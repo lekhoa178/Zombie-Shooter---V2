@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec326bee1ab147cdac6542a3ef9a827d, type: 3}
+  m_Name: PlayerAnimatorControllerMapping
+  m_EditorClassIdentifier: 
+  stateClipPairs:
+  - stateName: Mvm_Boost
+    clipName: Mvm_Boost
+  - stateName: Idle
+    clipName: Idle_Wait_A
+  - stateName: WalkTurn180
+    clipName: Mvm_Walk_Start_L180_Root
+  - stateName: HardStop
+    clipName: Mvm_DashEnd_A_Root
+  - stateName: HardLanding
+    clipName: Hard Landing
+  - stateName: LightLanding
+    clipName: Land_Base_Wait
+  - stateName: Roll
+    clipName: Land_Base_Move_Root
+  - stateName: LedgeGrab
+    clipName: jump_trans_to_climb_hang_idle_physics
+  - stateName: LedgeClimb
+    clipName: ledge_climb_up_root
+  - stateName: NormalAttack
+    clipName: combo_01_1
+  - stateName: NormalAttack 2
+    clipName: combo_01_2
+  - stateName: NormalAttack 3
+    clipName: combo_02_2
+  - stateName: NormalAttack 4
+    clipName: combo_01_4
+  - stateName: NormalAttack 5
+    clipName: Combo_02-4
+  - stateName: ChargeAttack
+    clipName: Charge_Attack_Loop

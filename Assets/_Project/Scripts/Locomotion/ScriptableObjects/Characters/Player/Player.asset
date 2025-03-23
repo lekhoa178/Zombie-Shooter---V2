@@ -1,0 +1,238 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8020a21d78650541bfa169212ad0fab, type: 3}
+  m_Name: Player
+  m_EditorClassIdentifier: 
+  <GroundedData>k__BackingField:
+    <BaseSpeed>k__BackingField: 5
+    <GroundToFallRayDistance>k__BackingField: 0.84
+    <SlopeSpeedAngles>k__BackingField:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: -0.016666668
+        outSlope: -0.016666668
+        tangentMode: 34
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 15
+        value: 0.75
+        inSlope: Infinity
+        outSlope: Infinity
+        tangentMode: 103
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 55.1
+        value: 0.4
+        inSlope: Infinity
+        outSlope: Infinity
+        tangentMode: 103
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 85
+        value: 0
+        inSlope: Infinity
+        outSlope: Infinity
+        tangentMode: 103
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 90
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 34
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    <SidewaysCameraRecenteringData>k__BackingField:
+    - <MinimumAngle>k__BackingField: 0
+      <MaximumAngle>k__BackingField: 80
+      <WaitTime>k__BackingField: -1
+      <RecenteringTime>k__BackingField: -1
+    - <MinimumAngle>k__BackingField: 80
+      <MaximumAngle>k__BackingField: 90
+      <WaitTime>k__BackingField: 0
+      <RecenteringTime>k__BackingField: 0.3
+    <BackwardsCameraRecenteringData>k__BackingField:
+    - <MinimumAngle>k__BackingField: 80
+      <MaximumAngle>k__BackingField: 90
+      <WaitTime>k__BackingField: 0
+      <RecenteringTime>k__BackingField: 0.5
+    <BaseRotationData>k__BackingField:
+      <TargetRotationReachTime>k__BackingField: {x: 0, y: 0.14, z: 0}
+    <IdleData>k__BackingField:
+      <BackwardsCameraRecenteringData>k__BackingField:
+      - <MinimumAngle>k__BackingField: 80
+        <MaximumAngle>k__BackingField: 90
+        <WaitTime>k__BackingField: 0.25
+        <RecenteringTime>k__BackingField: 0.5
+      <DistanceToGround>k__BackingField: 0.1
+    <DashData>k__BackingField:
+      <SpeedModifier>k__BackingField: 3
+      <RotationData>k__BackingField:
+        <TargetRotationReachTime>k__BackingField: {x: 0, y: 0.02, z: 0}
+      <TimeToBeConsideredConsecutive>k__BackingField: 1
+      <ConsecutiveDashesLimitAmount>k__BackingField: 10
+      <DashLimitReachedCooldown>k__BackingField: 0
+    <BoostDashData>k__BackingField:
+      <MaxDistance>k__BackingField: 3
+      <RotationData>k__BackingField:
+        <TargetRotationReachTime>k__BackingField: {x: 0, y: 0.02, z: 0}
+      <DashTrailMaxTime>k__BackingField: 0.1
+      <MaxDashTrailCount>k__BackingField: 20
+      <DashTrailPrefab>k__BackingField: {fileID: 2885649172368431484, guid: 2dd626b90336e654d9a81fe57e9f13eb, type: 3}
+      <DashTrailParticleSystem>k__BackingField: {fileID: 5246934075404874450, guid: ac4c30fb75ca314448e02c6c4659d336, type: 3}
+    <WalkData>k__BackingField:
+      <SpeedModifier>k__BackingField: 0.35
+      <BackwardsCameraRecenteringData>k__BackingField:
+      - <MinimumAngle>k__BackingField: 80
+        <MaximumAngle>k__BackingField: 90
+        <WaitTime>k__BackingField: -1
+        <RecenteringTime>k__BackingField: -1
+      <HasTurningState>k__BackingField: 1
+    <RunData>k__BackingField:
+      <SpeedModifier>k__BackingField: 1
+      <HasTurningState>k__BackingField: 0
+    <SprintData>k__BackingField:
+      <SpeedModifier>k__BackingField: 2.5
+      <SprintToRunTime>k__BackingField: 1
+      <RunToWalkTime>k__BackingField: 0.5
+      <HasTurningState>k__BackingField: 0
+    <StopData>k__BackingField:
+      <LightDecelerationForce>k__BackingField: 5
+      <MediumDecelerationForce>k__BackingField: 6.5
+      <HardDecelerationForce>k__BackingField: 5
+    <RollData>k__BackingField:
+      <SpeedModifier>k__BackingField: 1
+  <AirborneData>k__BackingField:
+    <JumpData>k__BackingField:
+      <JumpToGroundRayDistance>k__BackingField: 0.47
+      <JumpForceModifierOnSlopeUpwards>k__BackingField:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 1
+          inSlope: -0.0125
+          outSlope: -0.0125
+          tangentMode: 34
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 20
+          value: 0.75
+          inSlope: Infinity
+          outSlope: Infinity
+          tangentMode: 103
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 35.1
+          value: 0.5
+          inSlope: Infinity
+          outSlope: Infinity
+          tangentMode: 103
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 75.1
+          value: 1
+          inSlope: Infinity
+          outSlope: Infinity
+          tangentMode: 103
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 90
+          value: 1
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 34
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+      <JumpForceModifierOnSlopeDownwards>k__BackingField:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 1
+          inSlope: -0.007499999
+          outSlope: -0.007499999
+          tangentMode: 34
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 20
+          value: 0.85
+          inSlope: Infinity
+          outSlope: Infinity
+          tangentMode: 103
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 70.1
+          value: 1
+          inSlope: Infinity
+          outSlope: Infinity
+          tangentMode: 103
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 90
+          value: 1
+          inSlope: 0
+          outSlope: 0
+          tangentMode: 34
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+      <RotationData>k__BackingField:
+        <TargetRotationReachTime>k__BackingField: {x: 0, y: 0.02, z: 0}
+      <StationaryForce>k__BackingField: {x: 0, y: 1.25, z: 0}
+      <WeakForce>k__BackingField: {x: 1, y: 1.25, z: 1}
+      <MediumForce>k__BackingField: {x: 3.5, y: 1.25, z: 3.5}
+      <StrongForce>k__BackingField: {x: 5, y: 1.25, z: 5}
+      <MaxJumpTime>k__BackingField: 0.33
+      <MaxJumpCount>k__BackingField: 2
+    <FallData>k__BackingField:
+      <FallSpeedLimit>k__BackingField: 25
+      <MinimumDistanceToBeConsideredHardFall>k__BackingField: 4
+  <ComboConfig>k__BackingField: {fileID: 11400000, guid: b59dad8733fa7e64ca241746c3e8f39e, type: 2}
+  <DefaultHitVfxSettings>k__BackingField: {fileID: 11400000, guid: 7599c7172fe8408429198924f6171180, type: 2}
+  <LastHitVfx>k__BackingField: {fileID: 1392472177120628003, guid: 9f6615f6ff472c7449a117419620c20f, type: 3}

@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7666e94212cf1249b02457f2f81eba0, type: 3}
+  m_Name: MeleeAttack_5
+  m_EditorClassIdentifier: 
+  Shape: 1
+  FallbackToDefaultOnNoHits: 0
+  Radius: 1
+  ArcAngle: 120
+  BoxSize: {x: 1, y: 0.5, z: 1}
+  Offset: {x: 0, y: 0, z: 1}
+  OffsetFromColliderCenter: 1
+  Damage: 10
+  EnableHitStop: 0
+  HitStopDuration: 0.1
+  HitStopTimeScale: 0.1
+  HitStopAffects: 2
+  EnableCameraShake: 1
+  CameraShakeIntensity: 0.1
+  CameraShakeDuration: 0.1
+  HitVfxSettings: {fileID: 0}
+  OverrideHitVfxScale: 0
+  HitVfxScale: {x: 1, y: 1, z: 1}
+  EnableAdditionalVfx: 0
+  AdditionalVfxSettings: {fileID: 11400000, guid: 262cbe435cb596544a797138cb8cc4ad, type: 2}
+  SpawnAtHitLocation: 1
+  SpawnAtPlayerLocation: 0
+  AdditionalVfxOffset: {x: 0, y: 0, z: 0}
+  OverrideAdditionalVfxScale: 1
+  AdditionalVfxScale: {x: 1, y: 1, z: 1}
+  AdditionalVfxDelay: 0
+  EnableCriticalHit: 0
+  CriticalHitChance: 10
+  CriticalHitDamageMultiplier: 2
+  CriticalHitVfxSettings: {fileID: 0}
+  OverrideCriticalVfxScale: 1
+  CriticalVfxScale: {x: 1, y: 1, z: 1}
+  CriticalHitColor: {r: 1, g: 0, b: 0, a: 1}
+  EnableAreaEffect: 1
+  AreaEffectRadius: 2
+  AreaEffectVfxSettings: {fileID: 11400000, guid: 262cbe435cb596544a797138cb8cc4ad, type: 2}
+  OverrideAreaEffectVfxScale: 1
+  AreaEffectVfxScale: {x: 0.3, y: 0.3, z: 0.3}
+  AreaEffectDamage: 5
+  EnableAreaHitStop: 1
+  AreaHitStopDuration: 0.2
+  AreaHitStopTimeScale: 0.348
+  AreaHitStopAffects: 2
+  EnableAreaCameraShake: 1
+  AreaCameraShakeIntensity: 0.08
+  AreaCameraShakeDuration: 0.08
+  DebugEnabled: 1
+  DebugColor: {r: 1, g: 0, b: 0, a: 1}
+  DebugDuration: 1
+  UseCustomAnimation: 1
+  AnimationClip: {fileID: 7400000, guid: cf1cf5d7c0dd0974aadb4eca42310fd8, type: 2}
+  AnimatorStateName: NormalAttack 5
+  OverrideAnimationSpeed: 1
+  AnimationSpeedMultiplier: 1.6
+  UseRootMotion: 1
+  HitTiming: 0.5
+  EnableAttackIFrames: 1
+  AttackIFrameDuration: 0.2

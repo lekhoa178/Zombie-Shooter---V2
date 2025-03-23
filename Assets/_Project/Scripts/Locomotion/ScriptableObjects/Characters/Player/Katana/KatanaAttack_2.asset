@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7666e94212cf1249b02457f2f81eba0, type: 3}
+  m_Name: KatanaAttack_2
+  m_EditorClassIdentifier: 
+  Shape: 1
+  FallbackToDefaultOnNoHits: 0
+  Radius: 1.2
+  ArcAngle: 180
+  BoxSize: {x: 1, y: 0.5, z: 1}
+  Offset: {x: 0, y: 0, z: 0.2}
+  OffsetFromColliderCenter: 1
+  Damage: 10
+  EnableHitStop: 0
+  HitStopDuration: 0.1
+  HitStopTimeScale: 0.1
+  HitStopAffects: 2
+  EnableCameraShake: 1
+  CameraShakeIntensity: 0.1
+  CameraShakeDuration: 0.1
+  HitVfxSettings: {fileID: 11400000, guid: 49930fb845c99d24e932dc72a0355da7, type: 2}
+  OverrideHitVfxScale: 1
+  HitVfxScale: {x: 0.15, y: 0.15, z: 0.15}
+  EnableAdditionalVfx: 1
+  AdditionalVfxSettings: {fileID: 11400000, guid: c7aa610c3ea62aa41b335414f2741273, type: 2}
+  SpawnEvenWithoutHit: 1
+  SpawnPerCollision: 0
+  SpawnAtHitLocation: 0
+  SpawnAtPlayerLocation: 1
+  AdditionalVfxOffset: {x: 0, y: 0.5, z: 0}
+  AdditionalVfxRotation: {x: 0, y: 180, z: -20}
+  FaceHitDirection: 0
+  InheritPlayerRotation: 1
+  OverrideAdditionalVfxScale: 1
+  AdditionalVfxScale: {x: 0.15, y: 0.15, z: 0.15}
+  AdditionalVfxDelay: 0
+  EnableCriticalHit: 0
+  CriticalHitChance: 10
+  CriticalHitDamageMultiplier: 2
+  CriticalHitVfxSettings: {fileID: 0}
+  OverrideCriticalVfxScale: 1
+  CriticalVfxScale: {x: 1, y: 1, z: 1}
+  CriticalHitColor: {r: 1, g: 0, b: 0, a: 1}
+  EnableAreaEffect: 0
+  AreaEffectRadius: 2
+  AreaEffectVfxSettings: {fileID: 11400000, guid: 262cbe435cb596544a797138cb8cc4ad, type: 2}
+  OverrideAreaEffectVfxScale: 0
+  AreaEffectVfxScale: {x: 1, y: 1, z: 1}
+  AreaEffectDamage: 5
+  EnableAreaHitStop: 1
+  AreaHitStopDuration: 0.05
+  AreaHitStopTimeScale: 0.2
+  AreaHitStopAffects: 2
+  EnableAreaCameraShake: 1
+  AreaCameraShakeIntensity: 0.08
+  AreaCameraShakeDuration: 0.08
+  DebugEnabled: 1
+  DebugColor: {r: 1, g: 0, b: 0, a: 1}
+  DebugDuration: 1
+  UseCustomAnimation: 1
+  AnimationClip: {fileID: 7400000, guid: ed5456bfce9dd5d4285ed9aed76afe3e, type: 2}
+  AnimatorStateName: NormalAttack 2
+  OverrideAnimationSpeed: 1
+  AnimationSpeedMultiplier: 1
+  UseRootMotion: 1
+  HitTiming: 0.5
+  EnableAttackIFrames: 0
+  AttackIFrameDuration: 0.2
+  UseWeapon: 1
+  WeaponPrefab: {fileID: 3579451142723694405, guid: 91ddbba0bf3e2c64b96fa51d93b246fa, type: 3}
+  WeaponSlot: 2
+  RemoveWeaponAfterAttack: 0
+  WeaponPositionOffset: {x: 0, y: 0, z: 0}
+  WeaponRotationOffset: {x: 0, y: 0, z: 0}

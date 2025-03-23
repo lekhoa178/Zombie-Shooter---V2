@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81c1cd2982b6f1b40863b245a3ec1606, type: 3}
+  m_Name: KatanaCombo
+  m_EditorClassIdentifier: 
+  ComboWindowDuration: 0.8
+  BaseAttackInterval: 0.4
+  AttackSpeedMultiplier: 2
+  MinimumAttackInterval: 0.1
+  AttackConfigs:
+  - {fileID: 11400000, guid: 29576446b84ce5f47862ec234006c2fa, type: 2}
+  - {fileID: 11400000, guid: eadad3c57e5dcf840a94ac0561d36419, type: 2}
+  - {fileID: 11400000, guid: 157ed66a1f02e49479a52b21822575e6, type: 2}
+  - {fileID: 11400000, guid: 5146f653ca507f243b68055b5415b0f6, type: 2}
+  LastHitVfxSettings: {fileID: 0}

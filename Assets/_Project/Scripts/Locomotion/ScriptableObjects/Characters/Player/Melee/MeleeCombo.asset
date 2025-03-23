@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81c1cd2982b6f1b40863b245a3ec1606, type: 3}
+  m_Name: MeleeCombo
+  m_EditorClassIdentifier: 
+  ComboWindowDuration: 0.8
+  AttackConfigs:
+  - {fileID: 11400000, guid: f60e98f8f664aab4c9acd6ae96029f82, type: 2}
+  - {fileID: 11400000, guid: 184e54c4245cf834abeeaa0befeded2c, type: 2}
+  - {fileID: 11400000, guid: 25dd7237bccf2264a9028accb63fcf77, type: 2}
+  - {fileID: 11400000, guid: 05415faf1b8707d4897d344c0929db92, type: 2}
+  - {fileID: 11400000, guid: 1bd7900b4c834844bb8e46bc02533163, type: 2}
+  LastHitVfxSettings: {fileID: 0}
