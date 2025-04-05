@@ -74,7 +74,7 @@ MonoBehaviour:
   UseRootMotion: 1
   HitTiming: 0.5
   EnableAttackIFrames: 1
-  AttackIFrameDuration: 0.2
+  AttackIFrameDuration: 0.5
   UseWeapon: 1
   WeaponPrefab: {fileID: 3579451142723694405, guid: 91ddbba0bf3e2c64b96fa51d93b246fa, type: 3}
   WeaponSlot: 2

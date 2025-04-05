@@ -19,7 +19,9 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
     private bool isInStunRecovery = false;
     private float stunStressLevel = 0f;
     private float lastStunTime = 0f;
+    private float stunEndTime = 0f;
     private float stunRecoveryEndTime = 0f;
+    private float stunDuration = 0f;
     private Coroutine stunDecayCoroutine;
     private bool isAccumulatingStress = false;
     
@@ -35,9 +37,9 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
     public bool IsStunned => isStunned;
     public bool IsInStunRecovery => isInStunRecovery;
     public float StunStressLevel => stunStressLevel;
-    public bool CanBeStunned => !isStunned && !isInStunRecovery && !enemy.IsDead;
+    public bool CanBeStunned => !isInStunRecovery && !enemy.IsDead;
     
-    private Camera mainCamera;
+    private Camera _mainCamera;
     
     // Initialize the handler with required references
     public void Initialize(BaseEnemy enemy, EnemyData data, Animator animator, IAIMovement movement)
@@ -50,7 +52,7 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
 
     private void Awake()
     {
-        mainCamera = Camera.main;
+        _mainCamera = Camera.main;
     }
 
     private void OnEnable()
@@ -72,7 +74,7 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
     /// </summary>
     public void ProcessStunFromHit(HitContext hitContext)
     {
-        if (!hitContext.EnableStun || isStunned || isInStunRecovery || enemy.IsDead) 
+        if (!hitContext.EnableStun || isInStunRecovery || enemy.IsDead) 
         {
             Debug.Log($"<color=gray>{gameObject.name} stun rejected: EnableStun={hitContext.EnableStun}, isStunned={isStunned}, isInRecovery={isInStunRecovery}</color>");
             return;
@@ -83,7 +85,7 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
             var resistedDuration = hitContext.StunDuration * (1f - enemyData.stunDurationResistance);
             Debug.Log($"<color=yellow>{gameObject.name} will be stunned for {resistedDuration}s</color>");
             
-            // Start the stun coroutine
+            // Apply the stun directly
             ApplyStun(resistedDuration);
         }
         else
@@ -97,8 +99,8 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
     /// </summary>
     public bool ApplyStun(float duration)
     {
-        // If in recovery or already stunned, can't be stunned again
-        if (isInStunRecovery || isStunned || enemy.IsDead)
+        // If in recovery or dead, can't be stunned again
+        if (isInStunRecovery || enemy.IsDead)
         {
             Debug.LogWarning($"[{gameObject.name}] Stun rejected: already stunned={isStunned}, in recovery={isInStunRecovery}, dead={enemy.IsDead}");
             
@@ -107,8 +109,68 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
             return false;
         }
         
-        StartCoroutine(ApplyStunCoroutine(duration));
+        // If already stunned, just refresh the duration
+        if (isStunned)
+        {
+            stunEndTime = Time.time + duration;
+            stunDuration = duration;
+            Debug.Log($"[{gameObject.name}] Refreshing stun duration to {duration}s (until {stunEndTime})");
+            return true;
+        }
+        
+        // Otherwise apply a new stun
+        BeginStun(duration);
         return true;
+    }
+    
+    /// <summary>
+    /// Begin a new stun effect
+    /// </summary>
+    private void BeginStun(float duration)
+    {
+        Debug.Log($"[{gameObject.name}] Applying stun for {duration}s");
+        
+        lastStunTime = Time.time;
+        stunEndTime = Time.time + duration;
+        stunDuration = duration;
+        isStunned = true;
+        
+        // Force start stress accumulation regardless of settings
+        // This ensures we're always building stress for the debug visualization
+        if (stunDecayCoroutine != null)
+        {
+            StopCoroutine(stunDecayCoroutine);
+            stunDecayCoroutine = null;
+        }
+        
+        // IMPORTANT: Always add a minimum amount of stress immediately
+        // This ensures we see something in the debug bar
+        stunStressLevel += 1.0f;
+        
+        enemy.SafeSetVariable("IsStunned", true);
+        
+        enemy.PauseBehaviorGraph();
+        
+        // Fire both the old and new event systems
+        OnEnemyStunBegin?.Invoke(enemy);
+        OnStunBegin?.Invoke(gameObject);
+        
+        aiMovement?.StopMovement();
+        
+        if (enemyData.rotateToFaceHitDirection && 
+            (enemyData.onlyRotateWhenStunned || (!enemyData.onlyRotateWhenStunned && !enemyData.onlyRotateWhenPushedBack)))
+        {
+            if (enemy.lastHitDirection != Vector3.zero)
+            {
+                Vector3 facingDirection = new Vector3(-enemy.lastHitDirection.x, 0, -enemy.lastHitDirection.z).normalized;
+                transform.forward = facingDirection;
+            }
+        }
+        
+        if (animator)
+        {
+            animator.SetFloat("Moving", 0);
+        }
     }
     
     /// <summary>
@@ -139,75 +201,6 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
     }
     
     /// <summary>
-    /// Internal coroutine to apply the stun effect
-    /// </summary>
-    private IEnumerator ApplyStunCoroutine(float duration)
-    {
-        Debug.Log($"[{gameObject.name}] Applying stun for {duration}s");
-        
-        lastStunTime = Time.time;
-        isStunned = true;
-        
-        // Force start stress accumulation regardless of settings
-        // This ensures we're always building stress for the debug visualization
-        if (stunDecayCoroutine != null)
-        {
-            StopCoroutine(stunDecayCoroutine);
-            stunDecayCoroutine = null;
-        }
-        
-        // IMPORTANT: Always add a minimum amount of stress immediately
-        // This ensures we see something in the debug bar
-        stunStressLevel += 1.0f;
-        
-        if (!isInStunRecovery) StartCoroutine(AccumulateStunStress(duration));
-        
-        enemy.SafeSetVariable("IsStunned", true);
-        
-        enemy.PauseBehaviorGraph();
-        
-        // Fire both the old and new event systems
-        OnEnemyStunBegin?.Invoke(enemy);
-        OnStunBegin?.Invoke(gameObject);
-        
-        aiMovement?.StopMovement();
-        
-        if (enemyData.rotateToFaceHitDirection && 
-            (enemyData.onlyRotateWhenStunned || (!enemyData.onlyRotateWhenStunned && !enemyData.onlyRotateWhenPushedBack)))
-        {
-            if (enemy.lastHitDirection != Vector3.zero)
-            {
-                Vector3 facingDirection = new Vector3(-enemy.lastHitDirection.x, 0, -enemy.lastHitDirection.z).normalized;
-                transform.forward = facingDirection;
-            }
-        }
-        
-        if (animator)
-        {
-            animator.SetFloat("Moving", 0);
-        }
-        
-        yield return new WaitForSeconds(duration);
-        
-        if (enemy.IsDead) yield break;
-        
-        if (stunStressLevel >= enemyData.stunResistanceThreshold && enemyData.enableStunResistance)
-        {
-            CombatEventManager.TriggerStunEnded(gameObject, gameObject);
-            
-            CombatEventManager.TriggerRecoveryStarted(gameObject, gameObject, "Stun", enemyData.stunRecoveryDuration);
-            
-            StartStunRecovery();
-        }
-        else
-        {
-            CombatEventManager.TriggerStunEnded(gameObject, gameObject);
-            
-            EndStun();
-        }
-    }
-    
-    /// <summary>
     /// End the stunned state
     /// </summary>
     public void EndStun()
@@ -227,64 +220,6 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
         if (animator)
         {
             // animator.SetBool("Stunned", false);
-        }
-    }
-    
-    /// <summary>
-    /// Accumulate stun stress while the enemy is stunned
-    /// </summary>
-    private IEnumerator AccumulateStunStress(float stunDuration)
-    {
-        var timer = 0f;
-        isAccumulatingStress = true;
-        
-        Debug.Log($"[{gameObject.name}] Starting stress accumulation: current={stunStressLevel}, rate={enemyData.stunStressAccumulationRate}/sec, threshold={enemyData.stunResistanceThreshold}");
-        
-        try
-        {
-            while (timer < stunDuration && isStunned)
-            {
-                var stressToAdd = Mathf.Max(1.0f, enemyData.stunStressAccumulationRate) * Time.deltaTime;
-                stunStressLevel += stressToAdd;
-                timer += Time.deltaTime;
-                
-                // Force update ratio for debugging purposes
-                // var currentRatio = stunStressLevel / enemyData.stunResistanceThreshold;
-                
-                // Log more frequently
-                // if (Mathf.FloorToInt(timer * 4) > Mathf.FloorToInt((timer - Time.deltaTime) * 4))
-                // {
-                //     Debug.Log($"[{gameObject.name}] Stress: {stunStressLevel:F2}/{enemyData.stunResistanceThreshold} ({currentRatio:P0}) after {timer:F1}s");
-                // }
-
-                yield return null;
-            }
-        }
-        finally
-        {
-            isAccumulatingStress = false;
-        }
-        
-        // Don't start decay immediately, give time to see the accumulated value
-        yield return new WaitForSeconds(0.5f);
-        
-        // Start decaying stun stress when not stunned
-        stunDecayCoroutine = StartCoroutine(DecayStunStress());
-    }
-    
-    /// <summary>
-    /// Decay stun stress when the enemy is not stunned
-    /// </summary>
-    private IEnumerator DecayStunStress()
-    {
-        // Only decay if below threshold and not in recovery
-        while (stunStressLevel > 0 && !isStunned && !isInStunRecovery && 
-               Time.time - lastStunTime <= enemyData.stunStressResetDelay)
-        {
-            stunStressLevel -= enemyData.stunStressDecayRate * Time.deltaTime;
-            stunStressLevel = Mathf.Max(0, stunStressLevel);
-            
-            yield return null;
         }
     }
     
@@ -383,6 +318,36 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
     /// </summary>
     public void UpdateStunSystem()
     {
+        // Accumulate stun stress while stunned
+        if (isStunned && !isInStunRecovery && enemyData.enableStunResistance)
+        {
+            var stressToAdd = Mathf.Max(1.0f, enemyData.stunStressAccumulationRate) * Time.deltaTime;
+            stunStressLevel += stressToAdd;
+        }
+        
+        // Handle stun duration
+        if (isStunned && Time.time >= stunEndTime)
+        {
+            if (stunStressLevel >= enemyData.stunResistanceThreshold && enemyData.enableStunResistance)
+            {
+                CombatEventManager.TriggerStunEnded(gameObject, gameObject);
+                CombatEventManager.TriggerRecoveryStarted(gameObject, gameObject, "Stun", enemyData.stunRecoveryDuration);
+                StartStunRecovery();
+            }
+            else
+            {
+                CombatEventManager.TriggerStunEnded(gameObject, gameObject);
+                EndStun();
+                
+                // Start decaying stun stress when not stunned
+                if (stunDecayCoroutine != null)
+                {
+                    StopCoroutine(stunDecayCoroutine);
+                }
+                stunDecayCoroutine = StartCoroutine(DecayStunStress());
+            }
+        }
+        
         // Handle stun resistance decay when not stunned
         if (!isStunned && !isInStunRecovery && stunStressLevel > 0 && 
             Time.time - lastStunTime > enemyData.stunStressResetDelay)
@@ -396,6 +361,22 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
         if (isInStunRecovery && Time.time > stunRecoveryEndTime)
         {
             EndStunRecovery();
+        }
+    }
+    
+    /// <summary>
+    /// Decay stun stress when the enemy is not stunned
+    /// </summary>
+    private IEnumerator DecayStunStress()
+    {
+        // Only decay if below threshold and not in recovery
+        while (stunStressLevel > 0 && !isStunned && !isInStunRecovery && 
+               Time.time - lastStunTime <= enemyData.stunStressResetDelay)
+        {
+            stunStressLevel -= enemyData.stunStressDecayRate * Time.deltaTime;
+            stunStressLevel = Mathf.Max(0, stunStressLevel);
+            
+            yield return null;
         }
     }
     
@@ -424,23 +405,12 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
         
         fillRatio = Mathf.Clamp01(stunStressLevel / enemyData.stunResistanceThreshold);
         
-        // More frequent diagnostics when values change
-        // if (Time.frameCount % 60 == 0 || isStunned || isAccumulatingStress) 
-        // {
-        //     Debug.Log($"[{gameObject.name}] Stun DEBUG - Stress: {stunStressLevel:F2}, " +
-        //              $"Threshold: {enemyData.stunResistanceThreshold:F2}, " +
-        //              $"Ratio: {fillRatio:P0}, " +
-        //              $"isStunned: {isStunned}, " +
-        //              $"inRecovery: {isInStunRecovery}, " +
-        //              $"isAccumulating: {isAccumulatingStress}");
-        // }
-        
         // Make sure we have a camera
-        if (!mainCamera) return;
+        if (!_mainCamera) return;
         
         // Calculate screen position - check if the enemy is in front of camera
         Vector3 worldPos = transform.position + Vector3.up * 2f;
-        Vector3 screenPos = mainCamera.WorldToScreenPoint(worldPos);
+        Vector3 screenPos = _mainCamera.WorldToScreenPoint(worldPos);
         
         // Check if behind camera (z is negative in screen space when behind camera)
         if (screenPos.z < 0) return;
@@ -492,6 +462,14 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
             GUI.Label(new Rect(rect.x + rect.width + 5, rect.y, 100, 20), "RECOVERY");
         }
         
+        // Display stun duration if stunned
+        if (isStunned)
+        {
+            GUI.color = Color.cyan;
+            float remainingTime = stunEndTime - Time.time;
+            GUI.Label(new Rect(rect.x, rect.y - 30, 100, 20), $"Stun: {remainingTime:F1}s");
+        }
+        
         // Reset color when done
         GUI.color = originalColor;
     }
@@ -530,6 +508,7 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
         isInStunRecovery = false;
         stunStressLevel = 0f;
         lastStunTime = 0f;
+        stunEndTime = 0f;
         stunRecoveryEndTime = 0f;
         isAccumulatingStress = false;
         

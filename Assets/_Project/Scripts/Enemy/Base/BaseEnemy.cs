@@ -7,6 +7,7 @@ using Unity.Behavior;
 using UnityEngine;
 using Flyweight;
 using MoreMountains.Feedbacks;
+using Random = UnityEngine.Random;
 
 [RequireComponent(typeof(EnemyKnockbackHandler))]
 [RequireComponent(typeof(EnemyStunHandler))]
@@ -30,6 +31,10 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
     protected float currentHealth;
     protected bool isDead;
     protected bool isInvulnerable;
+    protected bool isElite = false;
+    protected VFXFlyweight elitePersistentVfx;
+    protected Material[] originalMaterials;
+    protected Vector3 originalScale;
     
     // Events
     public event Action<IEnemy> OnDeath;
@@ -45,10 +50,11 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
     public Transform Transform => transform;
     public GameObject GameObject => gameObject;
     public float CurrentHealth => currentHealth;
-    public float MaxHealth => enemyData.maxHealth;
+    public float MaxHealth => isElite ? enemyData.GetEffectiveMaxHealth(true) : enemyData.maxHealth;
     public bool IsDead => isDead;
     public bool IsStunned => stunHandler != null && stunHandler.IsStunned;
     public bool IsInvulnerable => isInvulnerable;
+    public bool IsElite => isElite;
     
     // Add the component references:
     [Header("Combat Handlers")]
@@ -69,7 +75,17 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
         HealthBarComponent = GetComponent<EnemyHealthBarComponent>();
         Collider = GetComponent<Collider>();
         
-        currentHealth = enemyData.maxHealth;
+        // Store original scale for reference
+        originalScale = transform.localScale;
+        
+        // Check if this enemy can be elite and roll the chance
+        if (enemyData.canBeElite && Random.value <= enemyData.eliteSpawnChance)
+        {
+            SetEliteStatus(true);
+        }
+        
+        // Set initial health based on elite status
+        currentHealth = MaxHealth;
         
         RegisterBehaviorMethods();
         
@@ -91,13 +107,114 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
         Debug.Log($"<color=blue>{gameObject.name}: BaseEnemy Awake completed, events registered</color>");
     }
     
+    protected virtual void Start()
+    {
+        // Apply Elite effects after all components are initialized
+        if (isElite)
+        {
+            ApplyEliteEffects();
+        }
+    }
+    
+    public void SetEliteStatus(bool elite)
+    {
+        isElite = elite;
+        
+        if (isElite)
+        {
+            // Store original materials for possible material changes
+            StoreOriginalMaterials();
+            
+            // Update behavior graph
+            if (BehaviorGraphAgent != null)
+            {
+                SafeSetVariable("IsElite", true);
+            }
+        }
+        
+        // Update current health based on new max health
+        currentHealth = MaxHealth;
+    }
+    
+    protected virtual void StoreOriginalMaterials()
+    {
+        // Store original materials for reference
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        List<Material> materials = new List<Material>();
+        
+        foreach (Renderer renderer in renderers)
+        {
+            foreach (Material material in renderer.materials)
+            {
+                materials.Add(new Material(material));
+            }
+        }
+        
+        originalMaterials = materials.ToArray();
+    }
+    
+    protected virtual void ApplyEliteEffects()
+    {
+        // Scale up the enemy if it's elite
+        if (enemyData.eliteScaleMultiplier > 1.0f)
+        {
+            transform.localScale = originalScale * enemyData.eliteScaleMultiplier;
+        }
+
+        // Spawn persistent VFX if specified
+        if (enemyData.elitePersistentVfxSettings != null)
+        {
+            SpawnElitePersistentVFX();
+        }
+        
+        // Spawn one-time spawn VFX if specified
+        if (enemyData.eliteSpawnVfxSettings != null)
+        {
+            VFXFlyweightHelper.SpawnVfxAtPosition(
+                enemyData.eliteSpawnVfxSettings,
+                transform.position,
+                Quaternion.identity,
+                enemyData.GetElitePersistentVfxScale()
+            );
+        }
+        
+        // Play elite spawn sound if specified
+        if (enemyData.eliteSpawnSound != null)
+        {
+            AudioSource.PlayClipAtPoint(enemyData.eliteSpawnSound, transform.position);
+        }
+        
+        // Log that we created an elite enemy
+        Debug.Log($"<color=#FFD700>Elite {enemyData.enemyName} spawned at {transform.position}</color>");
+    }
+
+    protected virtual void SpawnElitePersistentVFX()
+    {
+        if (elitePersistentVfx != null) return;
+        
+        VFXFlyweight vfxInstance = VFXFlyweightHelper.SpawnVfxAtPosition(
+            enemyData.elitePersistentVfxSettings,
+            transform.position + enemyData.elitePersistentVfxOffset,
+            Quaternion.identity,
+            enemyData.GetElitePersistentVfxScale()
+        );
+        
+        // Parent and save reference to destroy it later
+        if (vfxInstance != null)
+        {
+            vfxInstance.transform.SetParent(transform);
+            elitePersistentVfx = vfxInstance;
+        }
+    }
+    
     protected virtual void RegisterBehaviorMethods()
     {
         if (BehaviorGraphAgent != null)
         {
             // Use the safe method that won't crash
-            SafeSetVariable("HealthPercentage", currentHealth / enemyData.maxHealth);
+            SafeSetVariable("HealthPercentage", currentHealth / MaxHealth);
             SafeSetVariable("IsDead", isDead);
+            SafeSetVariable("IsElite", isElite);
         }
     }
     
@@ -151,7 +268,7 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
             // Update health percentage in behavior graph
             if (BehaviorGraphAgent)
             {
-                SafeSetVariable("HealthPercentage", currentHealth / enemyData.maxHealth);
+                SafeSetVariable("HealthPercentage", currentHealth / MaxHealth);
                 SafeSetVariable("currentHealth", currentHealth);
             }
             
@@ -189,6 +306,13 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
                 if (Animator != null && !IsDead)
                 {
                     Animator.SetTrigger("Damage");
+                }
+                
+                // Play elite hit sound if applicable
+                if (isElite && enemyData.eliteHitSounds != null && enemyData.eliteHitSounds.Length > 0)
+                {
+                    int randomIndex = UnityEngine.Random.Range(0, enemyData.eliteHitSounds.Length);
+                    AudioSource.PlayClipAtPoint(enemyData.eliteHitSounds[randomIndex], transform.position);
                 }
                 
                 // Spawn hit reaction VFX at hit position using enemyData configuration
@@ -271,16 +395,40 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
         
         OnDeath?.Invoke(this);
         
-        // Handle death visuals
-        if (enemyData.deathVFX)
+        // Handle elite death effects if applicable
+        if (isElite && enemyData.eliteDeathVfxSettings != null)
+        {
+            VFXFlyweightHelper.SpawnVfxAtPosition(
+                enemyData.eliteDeathVfxSettings,
+                transform.position,
+                Quaternion.identity
+            );
+            
+            // Play elite death sound if specified
+            if (enemyData.eliteDeathSounds != null && enemyData.eliteDeathSounds.Length > 0)
+            {
+                int randomIndex = UnityEngine.Random.Range(0, enemyData.eliteDeathSounds.Length);
+                AudioSource.PlayClipAtPoint(enemyData.eliteDeathSounds[randomIndex], transform.position);
+            }
+        }
+        // Handle normal death visuals for non-elite
+        else if (enemyData.deathVFX)
         {
             Instantiate(enemyData.deathVFX, transform.position, Quaternion.identity);
+            
+            // Play normal death sound
+            if (enemyData.deathSounds != null && enemyData.deathSounds.Length > 0)
+            {
+                int randomIndex = UnityEngine.Random.Range(0, enemyData.deathSounds.Length);
+                AudioSource.PlayClipAtPoint(enemyData.deathSounds[randomIndex], transform.position);
+            }
         }
         
-        // Play random death sound
-        if (enemyData.deathSounds != null && enemyData.deathSounds.Length > 0)
+        // Destroy elite persistent VFX if it exists
+        if (elitePersistentVfx != null)
         {
-            // Play sound logic
+            Destroy(elitePersistentVfx);
+            elitePersistentVfx = null;
         }
         
         // Handle game object (destroy or pool)
@@ -409,7 +557,7 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
         CombatEventManager.OnDeath -= HandleDeath;
     }
 
-    private void HandleHit(CombatEventManager.HitEventContext context)
+    protected void HandleHit(CombatEventManager.HitEventContext context)
     {
         // We only care about hits that target this enemy
         if (context.Target != gameObject) return;
@@ -421,7 +569,7 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
         // This is just for handling VFX and other effects
     }
 
-    private void HandleDeath(CombatEventManager.CombatEventContext context)
+    protected void HandleDeath(CombatEventManager.CombatEventContext context)
     {
         if (context.Target != gameObject) return;
         

@@ -24,14 +24,30 @@ public class RangedEnemy : BaseEnemy, IAttacker
     private Coroutine currentFiringCoroutine;
     
     // IAttacker implementation
-    public bool CanAttack => Time.time > lastAttackTime + rangedData.attackCooldown;
-    public float AttackRange => rangedData.attackRange;
-    public float AttackCooldown => rangedData.attackCooldown;
+    public bool CanAttack => Time.time > lastAttackTime + GetEffectiveAttackCooldown();
+    public float AttackRange => isElite ? enemyData.GetEffectiveAttackRange(true) : rangedData.attackRange;
+    public float AttackCooldown => GetEffectiveAttackCooldown();
     
     public event Action<IAttacker> OnAttackStart;
     public event Action<IAttacker> OnAttackEnd;
     public event Action<IAttacker> OnAttackTelegraphStart;
     public event Action<IAttacker> OnAttackTelegraphEnd;
+    
+    // Helper methods to get elite-adjusted values
+    protected float GetEffectiveAttackCooldown()
+    {
+        return isElite ? enemyData.GetEffectiveAttackCooldown(true) : rangedData.attackCooldown;
+    }
+
+    protected float GetEffectiveAttackDamage()
+    {
+        return isElite ? enemyData.GetEffectiveAttackDamage(true) : rangedData.attackDamage;
+    }
+
+    protected float GetEffectiveMoveSpeed()
+    {
+        return isElite ? enemyData.GetEffectiveMoveSpeed(true) : rangedData.moveSpeed;
+    }
     
     protected override void Awake()
     {
@@ -55,6 +71,10 @@ public class RangedEnemy : BaseEnemy, IAttacker
     {
         // Set debug visualization state
         ProjectileFlyweightHelper.SetDebugVisualization(showDebugTrajectories, debugLineDuration);
+        
+        // Register for combat events
+        CombatEventManager.OnHit += HandleHit;
+        CombatEventManager.OnDeath += HandleDeath;
     }
 
     private void OnValidate()
@@ -321,16 +341,40 @@ public class RangedEnemy : BaseEnemy, IAttacker
             Debug.DrawLine(projectileSpawnPoint.position, targetPosition, Color.yellow, debugLineDuration);
         }
         
-        // Use ProjectileFlyweightHelper if we have ProjectileSettings
+        // Let the ProjectileSettings control parabolic behavior and height
         if (rangedData.projectileSettings != null)
         {
-            // Let the ProjectileSettings control parabolic behavior and height
-            // This ensures projectile behavior comes from ProjectileSettings, not RangedEnemyData
+            // Play elite attack sound if applicable
+            if (isElite && enemyData.eliteAttackSounds != null && enemyData.eliteAttackSounds.Length > 0)
+            {
+                int randomIndex = UnityEngine.Random.Range(0, enemyData.eliteAttackSounds.Length);
+                AudioSource.PlayClipAtPoint(enemyData.eliteAttackSounds[randomIndex], transform.position);
+            }
+            
+            // Use elite VFX for projectiles if applicable
+            if (isElite && count > 0)
+            {
+                // Spawn an elite attack indicator VFX
+                if (enemyData.elitePersistentVfxSettings != null)
+                {
+                    VFXFlyweightHelper.SpawnVfxAtPosition(
+                        enemyData.elitePersistentVfxSettings,
+                        projectileSpawnPoint.position,
+                        Quaternion.identity,
+                        enemyData.GetElitePersistentVfxScale()
+                    );
+                }
+            }
+            
+            // Get effective damage value considering elite status
+            float effectiveDamage = GetEffectiveAttackDamage();
+            
+            // Spawn the projectile pattern with proper scaling for damage
             ProjectileFlyweightHelper.SpawnProjectilePattern(
                 rangedData.projectileSettings,
                 projectileSpawnPoint.position,
                 targetPosition,
-                rangedData.attackDamage,
+                effectiveDamage, // Use scaled damage
                 gameObject,
                 count,
                 spreadAngle,
@@ -384,10 +428,16 @@ public class RangedEnemy : BaseEnemy, IAttacker
     
     // Public getters for use with RangedAttackAction
     public Transform GetProjectileSpawnPoint() => projectileSpawnPoint;
+    public float GetEliteMultiplier(float baseValue, float multiplier) => isElite ? baseValue * multiplier : baseValue;
     
     // Cancel any ongoing firing routines on disable
     private void OnDisable()
     {
+        // Unregister from combat events
+        CombatEventManager.OnHit -= HandleHit;
+        CombatEventManager.OnDeath -= HandleDeath;
+        
+        // Cancel any ongoing firing routines
         if (currentFiringCoroutine != null)
         {
             StopCoroutine(currentFiringCoroutine);

@@ -133,9 +133,11 @@ public class HitPredictionZoneManager : MonoBehaviour
             var zone = activeZones[id];
             if (zone != null && zone.visual != null)
             {
+                zone.ResetZone();
+                
                 // Get the flyweight reference and return it to the pool
                 var flyweightRef = zone.visual.GetComponent<FlyweightReference>();
-                if (flyweightRef != null && flyweightRef.flyweight != null)
+                if (flyweightRef && flyweightRef.flyweight)
                 {
                     try
                     {

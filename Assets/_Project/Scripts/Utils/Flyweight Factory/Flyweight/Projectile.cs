@@ -73,6 +73,8 @@ namespace Flyweight
         protected Vector3 finalControlPoint;    // The control point when cutoff occurred
         protected Vector3 finalTangent;         // The curve tangent at cutoff point
         
+        [HideInInspector] public TrailRenderer[] trailRenderers;
+        
         // Component references
         private Collider _collider;
         private Rigidbody _rigidbody;
@@ -133,6 +135,18 @@ namespace Flyweight
         protected void OnDisable()
         {
             CleanupPredictionZone();
+            
+            if (trailRenderers != null)
+            {
+                foreach (var trail in trailRenderers)
+                {
+                    if (trail != null)
+                    {
+                        trail.enabled = false;
+                        trail.Clear();
+                    }
+                }
+            }
         }
         
         private void OnTriggerEnter(Collider other)
@@ -196,6 +210,17 @@ namespace Flyweight
             predictionZoneId = -1;
             predictionZoneTarget = null;
             showPredictionZone = settings && settings.predictionZoneSettings != null ? settings.showPredictionZone : false;
+            
+            if (trailRenderers != null)
+            {
+                foreach (var trail in trailRenderers)
+                {
+                    if (trail != null)
+                    {
+                        trail.enabled = true;
+                    }
+                }
+            }
         }
         
         private void ConfigureProjectile()

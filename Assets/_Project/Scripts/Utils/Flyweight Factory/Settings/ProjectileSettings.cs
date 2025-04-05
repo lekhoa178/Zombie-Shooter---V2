@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.VisualScripting;
+using UnityEngine;
 
 namespace Flyweight
 {
@@ -113,7 +114,7 @@ namespace Flyweight
             go.SetActive(false);
             go.name = prefab.name;
 
-            Flyweight flyweight = go.AddComponent<Projectile>();
+            Projectile flyweight = go.AddComponent<Projectile>();
             flyweight.settings = this;
             
             // Apply custom scale if not default
@@ -123,11 +124,13 @@ namespace Flyweight
             }
             
             // Add trail if specified
-            if (trailPrefab != null)
+            if (trailPrefab)
             {
                 GameObject trail = Instantiate(trailPrefab, go.transform);
                 trail.transform.localPosition = Vector3.zero;
             }
+            
+            flyweight.trailRenderers = flyweight.GetComponentsInChildren<TrailRenderer>(true);
 
             // Set up collision layers
             Collider[] colliders = go.GetComponentsInChildren<Collider>();

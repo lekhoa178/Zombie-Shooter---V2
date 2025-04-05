@@ -10,16 +10,15 @@ public class MeleeEnemy : BaseEnemy, IAttacker
     private float lastAttackTime;
     private IPerception perception;
     private bool isAttackingOrTelegraphing = false;
-    public VFXFlyweightSettings telegraphVfxSettings = null;
     
     [Header("Telegraph Feedback")]
     [Tooltip("Optional feedback player for telegraph effects")]
     [SerializeField] private MMF_Player telegraphFeedback;
     
     // IAttacker implementation
-    public bool CanAttack => (Time.time > lastAttackTime + enemyData.attackCooldown) && !isDead;
-    public float AttackRange => enemyData.attackRange;
-    public float AttackCooldown => enemyData.attackCooldown;
+    public bool CanAttack => (Time.time > lastAttackTime + GetEffectiveAttackCooldown()) && !isDead;
+    public float AttackRange => isElite ? enemyData.GetEffectiveAttackRange(true) : enemyData.attackRange;
+    public float AttackCooldown => GetEffectiveAttackCooldown();
     
     public event Action<IAttacker> OnAttackStart;
     public event Action<IAttacker> OnAttackEnd;
@@ -47,15 +46,15 @@ public class MeleeEnemy : BaseEnemy, IAttacker
         
         isAttackingOrTelegraphing = true;
 
-        if (telegraphFeedback != null)
+        if (telegraphFeedback)
         {
             telegraphFeedback.PlayFeedbacks();
         }
         
-        if (telegraphVfxSettings != null)
+        if (enemyData.telegraphVfxSettings)
         {
             var telegraph = VFXFlyweightHelper.SpawnVfxAtPosition(
-                telegraphVfxSettings,
+                enemyData.telegraphVfxSettings,
                 transform.position + Vector3.up,
                 Quaternion.identity
             );
@@ -66,13 +65,7 @@ public class MeleeEnemy : BaseEnemy, IAttacker
         OnAttackTelegraphStart?.Invoke(this);
         
         // Wait for telegraph duration
-        yield return new WaitForSeconds(0.2f);
-        
-        // Stop telegraph feedback
-        if (telegraphFeedback != null)
-        {
-            telegraphFeedback.StopFeedbacks();
-        }
+        yield return new WaitForSeconds(enemyData.telegraphDuration);
         
         OnAttackTelegraphEnd?.Invoke(this);
         
@@ -107,6 +100,22 @@ public class MeleeEnemy : BaseEnemy, IAttacker
         OnAttackStart?.Invoke(this);
     }
     
+    // Helper methods to get elite-adjusted values
+    protected float GetEffectiveAttackCooldown()
+    {
+        return isElite ? enemyData.GetEffectiveAttackCooldown(true) : enemyData.attackCooldown;
+    }
+
+    protected float GetEffectiveAttackDamage()
+    {
+        return isElite ? enemyData.GetEffectiveAttackDamage(true) : enemyData.attackDamage;
+    }
+
+    protected float GetEffectiveMoveSpeed()
+    {
+        return isElite ? enemyData.GetEffectiveMoveSpeed(true) : enemyData.moveSpeed;
+    }
+
     // Called from animation event
     public void OnAttackHit()
     {
@@ -126,7 +135,7 @@ public class MeleeEnemy : BaseEnemy, IAttacker
         var hitContext = HitContext.Create(
             hitDirection,
             hitPosition,
-            enemyData.attackDamage,
+            GetEffectiveAttackDamage(), // Use effective damage that considers elite status
             gameObject
         )
         .WithPushBack(
@@ -141,6 +150,25 @@ public class MeleeEnemy : BaseEnemy, IAttacker
         );
         
         hitContext.TriggerOnHit(player.gameObject);
+
+        // Play elite attack sound if applicable
+        if (isElite && enemyData.eliteAttackSounds != null && enemyData.eliteAttackSounds.Length > 0)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, enemyData.eliteAttackSounds.Length);
+            AudioSource.PlayClipAtPoint(enemyData.eliteAttackSounds[randomIndex], transform.position);
+        }
+
+        // Use appropriate VFX settings based on elite status
+        if (isElite && enemyData.elitePersistentVfxSettings != null && hitPosition != Vector3.zero)
+        {
+            // Spawn an additional hit effect for elite enemies
+            VFXFlyweightHelper.SpawnVfxAtPosition(
+                enemyData.elitePersistentVfxSettings,
+                hitPosition,
+                Quaternion.LookRotation(hitDirection),
+                enemyData.GetElitePersistentVfxScale()
+            );
+        }
 
         if (enemyData.hitVfxSettings != null)
         {

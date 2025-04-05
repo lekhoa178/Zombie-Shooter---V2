@@ -41,6 +41,11 @@ namespace LocomotionSystem
             {
                 StateMachine.Player.WeaponManager.HandleWeaponForAttack(config);
             }
+            
+            if (config && config.EnableAttackIFrames)
+            {
+                IFrameManager.Instance.StartInvincibility(config.AttackIFrameDuration);
+            }
         }
 
         public override void PhysicsUpdate()
@@ -255,12 +260,6 @@ namespace LocomotionSystem
                 );
 
                 if (collider.gameObject.GetInterface<IHittable>() is not { } enemy || !HitEnemies.Add(enemy)) continue;
-                
-                // Apply attack iFrames when successfully hitting an enemy
-                if (attackConfig.EnableAttackIFrames)
-                {
-                    IFrameManager.Instance.StartInvincibility(attackConfig.AttackIFrameDuration);
-                }
                 
                 // Process critical hit chance
                 bool isCriticalHit = attackConfig.EnableCriticalHit && Random.Range(0f, 100f) <= attackConfig.CriticalHitChance;

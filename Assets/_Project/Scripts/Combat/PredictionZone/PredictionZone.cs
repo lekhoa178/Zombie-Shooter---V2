@@ -73,7 +73,7 @@ public class PredictionZone
 
     public void UpdateVisual()
     {
-        if (!isValid || visual == null || target == null)
+        if (!isValid || !visual || !target)
         {
             InvalidateZone();
             return;
@@ -83,6 +83,9 @@ public class PredictionZone
         {
             visual.transform.position = target.position + offset;
             visual.transform.localScale = scale;
+            
+            if (!visual.gameObject.activeSelf) 
+                visual.SetActive(true);
 
             if (hasProgression)
                 ApplyProgressionVisual();
@@ -109,10 +112,26 @@ public class PredictionZone
         
         if (visual != null)
         {
+            visual.SetActive(false);
+
             var progressionVisual = visual.GetComponent<ProgressionVisual>();
             if (progressionVisual != null)
             {
-                progressionVisual.ResetVisual();
+                progressionVisual.ResetAllEffects();
+            }
+        }
+    }
+
+    public void ResetZone()
+    {
+        if (visual != null)
+        {
+            visual.SetActive(false);
+            
+            var progressionVisual = visual.GetComponent<ProgressionVisual>();
+            if (progressionVisual)
+            {
+                progressionVisual.ResetAllEffects();
             }
         }
     }

@@ -22,6 +22,79 @@ public class EnemyData : ScriptableObject
     public float telegraphDuration = 0.2f;
     public VFXFlyweightSettings telegraphVfxSettings;
     
+    [Header("Elite Enemy Configuration")]
+    [Tooltip("When enabled, this enemy can spawn as an elite variant with enhanced attributes")]
+    public bool canBeElite = false;
+    [Tooltip("Chance of this enemy spawning as an elite (0-1)")]
+    [Range(0, 1)]
+    public float eliteSpawnChance = 0.1f;
+    [Tooltip("Scale multiplier for the elite enemy's visual size")]
+    [Range(1, 2)]
+    public float eliteScaleMultiplier = 1.2f;
+
+    [Header("Elite Attribute Scaling")]
+    [Tooltip("Enable to override max health for elite enemies")]
+    public bool overrideEliteHealth = true;
+    [Tooltip("Multiplier for max health when enemy is elite")]
+    [Range(1, 5)]
+    public float eliteHealthMultiplier = 2f;
+    
+    [Tooltip("Enable to override damage for elite enemies")]
+    public bool overrideEliteDamage = true;
+    [Tooltip("Multiplier for attack damage when enemy is elite")]
+    [Range(1, 5)]
+    public float eliteDamageMultiplier = 1.5f;
+    
+    [Tooltip("Enable to override movement speed for elite enemies")]
+    public bool overrideEliteSpeed = true;
+    [Tooltip("Multiplier for movement speed when enemy is elite")]
+    [Range(1, 3)]
+    public float eliteSpeedMultiplier = 1.3f;
+    
+    [Tooltip("Enable to override attack cooldown for elite enemies")]
+    public bool overrideEliteAttackCooldown = true;
+    [Tooltip("Multiplier for attack cooldown when enemy is elite (lower is faster attacks)")]
+    [Range(0.5f, 1f)]
+    public float eliteAttackCooldownMultiplier = 0.75f;
+    
+    [Tooltip("Enable to override attack range for elite enemies")]
+    public bool overrideEliteAttackRange = false;
+    [Tooltip("Multiplier for attack range when enemy is elite")]
+    [Range(1, 3)]
+    public float eliteAttackRangeMultiplier = 1.2f;
+    
+    [Tooltip("Enable to override resistance values for elite enemies")]
+    public bool overrideEliteResistances = true;
+    [Tooltip("Additional reduction to stun duration for elite enemies")]
+    [Range(0, 0.5f)]
+    public float eliteStunResistanceBonus = 0.2f;
+    [Tooltip("Additional reduction to pushback effects for elite enemies")]
+    [Range(0, 0.5f)]
+    public float elitePushbackResistanceBonus = 0.2f;
+    
+    [Header("Elite Visual Effects")]
+    [Tooltip("Persistent VFX attached to elite enemies")]
+    public VFXFlyweightSettings elitePersistentVfxSettings;
+    [Tooltip("Offset from the enemy position for the persistent VFX")]
+    public Vector3 elitePersistentVfxOffset = new Vector3(0, 0.5f, 0);
+    [Tooltip("Scale of the persistent elite VFX")]
+    public Vector3 elitePersistentVfxScale = Vector3.one;
+    
+    [Tooltip("Spawn VFX when elite enemy is first encountered")]
+    public VFXFlyweightSettings eliteSpawnVfxSettings;
+    [Tooltip("Death VFX specifically for elite enemies")]
+    public VFXFlyweightSettings eliteDeathVfxSettings;
+    
+    [Header("Elite Sound Effects")]
+    [Tooltip("Sound played when elite enemy is encountered")]
+    public AudioClip eliteSpawnSound;
+    [Tooltip("Sound played when elite enemy attacks")]
+    public AudioClip[] eliteAttackSounds;
+    [Tooltip("Sound played when elite enemy is hit")]
+    public AudioClip[] eliteHitSounds;
+    [Tooltip("Sound played when elite enemy dies")]
+    public AudioClip[] eliteDeathSounds;
+    
     [Header("Hit Reaction Settings")]
     [Tooltip("Reduces push back distance by this percentage (0-1)")]
     public float pushBackResistance = 0.3f;
@@ -212,6 +285,71 @@ public class EnemyData : ScriptableObject
     public Vector3 GetStartMovingVfxScale()
     {
         return overrideStartMovingVfxScale ? startMovingVfxScale : Vector3.zero;
+    }
+    
+    public Vector3 GetElitePersistentVfxScale()
+    {
+        return elitePersistentVfxScale;
+    }
+    
+    // Helper method to calculate scaled stats for elite enemies
+    public float GetScaledStat(float baseStat, float multiplier, bool shouldOverride)
+    {
+        return shouldOverride ? baseStat * multiplier : baseStat;
+    }
+    
+    // Returns effective health considering elite status
+    public float GetEffectiveMaxHealth(bool isElite)
+    {
+        return isElite && overrideEliteHealth ? maxHealth * eliteHealthMultiplier : maxHealth;
+    }
+    
+    // Returns effective damage considering elite status
+    public float GetEffectiveAttackDamage(bool isElite)
+    {
+        return isElite && overrideEliteDamage ? attackDamage * eliteDamageMultiplier : attackDamage;
+    }
+    
+    // Returns effective move speed considering elite status
+    public float GetEffectiveMoveSpeed(bool isElite)
+    {
+        return isElite && overrideEliteSpeed ? moveSpeed * eliteSpeedMultiplier : moveSpeed;
+    }
+    
+    // Returns effective attack cooldown considering elite status
+    public float GetEffectiveAttackCooldown(bool isElite)
+    {
+        return isElite && overrideEliteAttackCooldown ? attackCooldown * eliteAttackCooldownMultiplier : attackCooldown;
+    }
+    
+    // Returns effective attack range considering elite status
+    public float GetEffectiveAttackRange(bool isElite)
+    {
+        return isElite && overrideEliteAttackRange ? attackRange * eliteAttackRangeMultiplier : attackRange;
+    }
+    
+    // Returns effective stun resistance considering elite status
+    public float GetEffectiveStunResistance(bool isElite)
+    {
+        float resistance = stunDurationResistance;
+        if (isElite && overrideEliteResistances)
+        {
+            // Clamp to ensure we don't exceed 100% resistance
+            resistance = Mathf.Clamp01(resistance + eliteStunResistanceBonus);
+        }
+        return resistance;
+    }
+    
+    // Returns effective pushback resistance considering elite status
+    public float GetEffectivePushbackResistance(bool isElite)
+    {
+        float resistance = pushBackResistance;
+        if (isElite && overrideEliteResistances)
+        {
+            // Clamp to ensure we don't exceed 100% resistance
+            resistance = Mathf.Clamp01(resistance + elitePushbackResistanceBonus);
+        }
+        return resistance;
     }
 }
 
