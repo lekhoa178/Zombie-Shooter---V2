@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: MeleeCombo
   m_EditorClassIdentifier: 
   ComboWindowDuration: 0.8
+  BaseAttackInterval: 0
+  AttackSpeedMultiplier: 1
+  MinimumAttackInterval: 0
   AttackConfigs:
   - {fileID: 11400000, guid: f60e98f8f664aab4c9acd6ae96029f82, type: 2}
   - {fileID: 11400000, guid: 184e54c4245cf834abeeaa0befeded2c, type: 2}
@@ -20,3 +23,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 05415faf1b8707d4897d344c0929db92, type: 2}
   - {fileID: 11400000, guid: 1bd7900b4c834844bb8e46bc02533163, type: 2}
   LastHitVfxSettings: {fileID: 0}
+  DefaultDetectionRange: 10
+  DefaultDotProductThreshold: 0.15

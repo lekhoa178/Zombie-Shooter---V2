@@ -22,8 +22,8 @@ namespace LocomotionSystem
         
         protected bool IsCombo = false;
         protected bool IsFinished = false;
-        
-        public PlayerCombatState(PlayerMovementStateMachine playerMovementStateMachine) : base(playerMovementStateMachine)
+
+        protected PlayerCombatState(PlayerMovementStateMachine playerMovementStateMachine) : base(playerMovementStateMachine)
         {
             _attackIntervalTimer = new CountdownTimer(AttackInterval);
             HitEnemies = new HashSet<IHittable>();
@@ -37,7 +37,7 @@ namespace LocomotionSystem
 
             // Handle weapon attachment at the start of the attack
             var config = StateMachine.Player.Data.ComboConfig?.AttackConfigs[StateMachine.ReusableData.CurrentComboIndex];
-            if (config != null)
+            if (config)
             {
                 StateMachine.Player.WeaponManager.HandleWeaponForAttack(config);
             }
@@ -77,7 +77,7 @@ namespace LocomotionSystem
         // ** Animation Event **
         public void GetCloseToTarget()
         {
-            GameObject targetEnemy = StateMachine.Player.TargetDetector.GetTargetEnemy();
+            GameObject targetEnemy = StateMachine.Player.TargetDetector.GetCurrentTarget();
 
             if (targetEnemy == null) return;
 
@@ -90,7 +90,7 @@ namespace LocomotionSystem
         // ** Animation Event **
         public void FaceTarget()
         {
-            GameObject targetEnemy = StateMachine.Player.TargetDetector.GetTargetEnemy();
+            GameObject targetEnemy = StateMachine.Player.TargetDetector.GetCurrentTarget();
 
             if (targetEnemy == null) return;
 
@@ -131,24 +131,24 @@ namespace LocomotionSystem
         
         private void Float()
         {
-            Vector3 capsuleColliderCenterInWorldSpace = StateMachine.Player.ResizableCapsuleCollider.CapsuleColliderData.Collider.bounds.center;
+            var capsuleColliderCenterInWorldSpace = StateMachine.Player.ResizableCapsuleCollider.CapsuleColliderData.Collider.bounds.center;
 
-            Ray downwardsRayFromCapsuleCenter = new Ray(capsuleColliderCenterInWorldSpace, Vector3.down);
+            var downwardsRayFromCapsuleCenter = new Ray(capsuleColliderCenterInWorldSpace, Vector3.down);
 
             if (Physics.Raycast(downwardsRayFromCapsuleCenter, out RaycastHit hit, StateMachine.Player.ResizableCapsuleCollider.SlopeData.FloatRayDistance, StateMachine.Player.LayerData.GroundLayer, QueryTriggerInteraction.Ignore))
             {
-                float groundAngle = Vector3.Angle(hit.normal, -downwardsRayFromCapsuleCenter.direction);
+                var groundAngle = Vector3.Angle(hit.normal, -downwardsRayFromCapsuleCenter.direction);
 
-                float distanceToFloatingPoint = StateMachine.Player.ResizableCapsuleCollider.CapsuleColliderData.ColliderCenterInLocalSpace.y * StateMachine.Player.transform.localScale.y - hit.distance;
+                var distanceToFloatingPoint = StateMachine.Player.ResizableCapsuleCollider.CapsuleColliderData.ColliderCenterInLocalSpace.y * StateMachine.Player.transform.localScale.y - hit.distance;
 
                 if (distanceToFloatingPoint == 0f)
                 {
                     return;
                 }
 
-                float amountToLift = distanceToFloatingPoint * StateMachine.Player.ResizableCapsuleCollider.SlopeData.StepReachForce - GetPlayerVerticalVelocity().y;
+                var amountToLift = distanceToFloatingPoint * StateMachine.Player.ResizableCapsuleCollider.SlopeData.StepReachForce - GetPlayerVerticalVelocity().y;
 
-                Vector3 liftForce = new Vector3(0f, amountToLift, 0f);
+                var liftForce = new Vector3(0f, amountToLift, 0f);
 
                 StateMachine.Player.Rigidbody.AddForce(liftForce, ForceMode.VelocityChange);
             }
@@ -186,40 +186,40 @@ namespace LocomotionSystem
                 return;
             }
 
-            // Get configuration for current combo index
-            var config = StateMachine.Player.Data.ComboConfig.AttackConfigs[comboIndex];
+            // Get the current attack configuration
+            var attackConfig = StateMachine.Player.Data.ComboConfig.AttackConfigs[comboIndex];
 
             // Fall back to default if config is null
-            if (!config)
+            if (!attackConfig)
             {
                 DefaultSphereDetection();
                 return;
             }
 
             // Create detection context with only the necessary data
-            var detectionContext = HitDetectionContext.CreateFromPlayer(StateMachine.Player);
+            var detectionContext = HitDetectionContext.CreateFromPlayer(StateMachine.Player, attackConfig);
 
             // Handle additional VFX that should spawn regardless of hits
-            if (config.EnableAdditionalVfx && config.AdditionalVfxSettings && config.SpawnEvenWithoutHit)
+            if (attackConfig.EnableAdditionalVfx && attackConfig.AdditionalVfxSettings && attackConfig.SpawnEvenWithoutHit)
             {
-                SpawnAdditionalVFX(config, StateMachine.Player.transform.position, StateMachine.Player.transform.forward);
+                SpawnAdditionalVFX(attackConfig, StateMachine.Player.transform.position, StateMachine.Player.transform.forward);
             }
 
-            var hitColliders = HitDetectionManager.Instance.DetectHits(detectionContext, config);
+            var hitColliders = HitDetectionManager.Instance.DetectHits(detectionContext, attackConfig);
 
             // If we have hits and additional VFX is enabled
-            if (hitColliders.Length > 0 && config.EnableAdditionalVfx && config.AdditionalVfxSettings)
+            if (hitColliders.Length > 0 && attackConfig.EnableAdditionalVfx && attackConfig.AdditionalVfxSettings)
             {
-                if (!config.SpawnEvenWithoutHit) // Only spawn if we haven't already spawned due to SpawnEvenWithoutHit
+                if (!attackConfig.SpawnEvenWithoutHit) // Only spawn if we haven't already spawned due to SpawnEvenWithoutHit
                 {
-                    if (config.SpawnPerCollision)
+                    if (attackConfig.SpawnPerCollision)
                     {
                         // Spawn for each collision
                         foreach (var collider in hitColliders)
                         {
                             Vector3 hitPosition = collider.bounds.center - StateMachine.Player.transform.forward * collider.bounds.extents.z 
                                                 + Vector3.up * Random.Range(-0.1f, 0.1f);
-                            SpawnAdditionalVFX(config, hitPosition, StateMachine.Player.transform.forward);
+                            SpawnAdditionalVFX(attackConfig, hitPosition, StateMachine.Player.transform.forward);
                         }
                     }
                     else
@@ -227,7 +227,7 @@ namespace LocomotionSystem
                         // Spawn once using the first hit position
                         Vector3 hitPosition = hitColliders[0].bounds.center - StateMachine.Player.transform.forward * hitColliders[0].bounds.extents.z 
                                             + Vector3.up * Random.Range(-0.1f, 0.1f);
-                        SpawnAdditionalVFX(config, hitPosition, StateMachine.Player.transform.forward);
+                        SpawnAdditionalVFX(attackConfig, hitPosition, StateMachine.Player.transform.forward);
                     }
                 }
             }
@@ -248,106 +248,107 @@ namespace LocomotionSystem
                 
                 // Use config VFX if available, otherwise use default
                 VFXFlyweightHelper.SpawnVfxAtPosition(
-                    config.HitVfxSettings ? config.HitVfxSettings : StateMachine.Player.Data.DefaultHitVfxSettings, 
+                    attackConfig.HitVfxSettings ? attackConfig.HitVfxSettings : StateMachine.Player.Data.DefaultHitVfxSettings, 
                     hitPosition, 
                     Quaternion.identity, 
-                    config.GetHitVfxScale()
+                    attackConfig.GetHitVfxScale()
                 );
 
                 if (collider.gameObject.GetInterface<IHittable>() is not { } enemy || !HitEnemies.Add(enemy)) continue;
                 
                 // Apply attack iFrames when successfully hitting an enemy
-                if (config.EnableAttackIFrames)
+                if (attackConfig.EnableAttackIFrames)
                 {
-                    IFrameManager.Instance.StartInvincibility(config.AttackIFrameDuration, false);
+                    IFrameManager.Instance.StartInvincibility(attackConfig.AttackIFrameDuration);
                 }
                 
                 // Process critical hit chance
-                bool isCriticalHit = config.EnableCriticalHit && Random.Range(0f, 100f) <= config.CriticalHitChance;
-                float finalDamage = isCriticalHit ? config.Damage * config.CriticalHitDamageMultiplier : config.Damage;
+                bool isCriticalHit = attackConfig.EnableCriticalHit && Random.Range(0f, 100f) <= attackConfig.CriticalHitChance;
+                float finalDamage = isCriticalHit ? attackConfig.Damage * attackConfig.CriticalHitDamageMultiplier : attackConfig.Damage;
                 
-                // Apply hit to enemy
+                // Calculate hit direction
                 var hitDirection = StateMachine.Player.transform.forward;
-                enemy.OnHit(hitDirection, finalDamage);
                 
-                // Show critical hit VFX if applicable
-                if (isCriticalHit && config.CriticalHitVfxSettings)
+                // Create a hit context if available
+                if (typeof(HitContext).IsClass)
                 {
-                    VFXFlyweightHelper.SpawnVfxAtPosition(config.CriticalHitVfxSettings, hitPosition, Quaternion.identity, config.CriticalVfxScale);
+                    try
+                    {
+                        // Create a hit context with all necessary data
+                        var hitContext = HitContext.FromConfiguration(
+                            attackConfig, 
+                            hitDirection, 
+                            hitPosition, 
+                            finalDamage, 
+                            StateMachine.Player.gameObject
+                        ).WithStun(attackConfig.EnableStun, attackConfig.StunThresholdDamage, attackConfig.StunDuration)
+                         .WithPushBack(attackConfig.EnablePushBack, attackConfig.PushBackDistance, attackConfig.PushBackDuration, attackConfig.PushBackCurve, attackConfig.DeathPushBackMultiplier);
+                        
+                        // If it's a critical hit, mark it in the context
+                        if (isCriticalHit)
+                        {
+                            hitContext.AsCritical();
+                        }
+                        
+                        // Apply the hit using the context
+                        if (enemy != null)
+                        {
+                            // Use the new TriggerOnHit method if available
+                            try
+                            {
+                                // This method handles all combat event dispatching in one place
+                                hitContext.TriggerOnHit(collider.gameObject);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogWarning($"Error using TriggerOnHit: {ex.Message}. Falling back to direct method.");
+                                
+                                // Fallback to legacy methods
+                                var methodInfo = enemy.GetType().GetMethod("OnHitWithContext");
+                                if (methodInfo != null)
+                                {
+                                    // Call the context method if available
+                                    methodInfo.Invoke(enemy, new object[] { hitContext });
+                                }
+                                else
+                                {
+                                    // Fallback to regular hit method
+                                    enemy.OnHit(hitDirection, finalDamage);
+                                }
+                            }
+                        }
+                    }
+                    catch (System.Exception)
+                    {
+                        // If anything goes wrong with the context approach, fall back to the direct method
+                        enemy.OnHit(hitDirection, finalDamage);
+                    }
+                }
+                else
+                {
+                    // If HitContext doesn't exist, use the regular method
+                    enemy.OnHit(hitDirection, finalDamage);
                 }
                 
-                // Handle additional VFX if enabled
-                if (config.EnableAdditionalVfx && config.AdditionalVfxSettings)
+                // Show critical hit VFX if applicable
+                if (isCriticalHit && attackConfig.CriticalHitVfxSettings)
                 {
-                    // Determine spawn position based on configuration
-                    Vector3 additionalVfxPosition;
-                    if (config.SpawnAtHitLocation)
-                    {
-                        additionalVfxPosition = hitPosition;
-                    }
-                    else if (config.SpawnAtPlayerLocation)
-                    {
-                        additionalVfxPosition = StateMachine.Player.transform.position;
-                    }
-                    else
-                    {
-                        additionalVfxPosition = hitPosition; // Default to hit location
-                    }
-                    
-                    // Apply additional offset
-                    additionalVfxPosition += config.AdditionalVfxOffset;
-
-                    // Calculate rotation
-                    Quaternion vfxRotation = Quaternion.identity;
-                    if (config.FaceHitDirection)
-                    {
-                        vfxRotation = Quaternion.LookRotation(hitDirection);
-                    }
-                    else if (config.InheritPlayerRotation)
-                    {
-                        vfxRotation = StateMachine.Player.transform.rotation;
-                    }
-                    
-                    // Apply additional rotation offset
-                    vfxRotation *= Quaternion.Euler(config.AdditionalVfxRotation);
-                    
-                    // Handle delay if specified
-                    if (config.AdditionalVfxDelay > 0)
-                    {
-                        StateMachine.Player.StartStateCoroutine(
-                            VFXFlyweightHelper.SpawnDelayedVfx(
-                                config.AdditionalVfxSettings, 
-                                additionalVfxPosition,
-                                config.AdditionalVfxScale,
-                                config.AdditionalVfxDelay,
-                                vfxRotation
-                            )
-                        );
-                    }
-                    else
-                    {
-                        VFXFlyweightHelper.SpawnVfxAtPosition(
-                            config.AdditionalVfxSettings,
-                            additionalVfxPosition,
-                            vfxRotation,
-                            config.AdditionalVfxScale
-                        );
-                    }
+                    VFXFlyweightHelper.SpawnVfxAtPosition(attackConfig.CriticalHitVfxSettings, hitPosition, Quaternion.identity, attackConfig.CriticalVfxScale);
                 }
                 
                 // Apply hit stop with new configuration
-                if (config.EnableHitStop)
+                if (attackConfig.EnableHitStop)
                 {
-                    ApplyHitStop(config.HitStopDuration, config.HitStopTimeScale, config.HitStopAffects, enemy);
+                    ApplyHitStop(attackConfig.HitStopDuration, attackConfig.HitStopTimeScale, attackConfig.HitStopAffects, enemy);
                 }
                 
                 // Apply camera shake if enabled
-                if (config.EnableCameraShake)
+                if (attackConfig.EnableCameraShake)
                 {
                     CameraShakeManager.Instance.Shake(
-                        config.CameraShakeIntensity, 
-                        config.CameraShakeIntensity, 
-                        config.CameraShakeDuration
+                        attackConfig.CameraShakeIntensity, 
+                        attackConfig.CameraShakeIntensity, 
+                        attackConfig.CameraShakeDuration
                     );
                 }
             }
@@ -454,9 +455,11 @@ namespace LocomotionSystem
                     1f
                 );
             
+                var hitPosition = collider.bounds.center - StateMachine.Player.transform.forward * collider.bounds.extents.z + Vector3.up * Random.Range(-0.1f, 0.1f);
+                
                 VFXFlyweightHelper.SpawnVfxAtPosition(
                     StateMachine.Player.Data.DefaultHitVfxSettings,
-                    collider.bounds.center - StateMachine.Player.transform.forward * collider.bounds.extents.z + Vector3.up * Random.Range(-0.1f, 0.1f),
+                    hitPosition,
                     Quaternion.identity,
                     Vector3.one
                 );
@@ -464,7 +467,27 @@ namespace LocomotionSystem
                 if (collider.gameObject.GetInterface<IHittable>() is not { } enemy || !HitEnemies.Add(enemy)) continue;
             
                 var hitDirection = StateMachine.Player.transform.forward;
-                enemy.OnHit(hitDirection, 0f);
+                
+                // Create a simple hit context
+                var hitContext = HitContext.Create(
+                    hitDirection, 
+                    hitPosition, 
+                    1.0f, // Default small damage
+                    StateMachine.Player.gameObject
+                )
+                .WithPushBack(true, 0.5f, 0.2f)
+                .WithStun(false, 5f, 0.1f);
+                
+                // Use the new event system instead of directly calling OnHit
+                try
+                {
+                    hitContext.TriggerOnHit(collider.gameObject);
+                }
+                catch (System.Exception)
+                {
+                    // Fallback to direct method if there's an issue
+                    enemy.OnHit(hitDirection, 0f);
+                }
                 
                 // Use default hit stop values
                 ApplyHitStop(0.1f, 0.1f, AttackHitConfiguration.HitStopTarget.Both);
@@ -539,47 +562,47 @@ namespace LocomotionSystem
         {
             // Get current combo index and its configuration
             var comboIndex = StateMachine.ReusableData.CurrentComboIndex;
-            var config = StateMachine.Player.Data.ComboConfig.AttackConfigs[comboIndex];
+            var currentAttackConfig = StateMachine.Player.Data.ComboConfig.AttackConfigs[comboIndex];
             
-            if (!config || !config.EnableAreaEffect || !config.AreaEffectVfxSettings) return;
+            if (!currentAttackConfig || !currentAttackConfig.EnableAreaEffect || !currentAttackConfig.AreaEffectVfxSettings) return;
             
             // Determine the position for the area effect
             Vector3 areaEffectPosition = StateMachine.Player.transform.position + 
-                                         StateMachine.Player.transform.forward * config.Offset.z;
+                                         StateMachine.Player.transform.forward * currentAttackConfig.Offset.z;
             
             // Draw debug sphere to visualize area effect
             Debug.DrawLine(StateMachine.Player.transform.position, areaEffectPosition, Color.yellow, 2f);
-            DebugUtilities.DrawWireSphere(areaEffectPosition, config.AreaEffectRadius, Color.red, 2f);
+            DebugUtilities.DrawWireSphere(areaEffectPosition, currentAttackConfig.AreaEffectRadius, Color.red, 2f);
             
             // Spawn the area effect VFX
-            var vfxObj = VFXFlyweightHelper.SpawnVfxAtPosition(config.AreaEffectVfxSettings, areaEffectPosition, Quaternion.identity, config.GetAreaEffectVfxScale());
-            vfxObj.transform.localScale *= config.AreaEffectRadius;
+            var vfxObj = VFXFlyweightHelper.SpawnVfxAtPosition(currentAttackConfig.AreaEffectVfxSettings, areaEffectPosition, Quaternion.identity, currentAttackConfig.GetAreaEffectVfxScale());
+            vfxObj.transform.localScale *= currentAttackConfig.AreaEffectRadius;
 
             // Apply area damage to enemies within radius
-            var colliders = Physics.OverlapSphere(areaEffectPosition, config.AreaEffectRadius, StateMachine.Player.LayerData.EnemyLayer);
+            var colliders = Physics.OverlapSphere(areaEffectPosition, currentAttackConfig.AreaEffectRadius, StateMachine.Player.LayerData.EnemyLayer);
             
             foreach (var collider in colliders)
             {
                 if (collider.gameObject.GetInterface<IHittable>() is { } enemy)
                 {
                     var hitDirection = StateMachine.Player.transform.forward;
-                    enemy.OnHit(hitDirection, config.AreaEffectDamage);
+                    enemy.OnHit(hitDirection, currentAttackConfig.AreaEffectDamage);
                 }
             }
             
             // Apply area hit stop if enabled
-            if (config.EnableAreaHitStop)
+            if (currentAttackConfig.EnableAreaHitStop)
             {
-                ApplyHitStop(config.AreaHitStopDuration, config.AreaHitStopTimeScale, config.AreaHitStopAffects);
+                ApplyHitStop(currentAttackConfig.AreaHitStopDuration, currentAttackConfig.AreaHitStopTimeScale, currentAttackConfig.AreaHitStopAffects);
             }
             
             // Apply area camera shake if enabled
-            if (config.EnableAreaCameraShake)
+            if (currentAttackConfig.EnableAreaCameraShake)
             {
                 CameraShakeManager.Instance.Shake(
-                    config.AreaCameraShakeIntensity,
-                    config.AreaCameraShakeIntensity,
-                    config.AreaCameraShakeDuration
+                    currentAttackConfig.AreaCameraShakeIntensity,
+                    currentAttackConfig.AreaCameraShakeIntensity,
+                    currentAttackConfig.AreaCameraShakeDuration
                 );
             }
         }
@@ -629,7 +652,7 @@ namespace LocomotionSystem
         {
             if (maxDistance <= 0f || duration <= 0f) return;
             
-            GameObject targetEnemy = StateMachine.Player.TargetDetector.GetTargetEnemy();
+            GameObject targetEnemy = StateMachine.Player.TargetDetector.GetCurrentTarget();
             Vector3 startPosition = StateMachine.Player.transform.position;
             Vector3 targetPosition;
             

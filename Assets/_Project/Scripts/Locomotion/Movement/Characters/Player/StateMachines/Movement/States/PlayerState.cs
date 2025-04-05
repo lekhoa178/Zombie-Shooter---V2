@@ -17,6 +17,8 @@ namespace LocomotionSystem
         public virtual void Enter()
         {
             Debug.Log("Entered " + GetType().Name);
+            
+            StateMachine.Player.Animator.SetBool(StateMachine.Player.AnimationData.DamagedParameterHash, false);
 
             AddInputActionsCallbacks();
         }
@@ -206,7 +208,7 @@ namespace LocomotionSystem
         
         private void OnChargeAttackPerformed(InputAction.CallbackContext obj)
         {
-            StateMachine.ChangeState(StateMachine.ChargeAttackingState);
+            // StateMachine.ChangeState(StateMachine.ChargeAttackingState);
         }
 
         protected Vector3 GetMovementInputDirection()

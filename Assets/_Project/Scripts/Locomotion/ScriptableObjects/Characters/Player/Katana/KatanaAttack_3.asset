@@ -73,7 +73,7 @@ MonoBehaviour:
   AnimationSpeedMultiplier: 1
   UseRootMotion: 1
   HitTiming: 0.5
-  EnableAttackIFrames: 0
+  EnableAttackIFrames: 1
   AttackIFrameDuration: 0.2
   UseWeapon: 1
   WeaponPrefab: {fileID: 3579451142723694405, guid: 91ddbba0bf3e2c64b96fa51d93b246fa, type: 3}
@@ -81,3 +81,49 @@ MonoBehaviour:
   RemoveWeaponAfterAttack: 0
   WeaponPositionOffset: {x: 0, y: 0, z: 0}
   WeaponRotationOffset: {x: 0, y: 0, z: 0}
+  OverrideTargetDetectionSettings: 0
+  DetectionRange: 10
+  DotProductThreshold: 0.15
+  EnablePushBack: 1
+  PushBackDistance: 0.5
+  PushBackDuration: 0.2
+  PushBackCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  DeathPushBackMultiplier: 2
+  DestroyProjectiles: 1
+  ProjectileLayerMask:
+    serializedVersion: 2
+    m_Bits: 8192
+  ProjectileDestructionVfx: {fileID: 11400000, guid: e37f2caa0250b9844a29d1db9e5abcc8, type: 2}
+  MaxProjectilesToDestroy: 0
+  ProjectileDetectionRangeMultiplier: 1.2
+  ProjectileDestructionEffect: 0
+  ReflectionDirection: {x: 0, y: 0, z: 1}
+  ReflectionSpeedMultiplier: 1
+  ProjectileDamage: 10
+  OverrideProjectileDamage: 1
+  EnableStun: 1
+  StunThresholdDamage: 5
+  StunDuration: 1.7

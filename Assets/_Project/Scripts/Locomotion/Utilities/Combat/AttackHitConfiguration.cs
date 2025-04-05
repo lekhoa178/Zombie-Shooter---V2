@@ -169,6 +169,52 @@ public class AttackHitConfiguration : ScriptableObject
     [Range(0f, 1f)]
     public float DotProductThreshold = 0.15f;
 
+    [Header("Push Back Settings")]
+    [Tooltip("Whether this attack should push back enemies on hit")]
+    public bool EnablePushBack = true;
+    [Tooltip("How far to push the enemy back")]
+    public float PushBackDistance = 2.0f;
+    [Tooltip("How long the push back animation should take")]
+    public float PushBackDuration = 0.2f;
+    [Tooltip("The curve that controls the push back movement")]
+    public AnimationCurve PushBackCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    [Tooltip("Force multiplier when this attack kills an enemy")]
+    public float DeathPushBackMultiplier = 2.0f;
+    
+    [Header("Projectile Destruction")]
+    [Tooltip("Whether this attack should destroy/deflect projectiles in its hit area")]
+    public bool DestroyProjectiles = false;
+    [Tooltip("What types of projectiles this attack can destroy")]
+    public LayerMask ProjectileLayerMask = 0;
+    [Tooltip("Visual effect to spawn when destroying a projectile")]
+    public VFXFlyweightSettings ProjectileDestructionVfx;
+    [Tooltip("Maximum number of projectiles that can be destroyed by a single attack (0 = unlimited)")]
+    public int MaxProjectilesToDestroy = 0;
+    [Tooltip("Destruction detection range multiplier relative to the hit shape size")]
+    [Range(0.5f, 2.0f)]
+    public float ProjectileDetectionRangeMultiplier = 1.0f;
+    [Tooltip("Effect to apply to projectiles (destroy or reflect)")]
+    public enum ProjectileEffect { Destroy, Reflect }
+    public ProjectileEffect ProjectileDestructionEffect = ProjectileEffect.Destroy;
+    [Tooltip("Direction to reflect projectiles relative to player (if reflection is enabled)")]
+    public Vector3 ReflectionDirection = Vector3.forward;
+    [Tooltip("Speed multiplier for reflected projectiles")]
+    [Range(0.1f, 3.0f)]
+    public float ReflectionSpeedMultiplier = 1.0f;
+    [Tooltip("Damage to apply to player when hit by projectiles (0 = use projectile's default damage)")]
+    [Range(0f, 100f)]
+    public float ProjectileDamage = 10f;
+    [Tooltip("Whether to override the projectile's default damage when it hits the player")]
+    public bool OverrideProjectileDamage = true;
+
+    [Header("Stun Settings")]
+    [Tooltip("Whether this attack should stun enemies on hit")]
+    public bool EnableStun = true;
+    [Tooltip("Minimum damage needed to cause a stun")]
+    public float StunThresholdDamage = 5f;
+    [Tooltip("How long the enemy remains stunned")]
+    public float StunDuration = 1.5f;
+
     // Helper methods to get the appropriate scale for each VFX type
     public Vector3 GetHitVfxScale()
     {

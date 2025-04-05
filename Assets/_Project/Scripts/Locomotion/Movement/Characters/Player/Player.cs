@@ -9,8 +9,7 @@ namespace LocomotionSystem
 {
     [RequireComponent(typeof(PlayerInput))]
     [RequireComponent(typeof(PlayerResizableCapsuleCollider))]
-    [RequireComponent(typeof(TargetDetectionController))]
-    public class Player : MonoBehaviour
+    public class Player : MonoBehaviour, IHittable, IStunnable, IKnockbackable
     {
         [field: Header("References")]
         [field: SerializeField] public PlayerSO Data { get; private set; }
@@ -46,6 +45,43 @@ namespace LocomotionSystem
         public SkinnedMeshRenderer TargetAvatarRenderer { get; private set; }
         
         public WeaponManager WeaponManager { get; private set; }
+        
+        // Components for stun and knockback
+        private PlayerStunHandler _stunHandler;
+        private PlayerKnockbackHandler _knockbackHandler;
+        
+        private URPDamageFlashComponent _damageFlashComponent;
+        
+        // IStunnable implementation - delegates to PlayerStunHandler
+        public bool IsStunned => _stunHandler != null && _stunHandler.IsStunned;
+        public bool IsInStunRecovery => _stunHandler != null && _stunHandler.IsInStunRecovery;
+        public bool CanBeStunned => _stunHandler != null && _stunHandler.CanBeStunned;
+        public event Action<GameObject> OnStunBegin
+        {
+            add { if (_stunHandler != null) _stunHandler.OnStunBegin += value; }
+            remove { if (_stunHandler != null) _stunHandler.OnStunBegin -= value; }
+        }
+        public event Action<GameObject> OnStunEnd
+        {
+            add { if (_stunHandler != null) _stunHandler.OnStunEnd += value; }
+            remove { if (_stunHandler != null) _stunHandler.OnStunEnd -= value; }
+        }
+        
+        // IKnockbackable implementation - delegates to PlayerKnockbackHandler
+        public bool IsPushedBack => _knockbackHandler != null && _knockbackHandler.IsPushedBack;
+        public event Action<GameObject> OnKnockbackStart
+        {
+            add { if (_knockbackHandler != null) _knockbackHandler.OnKnockbackStart += value; }
+            remove { if (_knockbackHandler != null) _knockbackHandler.OnKnockbackStart -= value; }
+        }
+        public event Action<GameObject> OnKnockbackEnd
+        {
+            add { if (_knockbackHandler != null) _knockbackHandler.OnKnockbackEnd += value; }
+            remove { if (_knockbackHandler != null) _knockbackHandler.OnKnockbackEnd -= value; }
+        }
+        
+        // IHittable implementation
+        public event Action<IHittable, float, Vector3> OnDamaged;
 
         private void Awake()
         {
@@ -61,6 +97,21 @@ namespace LocomotionSystem
             LedgeDetector = GetComponent<LedgeDetectionController>();
             
             WeaponManager = GetComponent<WeaponManager>();
+            
+            // Get or add the stun and knockback handlers
+            _stunHandler = GetComponent<PlayerStunHandler>();
+            if (_stunHandler == null)
+            {
+                _stunHandler = gameObject.AddComponent<PlayerStunHandler>();
+            }
+            
+            _knockbackHandler = GetComponent<PlayerKnockbackHandler>();
+            if (_knockbackHandler == null)
+            {
+                _knockbackHandler = gameObject.AddComponent<PlayerKnockbackHandler>();
+            }
+            
+            _damageFlashComponent = GetComponent<URPDamageFlashComponent>();
 
             MainCameraTransform = Camera.main?.transform;
             
@@ -136,21 +187,136 @@ namespace LocomotionSystem
         {
             return StartCoroutine(enumerator);
         }
+        
 
-        // public void OnDamageReceived(float damage)
-        // {
-        //     // Check if we can take damage
-        //     if (IFrameManager.Instance.CanTakeDamage())
-        //     {
-        //         // Apply damage logic here
-        //         Debug.Log($"Player took {damage} damage");
-        //         
-        //         // Start invincibility frames
-        //         IFrameManager.Instance.StartInvincibility(
-        //             Data.ComboConfig.AttackConfigs[ReusableData.CurrentComboIndex].IFrameDuration,
-        //             Data.ComboConfig.AttackConfigs[ReusableData.CurrentComboIndex].ShowIFrameVisualFeedback
-        //         );
-        //     }
-        // }
+        public void OnHit(Vector3 direction, float damage)
+        {
+            // Forward to HitContext version
+            HitContext context = new HitContext
+            {
+                HitDirection = direction,
+                Damage = damage,
+                EnableStun = true,
+                StunDuration = 1.0f,
+                StunThresholdDamage = 5f,
+                EnablePushBack = true,
+                PushBackDistance = 2f,
+                PushBackDuration = 0.5f
+            };
+            
+            OnHitWithContext(context);
+        }
+
+        public void OnHitWithContext(HitContext hitContext)
+        {
+            if (IFrameManager.Instance.IsInvincible) return;
+            
+            // Process damage
+            Debug.Log($"Player took {hitContext.Damage} damage");
+            
+            OnDamaged?.Invoke(this, hitContext.Damage, hitContext.HitDirection);
+            
+            Animator.SetBool(AnimationData.DamagedParameterHash, false);
+            Animator.SetBool(AnimationData.DamagedParameterHash, true);
+            
+            // Face towards hit direction
+            Vector3 hitDirection = hitContext.HitDirection;
+            hitDirection.y = 0f; // Ignore vertical component
+            Quaternion targetRotation = Quaternion.LookRotation(hitDirection);
+            transform.rotation = targetRotation;
+            
+            // CameraShakeManager.Instance.Shake(1f, 0.2f);
+            IFrameManager.Instance.StartDamageInvincibility();
+            
+            // Use the new TriggerOnHit method to handle all event dispatching in one place
+            hitContext.TriggerOnHit(gameObject);
+        }
+
+        public void OnHitFromDirection(Vector3 hitPosition, Vector3 hitDirection, float damage)
+        {
+            OnHit(hitDirection, damage);
+        }
+
+        public void ReactToHit(HitReactionType reactionType, Vector3 direction)
+        {
+            // Handle different hit reaction types
+            switch (reactionType)
+            {
+                case HitReactionType.Small:
+                    // Small flinch without movement
+                    break;
+                case HitReactionType.Medium:
+                    // Medium pushback
+                    if (_knockbackHandler != null)
+                    {
+                        _knockbackHandler.ApplyKnockback(direction, 1f, 0.2f);
+                    }
+                    break;
+                case HitReactionType.Large:
+                    // Large knockback and stun
+                    if (_knockbackHandler != null)
+                    {
+                        _knockbackHandler.ApplyKnockback(direction, 3f, 0.5f);
+                    }
+                    if (_stunHandler != null)
+                    {
+                        _stunHandler.ApplyStun(0.5f);
+                    }
+                    break;
+            }
+        }
+        
+        // IStunnable implementation
+        public bool ApplyStun(float duration)
+        {
+            if (_stunHandler != null)
+            {
+                return _stunHandler.ApplyStun(duration);
+            }
+            return false;
+        }
+        
+        public void EndStun()
+        {
+            if (_stunHandler != null)
+            {
+                _stunHandler.EndStun();
+            }
+        }
+        
+        public void HandleStunEvent(CombatEventManager.StunEventContext context)
+        {
+            if (_stunHandler != null)
+            {
+                _stunHandler.HandleStunEvent(context);
+            }
+        }
+        
+        // IKnockbackable implementation
+        public bool ApplyKnockback(Vector3 direction, float distance, float duration, AnimationCurve curve = null)
+        {
+            if (_knockbackHandler != null)
+            {
+                return _knockbackHandler.ApplyKnockback(direction, distance, duration, curve);
+            }
+            return false;
+        }
+        
+        public bool ApplyDeathKnockback(Vector3 direction, float distance, float duration, AnimationCurve curve = null)
+        {
+            if (_knockbackHandler != null)
+            {
+                return _knockbackHandler.ApplyDeathKnockback(direction, distance, duration, curve);
+            }
+            return false;
+        }
+        
+        public void HandleKnockbackEvent(CombatEventManager.KnockbackEventContext context)
+        {
+            if (_knockbackHandler != null)
+            {
+                _knockbackHandler.HandleKnockbackEvent(context);
+            }
+        }
     }
 }

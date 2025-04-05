@@ -15,14 +15,16 @@ public class Dummy : MonoBehaviour, IHittable
         animator = GetComponent<Animator>();
     }
 
-    public void OnHit(Vector3 hitDirection, float damage)
+    public event Action<IHittable, float, Vector3> OnDamaged;
+
+    public void OnHit(Vector3 direction, float damage)
     {
-        hitDirection.y = 0;
-        
-        transform.rotation = Quaternion.LookRotation(-hitDirection);
-        
+        direction.y = 0;
+
+        transform.rotation = Quaternion.LookRotation(-direction);
+
         // transform.DOMove(transform.position + hitDirection.normalized * 0.3f, 0.1f);
-        
+
         animator.Play(hitAnimation.name, -1, 0f);
 
         if (hitFeedback)
@@ -30,9 +32,19 @@ public class Dummy : MonoBehaviour, IHittable
             hitFeedback.PlayFeedbacks();
         }
     }
-}
 
-public interface IHittable
-{
-    public void OnHit(Vector3 hitDirection, float damage);
+    public void OnHitWithContext(HitContext hitContext)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void OnHitFromDirection(Vector3 hitPosition, Vector3 hitDirection, float damage)
+    {
+        OnHit(hitDirection, damage);
+    }
+
+    public void ReactToHit(HitReactionType reactionType, Vector3 direction)
+    {
+        throw new NotImplementedException();
+    }
 }

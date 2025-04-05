@@ -103,6 +103,12 @@ namespace LocomotionSystem
             // Default duration of 0.2 seconds if only distance is provided
             (player.MovementStateMachine.CurrentState as PlayerCombatState)?.MoveTowardsTarget(maxDistance, 0.2f);
         }
+        
+        // ** Animation Event - Damage State ** // -> temporarily
+        public void ResetDamagedState()
+        {
+            Animator.SetBool(AnimationData.DamagedParameterHash, false);
+        }
 
 
         // *** Utility Methods ***

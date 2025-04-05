@@ -26,7 +26,7 @@ namespace LocomotionSystem
             
             StateMachine.Player.Animator.applyRootMotion = CheckGroundStatus();
 
-            if (!StateMachine.Player.TargetDetector.GetTargetEnemy())
+            if (!StateMachine.Player.TargetDetector.GetCurrentTarget())
             {
                 if (StateMachine.ReusableData.MovementInput != Vector2.zero)
                     StateMachine.Player.transform.rotation = Quaternion.Euler(0, GetMovementInputRotationAngle(), 0);

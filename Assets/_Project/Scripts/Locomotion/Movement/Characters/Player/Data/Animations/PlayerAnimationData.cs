@@ -38,6 +38,9 @@ namespace LocomotionSystem
         private string normalAttackParameterName = "isNormalAttacking";
 
         [SerializeField] private string chargeAttackParameterName = "isChargeAttacking";
+        
+        [Header("Damage Parameter Names")]
+        [SerializeField] private string damagedParameterName = "isDamaged";
 
         [Header("Util Parameter Names")] [SerializeField]
         private string rotationName = "Rotation";
@@ -74,6 +77,8 @@ namespace LocomotionSystem
         public int RotationHash { get; private set; }
         public int JumpIndexHash { get; private set; }
         
+        public int DamagedParameterHash { get; private set; }
+        
         public void Initialize(Player player)
         {
             // *** State Group Parameter Names ***
@@ -107,6 +112,9 @@ namespace LocomotionSystem
             // *** Util Parameter Names ***
             RotationHash = Animator.StringToHash(rotationName);
             JumpIndexHash = Animator.StringToHash(jumpIndexName);
+            
+            // *** Damage Parameter Names ***
+            DamagedParameterHash = Animator.StringToHash(damagedParameterName);
 
             if (player == null || player.Animator == null) return;
             

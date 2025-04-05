@@ -11,7 +11,10 @@ namespace LocomotionSystem
         public class IFrameSettings
         {
             public float duration = 0.5f;
-            public float recoveryDuration = 0.1f;
+            [Tooltip("Whether to apply layer exclusions during iFrames")]
+            public bool applyLayerExclusions = false;
+            [Tooltip("Layers to exclude from collision during iFrames (only if applyLayerExclusions is true)")]
+            public LayerMask excludeLayersDuringIFrame = 0;
         }
 
         [Header("IFrame Settings")]
@@ -20,66 +23,104 @@ namespace LocomotionSystem
         
         public bool IsInvincible => isInvincible;
         
-        [field: SerializeField] public bool Linear { get; private set; }
-        
         private float iFrameDuration;
-        private float recoveryDuration;
         private bool isInvincible;
-        
-        // Visual feedback
-        [Header("Visual Feedback")]
-        [SerializeField] private float blinkRate = 0.1f;
-        [SerializeField] private Material defaultMaterial;
-        [SerializeField] private Material invincibleMaterial;
-
-        public MMTweenType invincibilityTween = new MMTweenType(new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1)), "Linear");
+        private LayerMask originalExcludeLayers;
+        private Collider playerCollider;
         
         private Coroutine iFrameCoroutine;
-        private Coroutine blinkCoroutine;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            
+            // Find the player and cache the collider
+            var player = FindAnyObjectByType<Player>();
+            if (player == null) return;
+            playerCollider = player.ResizableCapsuleCollider?.CapsuleColliderData.Collider;
+            if (playerCollider != null)
+            {
+                // Store the original exclude layers
+                originalExcludeLayers = playerCollider.excludeLayers;
+            }
+        }
 
         public void StartDamageInvincibility()
         {
-            StartInvincibility(damageIFrameSettings.duration, true, damageIFrameSettings.recoveryDuration);
+            StartInvincibility(damageIFrameSettings.duration, damageIFrameSettings.applyLayerExclusions, damageIFrameSettings.excludeLayersDuringIFrame);
         }
 
         public void StartAttackInvincibility()
         {
-            StartInvincibility(attackIFrameSettings.duration, false, attackIFrameSettings.recoveryDuration);
+            StartInvincibility(attackIFrameSettings.duration, attackIFrameSettings.applyLayerExclusions, attackIFrameSettings.excludeLayersDuringIFrame);
         }
 
         public void StartInvincibility(float duration)
         {
-            StartInvincibility(duration, true, damageIFrameSettings.recoveryDuration);
+            StartInvincibility(duration, damageIFrameSettings.applyLayerExclusions, damageIFrameSettings.excludeLayersDuringIFrame);
         }
 
-        public void StartInvincibility(float duration, bool withVisualFeedback)
-        {
-            float recoveryTime = withVisualFeedback ? damageIFrameSettings.recoveryDuration : attackIFrameSettings.recoveryDuration;
-            StartInvincibility(duration, withVisualFeedback, recoveryTime);
-        }
-
-        private void StartInvincibility(float duration, bool withVisualFeedback, float recoveryTime)
+        public void StartInvincibility(float duration, bool applyLayerExclusions = false, LayerMask excludeLayers = default)
         {
             if (isInvincible)
             {
                 if (iFrameCoroutine != null)
+                {
                     StopCoroutine(iFrameCoroutine);
-                if (blinkCoroutine != null)
-                    StopCoroutine(blinkCoroutine);
+                    
+                    // Make sure to restore layers if we're interrupting an existing invincibility
+                    if (applyLayerExclusions)
+                    {
+                        RestoreOriginalLayers();
+                    }
+                }
             }
             
             iFrameDuration = duration;
-            recoveryDuration = recoveryTime;
             isInvincible = true;
             
-            iFrameCoroutine = StartCoroutine(IFrameCoroutine());
-            if (withVisualFeedback)
+            // Apply layer exclusions to the player's collider only if enabled
+            if (applyLayerExclusions && excludeLayers != 0)
             {
-                blinkCoroutine = StartCoroutine(BlinkCoroutine());
+                ApplyLayerExclusions(excludeLayers);
             }
+            
+            iFrameCoroutine = StartCoroutine(IFrameCoroutine(applyLayerExclusions));
         }
 
-        private IEnumerator IFrameCoroutine()
+        private void ApplyLayerExclusions(LayerMask excludeLayers)
+        {
+            if (playerCollider == null) return;
+            
+            // Store original exclude layers if not already stored
+            if (originalExcludeLayers == 0)
+            {
+                originalExcludeLayers = playerCollider.excludeLayers;
+            }
+            
+            // Apply the new exclude layers, combining with original ones
+            playerCollider.excludeLayers = originalExcludeLayers | excludeLayers;
+            
+            #if UNITY_EDITOR
+            Debug.Log($"IFrame applying layer exclusions: {LayerMaskToString(excludeLayers)}");
+            #endif
+        }
+        
+        private string LayerMaskToString(LayerMask mask)
+        {
+            string result = "";
+            for (int i = 0; i < 32; i++)
+            {
+                if ((mask & (1 << i)) != 0)
+                {
+                    if (result != "") result += ", ";
+                    result += LayerMask.LayerToName(i);
+                }
+            }
+            return result != "" ? result : "None";
+        }
+
+        private IEnumerator IFrameCoroutine(bool applyLayerExclusions)
         {
             if (iFrameDuration <= 0)
             {
@@ -88,48 +129,81 @@ namespace LocomotionSystem
             
             var iFrameTimer = 0f;
 
-            while (iFrameTimer < iFrameDuration - recoveryDuration)
+            while (iFrameTimer < iFrameDuration)
             {
                 iFrameTimer += Time.deltaTime;
                 yield return null;
             }
 
-            // Recovery phase
-            if (recoveryDuration > 0 && !Linear)
-            {
-                float recoveryTimer = 0f;
-                while (recoveryTimer < 1f)
-                {
-                    recoveryTimer += Time.deltaTime / recoveryDuration;
-                    yield return null;
-                }
-            }
-
             isInvincible = false;
+            
+            // Only restore layers if we applied them
+            if (applyLayerExclusions)
+            {
+                RestoreOriginalLayers();
+            }
         }
         
-        private IEnumerator BlinkCoroutine()
+        // Call to ensure layers are reset, useful for cleanup or when interrupted
+        public void ResetExcludeLayers()
         {
-            var renderer = FindObjectOfType<Player>()?.TargetAvatarRenderer;
-            if (!renderer) yield break;
+            RestoreOriginalLayers();
+        }
+        
+        private void RestoreOriginalLayers()
+        {
+            if (playerCollider == null) return;
             
-            var originalMaterial = renderer.material;
-            var isBlinking = true;
+            // Restore original exclude layers
+            playerCollider.excludeLayers = originalExcludeLayers;
             
-            while (isInvincible)
-            {
-                renderer.material = isBlinking ? invincibleMaterial : originalMaterial;
-                isBlinking = !isBlinking;
-                yield return new WaitForSeconds(blinkRate);
-            }
-            
-            renderer.material = originalMaterial;
+            #if UNITY_EDITOR
+            Debug.Log("IFrame restored original layer exclusions");
+            #endif
+        }
+        
+        // Ensure layers are reset on disable/destroy
+        private void OnDisable()
+        {
+            // Make sure we restore layers if component is disabled
+            RestoreOriginalLayers();
+        }
+        
+        private void OnDestroy() 
+        {
+            // Make sure we restore layers if component is destroyed
+            RestoreOriginalLayers();
         }
         
         // Call this from the player's damage handling code
         public bool CanTakeDamage()
         {
             return !isInvincible;
+        }
+
+        // Force end any active invincibility
+        public void EndInvincibility()
+        {
+            if (!isInvincible) return;
+            
+            if (iFrameCoroutine != null)
+            {
+                StopCoroutine(iFrameCoroutine);
+                iFrameCoroutine = null;
+            }
+            
+            isInvincible = false;
+            RestoreOriginalLayers();
+        }
+        
+        // Handle application quit
+        private void OnApplicationQuit()
+        {
+            // Make sure we restore layers when the application quits
+            if (playerCollider != null)
+            {
+                RestoreOriginalLayers();
+            }
         }
     }
 } 

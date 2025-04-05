@@ -6,6 +6,8 @@ namespace Flyweight
 {
     public class VFXFlyweight : Flyweight
     {
+        private new VFXFlyweightSettings settings => (VFXFlyweightSettings)base.settings;
+        
         private Coroutine _autoReturnCoroutine;
 
         public void SetPosition(Vector3 position)

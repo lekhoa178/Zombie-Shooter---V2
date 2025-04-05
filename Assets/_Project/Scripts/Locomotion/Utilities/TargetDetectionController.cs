@@ -1,20 +1,33 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace LocomotionSystem
 {
+    /// <summary>
+    /// Generic target detection and selection system that can work with any type of targetable object
+    /// </summary>
     public class TargetDetectionController : MonoBehaviour
     {
+        [Header("Components")] 
+        public PlayerInput Input { get; private set; }
 
-        [Header("Components")] public PlayerInput Input { get; private set; }
+        [Header("Target Lists")]
+        public List<Transform> availableTargets = new List<Transform>();
 
-        [Header("Scene")] public List<Transform> allTargetsInScene = new List<Transform>();
+        [Space] [Header("Target Detection Settings")] 
+        [Tooltip("Layer mask for detecting targets")]
+        public LayerMask targetLayers;
 
-        [Space] [Header("Target Detection")] public LayerMask whatIsEnemy;
+        [Tooltip("Should detector scan for new targets continuously")]
+        public bool autoScanForTargets = true;
+
+        [Tooltip("Can the target be changed while one is already selected")]
         public bool canChangeTarget = true;
 
-        [Tooltip("Detection Range: \n Player range for detecting potential targets.")] [Range(0f, 15f)]
+        [Tooltip("Detection Range: \n Maximum range for detecting potential targets.")] 
+        [Range(0f, 30f)]
         public float detectionRange = 10f;
 
         [Tooltip(
@@ -22,115 +35,352 @@ namespace LocomotionSystem
         [Range(0f, 1f)]
         public float dotProductThreshold = 0.15f;
 
-        [Space] [Header("Debug")] public bool debug;
+        [Tooltip("How often to update target detection (in seconds)")]
+        [Range(0.05f, 0.5f)]
+        public float detectionInterval = 0.1f;
+        
+        [Tooltip("Maximum targets to consider during detection")]
+        public int maxTargetsToConsider = 100;
+
+        [Space] [Header("Debug")] 
+        public bool debug;
         public Transform checkPos;
 
-        private GameObject targetEnemy;
-
+        private GameObject currentTarget;
         private Camera mainCamera;
+        private Coroutine detectionRoutine;
+        
+        // Event that fires when target changes
+        public event Action<GameObject> OnTargetChanged;
+
+        #region Unity Lifecycle
 
         private void Awake()
         {
             mainCamera = Camera.main;
             
-            Input = FindAnyObjectByType<PlayerInput>();
-        }
-
-        // Start is called before the first frame update
-        private void Start()
-        {
-            PopulateTargetInScene();
-            StartCoroutine(RunEveryXms());
-        }
-
-        private void PopulateTargetInScene()
-        {
-            // Find all active GameObjects in the scene
-            GameObject[] allGameObjects = GameObject.FindGameObjectsWithTag("Enemy");
-
-            // Convert the array to a list
-            List<GameObject> gameObjectList = new List<GameObject>(allGameObjects);
-
-            // Output the number of GameObjects found
-            if (debug)
-                Debug.Log("Number of targets found: " + gameObjectList.Count);
-
-            // Optionally, iterate over the list and do something with each GameObject
-            foreach (var obj in gameObjectList)
+            Input = GetComponent<PlayerInput>();
+            if (Input == null)
             {
-                allTargetsInScene.Add(obj.transform);
+            Input = FindAnyObjectByType<PlayerInput>();
             }
         }
 
-        private IEnumerator RunEveryXms()
+        private void Start()
         {
-            while (true)
+            if (autoScanForTargets)
             {
-                yield return new WaitForSeconds(.1f); // Wait for 'x' milliseconds
-                GetEnemyInInputDirection();
+                ScanForTargets();
+                StartDetectionRoutine();
             }
         }
         
-        public GameObject GetTargetEnemy()
+        private void OnEnable()
         {
-            if (!targetEnemy) return null;
+            // Subscribe to death events for targets that support it
+            SubscribeToTargetEvents();
             
-            if (Vector3.Distance(targetEnemy.transform.position, transform.position) < detectionRange)
+            if (detectionRoutine == null && autoScanForTargets)
             {
-                return targetEnemy;
+                StartDetectionRoutine();
             }
-            
-            return null;
         }
 
-        #region Get Enemy In Input Direction
+        private void OnDisable()
+        {
+            // Unsubscribe from all events
+            UnsubscribeFromTargetEvents();
+            
+            if (detectionRoutine != null)
+            {
+                StopCoroutine(detectionRoutine);
+                detectionRoutine = null;
+            }
+        }
 
-        private void GetEnemyInInputDirection()
+        #endregion
+
+        #region Target Detection and Management
+
+        /// <summary>
+        /// Scan the scene for available targets using the targetLayers
+        /// </summary>
+        public void ScanForTargets()
+        {
+            // Clear existing targets to prevent duplicates
+            availableTargets.Clear();
+            
+            // Find all GameObjects on the target layers
+            List<GameObject> targetObjects = new List<GameObject>();
+            
+            // Get all colliders on the target layers
+            Collider[] targetColliders = Physics.OverlapSphere(transform.position, maxTargetsToConsider, targetLayers);
+            
+            // Extract unique GameObjects from colliders
+            HashSet<GameObject> uniqueTargets = new HashSet<GameObject>();
+            foreach (var collider in targetColliders)
+            {
+                uniqueTargets.Add(collider.gameObject);
+            }
+            
+            // Convert to list for processing
+            targetObjects.AddRange(uniqueTargets);
+
+            // Output the number of targets found
+            if (debug)
+                Debug.Log("Number of targets found: " + targetObjects.Count);
+
+            // Add each target transform to the list if it's valid
+            foreach (var obj in targetObjects)
+            {
+                if (obj != null && obj.activeInHierarchy)
+                {
+                    availableTargets.Add(obj.transform);
+                    
+                    // Try to subscribe to target events
+                    TrySubscribeToTargetEvents(obj);
+                }
+            }
+        }
+        
+        private void StartDetectionRoutine()
+        {
+            if (detectionRoutine != null)
+            {
+                StopCoroutine(detectionRoutine);
+            }
+            
+            detectionRoutine = StartCoroutine(DetectionRoutine());
+        }
+
+        private IEnumerator DetectionRoutine()
+        {
+            while (true)
+            {
+                yield return new WaitForSeconds(detectionInterval);
+                
+                // First validate our current target is still valid
+                ValidateCurrentTarget();
+                
+                // Then try to get a new target if we don't have one or if we're allowed to change targets
+                if (currentTarget == null || canChangeTarget)
+                {
+                    GetTargetInInputDirection();
+                }
+            }
+        }
+        
+        private void ValidateCurrentTarget()
+        {
+            // Check if current target is still valid
+            if (currentTarget != null)
+            {
+                // If target is inactive, too far, or not on the right layer, clear it
+                if (!currentTarget.activeInHierarchy || 
+                    Vector3.Distance(currentTarget.transform.position, transform.position) > detectionRange ||
+                    !IsInLayerMask(currentTarget.layer, targetLayers))
+                {
+                    SetTarget(null);
+                }
+            }
+        }
+        
+        private bool IsInLayerMask(int layer, LayerMask layerMask)
+        {
+            return ((1 << layer) & layerMask) != 0;
+        }
+        
+        /// <summary>
+        /// Get the currently selected target
+        /// </summary>
+        /// <returns>The current target GameObject or null if none is selected</returns>
+        public GameObject GetCurrentTarget()
+        {
+            // First validate our target is still good
+            ValidateCurrentTarget();
+            
+            return currentTarget;
+        }
+        
+        /// <summary>
+        /// Manually set the current target
+        /// </summary>
+        /// <param name="target">Target to select</param>
+        /// <returns>True if the target was set successfully</returns>
+        public bool SetTarget(GameObject target)
+        {
+            // If the target is the same, don't do anything
+            if (target == currentTarget)
+                return true;
+                
+            // Validate the target
+            if (target != null)
+            {
+                // Check if it's a valid target (in range and on the right layer)
+                if (Vector3.Distance(target.transform.position, transform.position) > detectionRange ||
+                    !IsInLayerMask(target.layer, targetLayers))
+                {
+                    return false;
+                }
+                
+                // Make sure it's in our available targets
+                if (!availableTargets.Contains(target.transform))
+                {
+                    availableTargets.Add(target.transform);
+                    TrySubscribeToTargetEvents(target);
+                }
+            }
+            
+            // Set the target
+            GameObject previousTarget = currentTarget;
+            currentTarget = target;
+            
+            // Notify listeners
+            if (previousTarget != currentTarget)
+            {
+                OnTargetChanged?.Invoke(currentTarget);
+            }
+            
+            return true;
+        }
+        
+        /// <summary>
+        /// Clear the current target
+        /// </summary>
+        public void ClearTarget()
+        {
+            SetTarget(null);
+        }
+        
+        #endregion
+
+        #region Target Selection Logic
+
+        private void GetTargetInInputDirection()
         {
             if (!canChangeTarget) return;
+            if (Input == null) return;
 
             var moveDirection = Input.PlayerActions.Movement.ReadValue<Vector2>();
-            var inputDirection = new Vector3(moveDirection.x, 0, moveDirection.y);
-
-            if (inputDirection == Vector3.zero) return;
             
+            // If we don't have input but we have no current target, try to find the closest target
+            if (moveDirection.magnitude < 0.1f)
+            {
+                // Only fall back to closest target if we don't already have one
+                if (currentTarget == null)
+                {
+                    GameObject closestTarget = GetClosestTarget()?.gameObject;
+                    if (closestTarget != null)
+                    {
+                        SetTarget(closestTarget);
+                    }
+                }
+                return;
+            }
+            
+            var inputDirection = new Vector3(moveDirection.x, 0, moveDirection.y);
+            
+            if (mainCamera != null)
+            {
             inputDirection = mainCamera.transform.TransformDirection(inputDirection);
             inputDirection.y = 0;
             inputDirection.Normalize();
 
+                var closestTarget = GetClosestTargetInDirection(inputDirection);
 
-            var closestEnemy = GetClosestEnemyInDirection(inputDirection);
-
-            if (closestEnemy &&
-                (Vector3.Distance(transform.position, closestEnemy.position)) <= detectionRange)
+                if (closestTarget &&
+                    (Vector3.Distance(transform.position, closestTarget.position)) <= detectionRange)
+                {
+                    SetTarget(closestTarget.gameObject);
+                    
+                    if (debug)
+                    {
+                        Debug.Log($"Found target: {currentTarget.name} at distance {Vector3.Distance(transform.position, closestTarget.position)}");
+                    }
+                }
+            }
+            else if (debug)
             {
-                targetEnemy = closestEnemy.gameObject;
+                Debug.LogWarning("Main camera is null, cannot transform input direction");
             }
         }
 
-        private Transform GetClosestEnemyInDirection(Vector3 inputDirection)
+        private Transform GetClosestTargetInDirection(Vector3 inputDirection)
         {
-            Transform closestEnemy = null;
-            var minDistance = 99999f;
+            Transform closestTarget = null;
+            var minDistance = float.MaxValue;
 
-            foreach (var enemy in allTargetsInScene)
+            // Create a temporary list to avoid issues with collection being modified
+            List<Transform> validTargets = new List<Transform>(availableTargets);
+            
+            foreach (var target in validTargets)
             {
-                var enemyDirection = (enemy.position - transform.position).normalized;
-                var dotProduct = Vector3.Dot(inputDirection, enemyDirection);
-                var distance = Vector3.SqrMagnitude(enemy.position - transform.position);
-
-                if (dotProduct > dotProductThreshold && distance < minDistance)
+                // Skip null or inactive targets
+                if (target == null || !target.gameObject.activeInHierarchy) 
+                    continue;
+                
+                // Skip targets not on the target layers
+                if (!IsInLayerMask(target.gameObject.layer, targetLayers))
+                    continue;
+                
+                var distanceToTarget = Vector3.Distance(transform.position, target.position);
+                
+                // Skip targets outside detection range
+                if (distanceToTarget > detectionRange)
+                    continue;
+                    
+                var targetDirection = (target.position - transform.position).normalized;
+                var dotProduct = Vector3.Dot(inputDirection, targetDirection);
+                
+                if (dotProduct > dotProductThreshold && distanceToTarget < minDistance)
                 {
-                    minDistance = distance;
-                    closestEnemy = enemy;
+                    minDistance = distanceToTarget;
+                    closestTarget = target;
                 }
             }
 
-            return closestEnemy;
+            return closestTarget;
+        }
+        
+        /// <summary>
+        /// Get the closest target regardless of direction
+        /// </summary>
+        /// <returns>Transform of the closest target or null if none found</returns>
+        public Transform GetClosestTarget()
+        {
+            Transform closestTarget = null;
+            var minDistance = float.MaxValue;
+            
+            foreach (var target in availableTargets)
+            {
+                if (target == null || !target.gameObject.activeInHierarchy)
+                    continue;
+                
+                // Skip targets not on the target layers    
+                if (!IsInLayerMask(target.gameObject.layer, targetLayers))
+                    continue;
+                    
+                var distance = Vector3.Distance(transform.position, target.position);
+                
+                if (distance < minDistance && distance <= detectionRange)
+                {
+                    minDistance = distance;
+                    closestTarget = target;
+                }
+            }
+
+            return closestTarget;
         }
 
         #endregion
         
+        #region Configuration Methods
+        
+        /// <summary>
+        /// Set detection parameters dynamically
+        /// </summary>
+        /// <param name="range">Detection range</param>
+        /// <param name="threshold">Dot product threshold</param>
         public void SetDetectionParameters(float range, float threshold)
         {
             detectionRange = range;
@@ -142,11 +392,134 @@ namespace LocomotionSystem
             }
         }
         
+        /// <summary>
+        /// Reset detection parameters to defaults
+        /// </summary>
+        /// <param name="defaultRange">Default detection range</param>
+        /// <param name="defaultThreshold">Default dot product threshold</param>
         public void ResetToDefaultParameters(float defaultRange = 10f, float defaultThreshold = 0.15f)
         {
             detectionRange = defaultRange;
             dotProductThreshold = defaultThreshold;
         }
+        
+        /// <summary>
+        /// Set the update interval for target detection
+        /// </summary>
+        /// <param name="interval">Interval in seconds</param>
+        public void SetDetectionInterval(float interval)
+        {
+            detectionInterval = Mathf.Clamp(interval, 0.05f, 0.5f);
+            
+            // Restart detection routine with new interval
+            if (detectionRoutine != null)
+            {
+                StartDetectionRoutine();
+            }
+        }
+
+        #endregion
+        
+        #region Target Event Handling
+
+        private void SubscribeToTargetEvents()
+        {
+            foreach (var target in availableTargets)
+            {
+                if (target != null)
+                {
+                    TrySubscribeToTargetEvents(target.gameObject);
+                }
+            }
+        }
+        
+        private void UnsubscribeFromTargetEvents()
+        {
+            // Unsubscribe from all death events for BaseEnemy components
+            foreach (var enemy in FindObjectsOfType<BaseEnemy>())
+            {
+                if (IsInLayerMask(enemy.gameObject.layer, targetLayers))
+                {
+                    enemy.OnDeath -= HandleTargetDeath;
+                }
+            }
+            
+            // Add more unsubscribe logic here for other target types
+        }
+        
+        private void TrySubscribeToTargetEvents(GameObject target)
+        {
+            // Try to subscribe to BaseEnemy death events
+            BaseEnemy enemy = target.GetComponent<BaseEnemy>();
+            if (enemy != null)
+            {
+                enemy.OnDeath += HandleTargetDeath;
+            }
+            
+            // Add more event subscription logic here for other target types
+            // Example: IDestructible, IInteractable, etc.
+        }
+
+        private void HandleTargetDeath(IEnemy deadEnemy)
+        {
+            HandleTargetDestroyed(deadEnemy.Transform);
+        }
+        
+        private void HandleTargetDestroyed(Transform targetTransform)
+        {
+            // Remove the target from our list
+            if (availableTargets.Contains(targetTransform))
+            {
+                availableTargets.Remove(targetTransform);
+            }
+            
+            // Clear current target if it was the one destroyed
+            if (currentTarget != null && currentTarget.transform == targetTransform)
+            {
+                SetTarget(null);
+            }
+        }
+
+        #endregion
+        
+        #region Public Target Registration
+        
+        /// <summary>
+        /// Register a new target with the detection system
+        /// </summary>
+        /// <param name="targetTransform">Transform of the target to register</param>
+        public void RegisterTarget(Transform targetTransform)
+        {
+            // Only register if it's on the target layer
+            if (IsInLayerMask(targetTransform.gameObject.layer, targetLayers) && 
+                !availableTargets.Contains(targetTransform))
+            {
+                availableTargets.Add(targetTransform);
+                
+                // Subscribe to events
+                TrySubscribeToTargetEvents(targetTransform.gameObject);
+            }
+        }
+        
+        /// <summary>
+        /// Unregister a target from the detection system
+        /// </summary>
+        /// <param name="targetTransform">Transform of the target to unregister</param>
+        public void UnregisterTarget(Transform targetTransform)
+        {
+            if (availableTargets.Contains(targetTransform))
+            {
+                availableTargets.Remove(targetTransform);
+                
+                // If it was the current target, clear it
+                if (currentTarget != null && currentTarget.transform == targetTransform)
+                {
+                    SetTarget(null);
+                }
+            }
+        }
+        
+        #endregion
 
         #region Gizmos Debug Visualization
 
@@ -159,13 +532,13 @@ namespace LocomotionSystem
             Gizmos.DrawWireSphere(transform.position, detectionRange);
             
             // Show the current target with a line
-            if (targetEnemy != null)
+            if (currentTarget != null)
             {
                 Gizmos.color = Color.green;
-                Gizmos.DrawLine(transform.position, targetEnemy.transform.position);
+                Gizmos.DrawLine(transform.position, currentTarget.transform.position);
                 
                 // Draw sphere on the target
-                Gizmos.DrawWireSphere(targetEnemy.transform.position, 0.5f);
+                Gizmos.DrawWireSphere(currentTarget.transform.position, 0.5f);
             }
             
             // Calculate the angle from the dot product threshold
@@ -200,9 +573,13 @@ namespace LocomotionSystem
                 }
                 
                 // Draw lines to all targets and highlight valid ones
-                foreach (var target in allTargetsInScene)
+                foreach (var target in availableTargets)
                 {
                     if (target == null) continue;
+                    
+                    // Skip if not on target layer
+                    if (!IsInLayerMask(target.gameObject.layer, targetLayers))
+                        continue;
                     
                     Vector3 directionToTarget = (target.position - transform.position).normalized;
                     float distance = Vector3.Distance(transform.position, target.position);
@@ -320,5 +697,4 @@ namespace LocomotionSystem
 
         #endregion
     }
-
 }

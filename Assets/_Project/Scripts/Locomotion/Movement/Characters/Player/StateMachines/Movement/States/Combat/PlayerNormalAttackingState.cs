@@ -65,7 +65,7 @@ namespace LocomotionSystem
                 Debug.Log($"Attack animation speed scaled to: {finalAnimSpeed:F2}x due to high attack speed");
             }
             
-            if (!StateMachine.Player.TargetDetector.GetTargetEnemy())
+            if (!StateMachine.Player.TargetDetector.GetCurrentTarget())
             {
                 if (StateMachine.ReusableData.MovementInput != Vector2.zero)
                 {
@@ -126,17 +126,17 @@ namespace LocomotionSystem
         {
             Debug.Log($"Normal attack performed - PlayerNormalAttackingState || IsCombo: {IsCombo} || IsOnCooldown: {StateMachine.ReusableData.IsOnCooldown} || IsFinished: {IsFinished} || IsComboFrame: {StateMachine.ReusableData.IsComboFrame}");
             
+            // Only allow combo input during the combo window
+            if (StateMachine.ReusableData.IsComboFrame)
+            {
+                IsCombo = true;
+            }
+            
             // Check if we're on cooldown
             if (StateMachine.ReusableData.IsOnCooldown)
             {
                 Debug.Log($"Attack on cooldown: {StateMachine.ReusableData.AttackCooldownTimer.Time:F2}s remaining");
                 return;
-            }
-
-            // Only allow combo input during the combo window
-            if (StateMachine.ReusableData.IsComboFrame)
-            {
-                IsCombo = true;
             }
     
             if (IsFinished)

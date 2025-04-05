@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faacbedcf168fad4f836b76c9d905273, type: 3}
+  m_Name: FW_Enemy_Telegraph
+  m_EditorClassIdentifier: 
+  id: fa0f6dac-910a-4d50-9775-9f42bbec5865
+  type: 0
+  prefab: {fileID: 5804272120283705923, guid: d7977e5e4508ad045bee73a3b444d516, type: 3}
+  autoReturnDuration: 2

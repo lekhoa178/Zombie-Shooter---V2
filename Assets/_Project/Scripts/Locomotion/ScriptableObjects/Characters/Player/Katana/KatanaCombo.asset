@@ -22,3 +22,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 157ed66a1f02e49479a52b21822575e6, type: 2}
   - {fileID: 11400000, guid: 5146f653ca507f243b68055b5415b0f6, type: 2}
   LastHitVfxSettings: {fileID: 0}
+  DefaultDetectionRange: 8
+  DefaultDotProductThreshold: 0

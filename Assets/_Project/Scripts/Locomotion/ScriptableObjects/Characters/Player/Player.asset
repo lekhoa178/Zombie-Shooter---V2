@@ -97,11 +97,11 @@ MonoBehaviour:
       <ConsecutiveDashesLimitAmount>k__BackingField: 10
       <DashLimitReachedCooldown>k__BackingField: 0
     <BoostDashData>k__BackingField:
-      <MaxDistance>k__BackingField: 3
+      <MaxDistance>k__BackingField: 1
       <RotationData>k__BackingField:
         <TargetRotationReachTime>k__BackingField: {x: 0, y: 0.02, z: 0}
       <DashTrailMaxTime>k__BackingField: 0.1
-      <MaxDashTrailCount>k__BackingField: 20
+      <MaxDashTrailCount>k__BackingField: 8
       <DashTrailPrefab>k__BackingField: {fileID: 2885649172368431484, guid: 2dd626b90336e654d9a81fe57e9f13eb, type: 3}
       <DashTrailParticleSystem>k__BackingField: {fileID: 5246934075404874450, guid: ac4c30fb75ca314448e02c6c4659d336, type: 3}
     <WalkData>k__BackingField:
