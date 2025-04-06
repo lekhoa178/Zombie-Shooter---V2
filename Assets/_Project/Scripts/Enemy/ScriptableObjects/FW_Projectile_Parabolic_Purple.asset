@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8839494f86ea5e648b0486120c59618b, type: 3}
   m_Name: FW_Projectile_Parabolic_Purple
   m_EditorClassIdentifier: 
-  id: 64c8fe30-67b8-47eb-baec-bf56e16af040
+  id: 64c8fe30-67b8-47eb-baec-bf56e16af039
   type: 0
-  prefab: {fileID: 850505404668415353, guid: 196cfb3df3d80e644b2b8389c9931041, type: 3}
+  prefab: {fileID: 850505404668415353, guid: bdcba396f9ef90447b74e1b9493433e7, type: 3}
   damage: 10
   speed: 3
   despawnDelay: 5
@@ -31,7 +31,7 @@ MonoBehaviour:
   homingStrength: 1
   homingAngle: 360
   enableHomingForParabolic: 1
-  parabolicHomingFactor: 1
+  parabolicHomingFactor: 0.384
   useCutoffHoming: 0
   homingCutoffTime: 0.7
   homingCutoffFade: 0.1

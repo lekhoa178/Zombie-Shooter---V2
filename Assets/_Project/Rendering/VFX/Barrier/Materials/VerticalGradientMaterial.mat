@@ -76,8 +76,8 @@ Material:
     - _EdgeWidth: 0.0124
     - _GradientPower: 2.7
     - _Height: 1
-    - _IntersectionIntensity: 1.89
-    - _IntersectionThreshold: 0.095
+    - _IntersectionIntensity: 0.76
+    - _IntersectionThreshold: 0.206
     - _InvertDissolveY: 1
     - _Metallic: 0
     - _NoiseIntensity: 0.735
@@ -107,7 +107,7 @@ Material:
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _EdgeColor: {r: 0.8415094, g: 0.5702775, b: 0.2969099, a: 1}
-    - _IntersectionColor: {r: 0.7905661, g: 0.9305246, b: 1, a: 1}
+    - _IntersectionColor: {r: 0.8660377, g: 1, b: 0.9801219, a: 1}
     - _TopColor: {r: 1, g: 1, b: 1, a: 1}
     - _ZBufferParams: {r: 1, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

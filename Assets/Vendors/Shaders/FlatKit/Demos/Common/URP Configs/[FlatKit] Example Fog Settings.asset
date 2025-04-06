@@ -84,7 +84,7 @@ MonoBehaviour:
   distanceHeightBlend: 0.5
   renderEvent: 550
   applyInSceneView: 1
-  effectMaterial: {fileID: 3809722197779856838}
+  effectMaterial: {fileID: 0}
 --- !u!21 &3809722197779856838
 Material:
   serializedVersion: 8

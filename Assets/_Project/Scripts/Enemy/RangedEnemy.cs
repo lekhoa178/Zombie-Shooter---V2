@@ -120,13 +120,7 @@ public class RangedEnemy : BaseEnemy, IAttacker
         
         // Wait for telegraph duration
         yield return new WaitForSeconds(rangedData.telegraphDuration);
-        
-        // Stop telegraph feedback
-        if (telegraphFeedback != null)
-        {
-            telegraphFeedback.StopFeedbacks();
-        }
-        
+
         OnAttackTelegraphEnd?.Invoke(this);
         
         isAttackingOrTelegraphing = false;
@@ -154,6 +148,11 @@ public class RangedEnemy : BaseEnemy, IAttacker
         
         // Set attack cooldown
         lastAttackTime = Time.time;
+
+        if (currentFiringCoroutine == null)
+        {
+            FireProjectilePattern();
+        }
         
         // Raise event
         OnAttackStart?.Invoke(this);
@@ -179,6 +178,15 @@ public class RangedEnemy : BaseEnemy, IAttacker
                     Animator.SetTrigger("Attack");
                 }
                 
+                // Rotate towards target
+                Vector3 direction = (currentTarget.position - transform.position).normalized;
+                transform.forward = direction;
+                    
+                if (telegraphFeedback)
+                {
+                    telegraphFeedback.PlayFeedbacks();
+                }
+                
                 FireSimultaneousProjectiles(
                     simultaneousCount,
                     useRandomSpread,
@@ -188,8 +196,8 @@ public class RangedEnemy : BaseEnemy, IAttacker
                 // Wait before firing next salvo
                 if (i < count - 1)
                 {
-                    float timeElapsed = 0f;
-                    float totalDelay = rangedData.consecutiveDelay;
+                    var timeElapsed = 0f;
+                    var totalDelay = rangedData.consecutiveDelay;
                     
                     // Reset the trigger to ensure proper animation triggering for the next batch
                     if (Animator)
@@ -222,12 +230,10 @@ public class RangedEnemy : BaseEnemy, IAttacker
     // Called from animation event
     public void OnAttackHit()
     {
-        // Only fire directly if we're not using the consecutive coroutine
-        // (for consecutive firing, the coroutine handles it)
-        if (currentFiringCoroutine == null)
-        {
-            FireProjectilePattern();
-        }
+        // if (currentFiringCoroutine == null)
+        // {
+        //     FireProjectilePattern();
+        // }
     }
     
     // Main firing method that uses data to determine pattern

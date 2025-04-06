@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4611414725459992378}
   - component: {fileID: 8212573267801285278}
   m_Layer: 0
-  m_Name: Prefab_Projectile_Blue
+  m_Name: Prefab_S_Projectile_Purple
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -160,7 +160,7 @@ TrailRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Time: 0.5
+  m_Time: 0.4
   m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3
@@ -173,6 +173,15 @@ TrailRenderer:
         value: 0.23004687
         inSlope: 0
         outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.37665057
+        value: 0.17075057
+        inSlope: -0.35850993
+        outSlope: -0.35850993
         tangentMode: 0
         weightedMode: 0
         inWeight: 0.33333334
@@ -191,8 +200,8 @@ TrailRenderer:
       m_RotationOrder: 0
     colorGradient:
       serializedVersion: 2
-      key0: {r: 0, g: 0.0967741, b: 1, a: 1}
-      key1: {r: 0.5647059, g: 0.5797226, b: 1, a: 1}
+      key0: {r: 0.06404209, g: 0, b: 1, a: 1}
+      key1: {r: 1, g: 0.4509434, b: 0.82951653, a: 1}
       key2: {r: 1, g: 0.32413793, b: 0.125, a: 0.47058824}
       key3: {r: 1, g: 0.27123955, b: 0.125, a: 0}
       key4: {r: 1, g: 0.27123955, b: 0.125, a: 0}
@@ -200,7 +209,7 @@ TrailRenderer:
       key6: {r: 0, g: 0, b: 0, a: 0}
       key7: {r: 0, g: 0, b: 0, a: 0}
       ctime0: 0
-      ctime1: 65535
+      ctime1: 65304
       ctime2: 56090
       ctime3: 65535
       ctime4: 65535
@@ -259,7 +268,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.4, y: 0.4, z: 0.4}
+  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5623384696466208634}
@@ -295,7 +304,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 444efcc2f275ab540b0b99373d39263d, type: 2}
+  - {fileID: 2100000, guid: e405d12b17f18d24fba6f6b0261213bd, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

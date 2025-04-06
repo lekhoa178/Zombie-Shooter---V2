@@ -7,8 +7,8 @@ using System.Collections.Generic;
 /// </summary>
 public static class HealthBarHelper
 {
-    private static HealthBarFlyweightSettings _defaultSettings;
-    private static Dictionary<BaseEnemy, HealthBarFlyweight> _activeHealthBars = new Dictionary<BaseEnemy, HealthBarFlyweight>();
+    private static HealthBarFlyweightSettings s_DefaultSettings;
+    private static Dictionary<BaseEnemy, HealthBarFlyweight> s_ActiveHealthBars = new Dictionary<BaseEnemy, HealthBarFlyweight>();
     
     /// <summary>
     /// Initializes the default settings for health bars
@@ -16,7 +16,7 @@ public static class HealthBarHelper
     /// <param name="settings">The ScriptableObject settings to use</param>
     public static void InitializeDefaultSettings(HealthBarFlyweightSettings settings)
     {
-        _defaultSettings = settings;
+        s_DefaultSettings = settings;
     }
     
     /// <summary>
@@ -38,7 +38,7 @@ public static class HealthBarHelper
         }
         
         // Use provided settings or fall back to default
-        HealthBarFlyweightSettings healthBarSettings = settings ?? _defaultSettings;
+        HealthBarFlyweightSettings healthBarSettings = settings ?? s_DefaultSettings;
         
         if (healthBarSettings == null)
         {
@@ -53,7 +53,7 @@ public static class HealthBarHelper
         }
         
         // Check if enemy already has a health bar
-        if (_activeHealthBars.TryGetValue(enemy, out var existingHealthBar))
+        if (s_ActiveHealthBars.TryGetValue(enemy, out var existingHealthBar))
         {
             return existingHealthBar;
         }
@@ -67,11 +67,11 @@ public static class HealthBarHelper
             return null;
         }
         
-        // Initialize the health bar
+        // Initialize the health bar (regular world-space mode)
         healthBar.Initialize(enemy, offset);
         
         // Track active health bar
-        _activeHealthBars[enemy] = healthBar;
+        s_ActiveHealthBars[enemy] = healthBar;
         
         return healthBar;
     }
@@ -84,13 +84,26 @@ public static class HealthBarHelper
     {
         if (enemy == null) return;
         
-        if (_activeHealthBars.TryGetValue(enemy, out var healthBar))
+        if (s_ActiveHealthBars.TryGetValue(enemy, out var healthBar))
         {
             // Remove from active dictionary
-            _activeHealthBars.Remove(enemy);
+            s_ActiveHealthBars.Remove(enemy);
             
             // Return to pool
             FlyweightFactory.ReturnToPool(healthBar);
+        }
+    }
+    
+    /// <summary>
+    /// Updates the position of an enemy's health bar
+    /// </summary>
+    public static void UpdateHealthBarPosition(BaseEnemy enemy)
+    {
+        if (enemy == null) return;
+        
+        if (s_ActiveHealthBars.TryGetValue(enemy, out var healthBar))
+        {
+            healthBar.UpdatePosition();
         }
     }
     
@@ -99,28 +112,26 @@ public static class HealthBarHelper
     /// </summary>
     public static void ReleaseAllHealthBars()
     {
-        // Make a copy of all health bars to avoid modifying during enumeration
-        var healthBars = new List<HealthBarFlyweight>(_activeHealthBars.Values);
-        
-        foreach (var healthBar in healthBars)
+        foreach (var healthBar in s_ActiveHealthBars.Values)
         {
             FlyweightFactory.ReturnToPool(healthBar);
         }
         
-        _activeHealthBars.Clear();
+        s_ActiveHealthBars.Clear();
     }
     
     /// <summary>
-    /// Updates the position of an enemy's health bar
+    /// Gets an existing health bar for an enemy if one exists
     /// </summary>
-    /// <param name="enemy">The enemy whose health bar should be updated</param>
-    public static void UpdateHealthBarPosition(BaseEnemy enemy)
+    public static HealthBarFlyweight GetExistingHealthBar(BaseEnemy enemy)
     {
-        if (enemy == null) return;
+        if (enemy == null) return null;
         
-        if (_activeHealthBars.TryGetValue(enemy, out var healthBar))
+        if (s_ActiveHealthBars.TryGetValue(enemy, out var healthBar))
         {
-            // Position will be updated automatically in the next frame by the health bar's update routine
+            return healthBar;
         }
+        
+        return null;
     }
 } 

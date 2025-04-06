@@ -463,7 +463,7 @@ Material:
     - _SelfShadingSizeExtra: 0.6
     - _Set_SystemShadowsToBase: 1
     - _ShadeColor_Step: 0
-    - _ShadowEdgeSize: 0.05
+    - _ShadowEdgeSize: 0
     - _ShadowEdgeSizeExtra: 0.05
     - _Smoothness: 0.5
     - _SmoothnessRemapMax: 1

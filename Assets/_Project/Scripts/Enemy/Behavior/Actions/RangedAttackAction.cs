@@ -1,4 +1,5 @@
 using System;
+using Flyweight;
 using Unity.Behavior;
 using UnityEngine;
 using Action = Unity.Behavior.Action;
@@ -27,6 +28,9 @@ public partial class RangedAttackAction : Action
     [SerializeReference] public BlackboardVariable<bool> LeadTarget;
     [SerializeReference] public BlackboardVariable<float> LeadFactor;
     [SerializeReference] public BlackboardVariable<float> DirectionVariance;
+
+    [Header("Projectile Settings")] [SerializeReference]
+    public BlackboardVariable<ProjectileSettings> projectileSettings;
     
     [Header("Attack Timeout")]
     [SerializeReference] public BlackboardVariable<float> AttackTimeout;
@@ -37,6 +41,17 @@ public partial class RangedAttackAction : Action
     private bool _isCompleted = false;
     private float _attackStartTime = -1f;
     private const float _defaultAttackTimeout = 3f;
+    
+    // Store original values to restore later
+    private int _savedConsecutiveCount;
+    private int _savedSimultaneousCount;
+    private bool _savedUseRandomSpread;
+    private float _savedSpreadAngle;
+    private bool _savedLeadTarget;
+    private float _savedLeadFactor;
+    private float _savedDirectionVariance;
+    private ProjectileSettings _savedProjectileSettings;
+    private bool _valuesOverridden = false;
     
     protected override Status OnStart()
     {
@@ -60,6 +75,11 @@ public partial class RangedAttackAction : Action
             Debug.LogError("Agent does not have a RangedEnemy component");
             return Status.Failure;
         }
+
+        if (!_rangedEnemy.CanAttack)
+        {
+            return Status.Success;
+        }
         
         // Initialize defaults for unset variables
         if (UseBlackboardOverrides?.Value == null) UseBlackboardOverrides.Value = false;
@@ -78,6 +98,7 @@ public partial class RangedAttackAction : Action
         _isAttacking = false;
         _isCompleted = false;
         _attackStartTime = -1f;
+        _valuesOverridden = false;
         
         // Subscribe to ranged enemy events
         _rangedEnemy.OnAttackStart += OnRangedEnemyAttackStart;
@@ -90,16 +111,18 @@ public partial class RangedAttackAction : Action
         RangedEnemyData rangedData = _rangedEnemy.Data as RangedEnemyData;
         if (rangedData != null && useOverrides)
         {
-            // This is a bit of a hack, but we'll save and restore the values
-            var savedConsecutiveCount = rangedData.consecutiveCount;
-            var savedSimultaneousCount = rangedData.simultaneousCount;
-            var savedUseRandomSpread = rangedData.useRandomSpread;
-            var savedSpreadAngle = rangedData.spreadAngle;
-            var savedLeadTarget = rangedData.leadTarget;
-            var savedLeadFactor = rangedData.leadFactor;
-            var savedDirectionVariance = rangedData.directionVariance;
+            // Save original values
+            _savedConsecutiveCount = rangedData.consecutiveCount;
+            _savedSimultaneousCount = rangedData.simultaneousCount;
+            _savedUseRandomSpread = rangedData.useRandomSpread;
+            _savedSpreadAngle = rangedData.spreadAngle;
+            _savedLeadTarget = rangedData.leadTarget;
+            _savedLeadFactor = rangedData.leadFactor;
+            _savedDirectionVariance = rangedData.directionVariance;
+            _savedProjectileSettings = rangedData.projectileSettings;
+            _valuesOverridden = true;
             
-            // Temporarily set the values
+            // Apply new values
             rangedData.consecutiveCount = ConsecutiveCount.Value;
             rangedData.simultaneousCount = SimultaneousCount.Value;
             rangedData.useRandomSpread = UseRandomSpread.Value;
@@ -107,23 +130,17 @@ public partial class RangedAttackAction : Action
             rangedData.leadTarget = LeadTarget.Value;
             rangedData.leadFactor = LeadFactor.Value;
             rangedData.directionVariance = DirectionVariance.Value;
+            if (projectileSettings?.Value != null)
+                rangedData.projectileSettings = projectileSettings.Value;
             
             // Start the attack sequence
             _rangedEnemy.PerformAttack(Target.Value.transform);
             
-            // Restore the original values
-            rangedData.consecutiveCount = savedConsecutiveCount;
-            rangedData.simultaneousCount = savedSimultaneousCount;
-            rangedData.useRandomSpread = savedUseRandomSpread;
-            rangedData.spreadAngle = savedSpreadAngle;
-            rangedData.leadTarget = savedLeadTarget;
-            rangedData.leadFactor = savedLeadFactor;
-            rangedData.directionVariance = savedDirectionVariance;
+            // Values will be restored when the action completes
         }
         else
         {
             _rangedEnemy.PerformAttack(Target.Value.transform);
-
         }
         
         return Status.Running;
@@ -136,13 +153,6 @@ public partial class RangedAttackAction : Action
         {
             CleanupAttack(true);
             return Status.Success;
-        }
-        
-        // If target is lost, abort
-        if (Target?.Value == null)
-        {
-            CleanupAttack(false);
-            return Status.Failure;
         }
         
         // Check for attack timeout
@@ -173,6 +183,24 @@ public partial class RangedAttackAction : Action
         {
             _rangedEnemy.OnAttackStart -= OnRangedEnemyAttackStart;
             _rangedEnemy.OnAttackEnd -= OnRangedEnemyAttackEnd;
+            
+            // Restore original values if they were overridden
+            if (_valuesOverridden)
+            {
+                RangedEnemyData rangedData = _rangedEnemy.Data as RangedEnemyData;
+                if (rangedData != null)
+                {
+                    rangedData.consecutiveCount = _savedConsecutiveCount;
+                    rangedData.simultaneousCount = _savedSimultaneousCount;
+                    rangedData.useRandomSpread = _savedUseRandomSpread;
+                    rangedData.spreadAngle = _savedSpreadAngle;
+                    rangedData.leadTarget = _savedLeadTarget;
+                    rangedData.leadFactor = _savedLeadFactor;
+                    rangedData.directionVariance = _savedDirectionVariance;
+                    rangedData.projectileSettings = _savedProjectileSettings;
+                }
+                _valuesOverridden = false;
+            }
         }
         
         // Reset state
@@ -189,7 +217,7 @@ public partial class RangedAttackAction : Action
         // Only use direct overrides if:
         // 1. UseBlackboardOverrides is true
         // 2. AND we couldn't modify the data in OnStart (not a RangedEnemyData)
-        if (UseBlackboardOverrides.Value && !(_rangedEnemy.Data is RangedEnemyData))
+        if (UseBlackboardOverrides.Value && _rangedEnemy.Data is not RangedEnemyData)
         {
             // Override the firing pattern directly
             _rangedEnemy.FireProjectilePattern(

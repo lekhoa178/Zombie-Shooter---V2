@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b2db86121404754db890f4c8dfe81b2, type: 3}
   m_Name: Bloom
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   skipIterations:
     m_OverrideState: 0
     m_Value: 1
@@ -136,7 +136,7 @@ MonoBehaviour:
   active: 1
   lift:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 0.93546796, z: 0.9715675, w: 0.022848558}
+    m_Value: {x: 0.8942899, y: 0.8542626, z: 1, w: 0.022848558}
   gamma:
     m_OverrideState: 1
     m_Value: {x: 1, y: 0.98512965, z: 0.8969663, w: -0.041127145}
@@ -177,7 +177,7 @@ MonoBehaviour:
     m_Value: -0.4
   contrast:
     m_OverrideState: 1
-    m_Value: -11
+    m_Value: 25
   colorFilter:
     m_OverrideState: 1
     m_Value: {r: 0.8584906, g: 0.9158522, b: 1, a: 1}
@@ -186,7 +186,7 @@ MonoBehaviour:
     m_Value: 0
   saturation:
     m_OverrideState: 1
-    m_Value: 35
+    m_Value: 38
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -264,7 +264,7 @@ MonoBehaviour:
   active: 1
   temperature:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 12
   tint:
     m_OverrideState: 0
     m_Value: 0
@@ -280,7 +280,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81180773991d8724ab7f2d216912b564, type: 3}
   m_Name: ChromaticAberration
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   intensity:
     m_OverrideState: 1
     m_Value: 0.102

@@ -52,7 +52,7 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
     public float CurrentHealth => currentHealth;
     public float MaxHealth => isElite ? enemyData.GetEffectiveMaxHealth(true) : enemyData.maxHealth;
     public bool IsDead => isDead;
-    public bool IsStunned => stunHandler != null && stunHandler.IsStunned;
+    public bool IsStunned => stunHandler != null && stunHandler.IsStunned && !stunHandler.IsInStunRecovery;
     public bool IsInvulnerable => isInvulnerable;
     public bool IsElite => isElite;
     

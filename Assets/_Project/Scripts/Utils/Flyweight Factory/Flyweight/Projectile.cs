@@ -121,14 +121,31 @@ namespace Flyweight
         {
             if (!isInitialized) return;
             
-            if (useParabolicTrajectory)
+            // For straight projectiles, update rotation based on direction
+            if (!useParabolicTrajectory)
             {
-                UpdateParabolicMovement();
+                // Move straight projectiles
+                Vector3 newPosition = transform.position + (direction * (speed * Time.deltaTime));
+                
+                // Calculate actual velocity direction (may be different from direction due to external forces)
+                Vector3 actualVelocity = newPosition - transform.position;
+                
+                if (actualVelocity.magnitude > 0.001f)
+                {
+                    transform.forward = actualVelocity.normalized;
+                }
+                else
+                {
+                    transform.forward = direction;
+                }
+                
+                // Apply movement
+                transform.position = newPosition;
             }
             else
             {
-                // Move straight projectiles
-                transform.position += (direction * (speed * Time.deltaTime));
+                // Parabolic projectiles are handled by UpdateParabolicMovement
+                UpdateParabolicMovement();
             }
         }
         
@@ -232,9 +249,20 @@ namespace Flyweight
             }
             
             // Configure targeting layers
-            int projectileLayer = gameObject.layer;
-            if (projectileLayer == LayerMask.NameToLayer("Projectile"))
+            if (owner != null)
             {
+                if (owner.layer == LayerMask.NameToLayer("Enemy"))
+                {
+                    targetLayers = LayerMask.GetMask("Player");
+                }
+                else
+                {
+                    targetLayers = LayerMask.GetMask("Enemy");
+                }
+            }
+            else
+            {
+                // Fallback
                 targetLayers = LayerMask.GetMask("Player", "Enemy");
             }
             
@@ -446,6 +474,9 @@ namespace Flyweight
         // Update parabolic movement in FixedUpdate
         private void UpdateParabolicMovement()
         {
+            // Store the previous position for velocity calculation
+            Vector3 previousPosition = transform.position;
+            
             // Update time progression
             parabolicElapsedTime += Time.fixedDeltaTime;
             parabolicNormalizedTime = Mathf.Clamp01(parabolicElapsedTime / timeToTarget);
@@ -520,22 +551,37 @@ namespace Flyweight
                 // Update position
                 transform.position = currentPos;
                 
-                // Update rotation using the frozen tangent direction
-                Vector3 tangent = CalculateBezierTangent(
-                    startPosition,
-                    finalControlPoint,
-                    finalHomingTarget,
-                    parabolicNormalizedTime
-                );
+                // Update rotation using the frozen tangent direction or actual velocity
+                Vector3 actualVelocity = currentPos - previousPosition;
                 
-                if (tangent.magnitude > 0.01f)
+                if (actualVelocity.magnitude > 0.001f)
                 {
-                    Quaternion targetRotation = Quaternion.LookRotation(tangent.normalized);
+                    Quaternion targetRotation = Quaternion.LookRotation(actualVelocity.normalized);
                     transform.rotation = Quaternion.Slerp(
                         transform.rotation,
                         targetRotation,
                         Time.fixedDeltaTime * 12f
                     );
+                }
+                else
+                {
+                    // Fallback to tangent if velocity is too small
+                    Vector3 tangent = CalculateBezierTangent(
+                        startPosition,
+                        finalControlPoint,
+                        finalHomingTarget,
+                        parabolicNormalizedTime
+                    );
+                    
+                    if (tangent.magnitude > 0.01f)
+                    {
+                        Quaternion targetRotation = Quaternion.LookRotation(tangent.normalized);
+                        transform.rotation = Quaternion.Slerp(
+                            transform.rotation,
+                            targetRotation,
+                            Time.fixedDeltaTime * 12f
+                        );
+                    }
                 }
             }
             else
@@ -595,7 +641,7 @@ namespace Flyweight
                 distanceTraveled += Vector3.Distance(oldPosition, currentPos);
                 
                 // Update rotation to follow the curve
-                UpdateBezierRotation();
+                UpdateBezierRotation(previousPosition);
             }
             
             // Check if we've reached the target
@@ -743,27 +789,43 @@ namespace Flyweight
             );
         }
         
-        private void UpdateBezierRotation()
+        private void UpdateBezierRotation(Vector3 previousPosition)
         {
-            // Calculate tangent to the bezier curve at the current point
-            Vector3 tangent = CalculateBezierTangent(
-                startPosition,
-                bezierControlPoint,
-                currentParabolicTarget,
-                parabolicNormalizedTime
-            );
+            // Try to use actual velocity first (most accurate)
+            Vector3 actualVelocity = transform.position - previousPosition;
             
-            if (tangent.magnitude > 0.01f)
+            if (actualVelocity.magnitude > 0.01f)
             {
-                // Create a rotation that points along the tangent
-                Quaternion targetRotation = Quaternion.LookRotation(tangent.normalized);
-                
-                // Apply smooth rotation
+                // Use actual velocity for rotation
+                Quaternion targetRotation = Quaternion.LookRotation(actualVelocity.normalized);
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     targetRotation,
                     Time.fixedDeltaTime * 12f
                 );
+            }
+            else
+            {
+                // Fallback to using bezier tangent (theoretical velocity)
+                Vector3 tangent = CalculateBezierTangent(
+                    startPosition,
+                    bezierControlPoint,
+                    currentParabolicTarget,
+                    parabolicNormalizedTime
+                );
+                
+                if (tangent.magnitude > 0.01f)
+                {
+                    // Create a rotation that points along the tangent
+                    Quaternion targetRotation = Quaternion.LookRotation(tangent.normalized);
+                    
+                    // Apply smooth rotation
+                    transform.rotation = Quaternion.Slerp(
+                        transform.rotation,
+                        targetRotation,
+                        Time.fixedDeltaTime * 12f
+                    );
+                }
             }
         }
         

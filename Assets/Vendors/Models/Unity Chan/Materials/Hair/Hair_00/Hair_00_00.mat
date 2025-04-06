@@ -353,7 +353,7 @@ Material:
     - _RimPower: 0.55
     - _Rotate_MatCapUV: 0
     - _Rotate_NormalMapForMatCapUV: 0
-    - _SelfShadingSize: 0.5
+    - _SelfShadingSize: 0.507
     - _SelfShadingSizeExtra: 0.6
     - _Set_SystemShadowsToBase: 1
     - _ShadeColor_Step: 0.124
@@ -410,9 +410,9 @@ Material:
     - _1st_ShadeColor: {r: 0.8490566, g: 0.6127626, b: 0.6688324, a: 1}
     - _2nd_ShadeColor: {r: 0.8867924, g: 0.55633676, b: 0.7093898, a: 1}
     - _Ap_RimLightColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BaseColor: {r: 0.86415094, g: 0.741549, b: 0.37663934, a: 1}
+    - _BaseColor: {r: 0.87058824, g: 0.69706094, b: 0.41960785, a: 1}
     - _Color: {r: 0.7647059, g: 0.7647059, b: 0.7647059, a: 1}
-    - _ColorDim: {r: 0.6156863, g: 0.34117648, b: 0.34466422, a: 1}
+    - _ColorDim: {r: 0.5999999, g: 0.19358486, b: 0.43548158, a: 1}
     - _ColorDimCurve: {r: 0.85023, g: 0.85034, b: 0.8504499, a: 0.85056}
     - _ColorDimExtra: {r: 0.85023, g: 0.85034, b: 0.8504499, a: 0.85056}
     - _ColorDimSteps: {r: 0.85023, g: 0.85034, b: 0.8504499, a: 0.85056}

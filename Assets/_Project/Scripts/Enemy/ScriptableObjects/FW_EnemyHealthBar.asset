@@ -24,7 +24,7 @@ MonoBehaviour:
   criticalColor: {r: 1, g: 0, b: 0, a: 1}
   healthyThreshold: 0.7
   criticalThreshold: 0.3
-  hideAtFullHealth: 0
+  hideAtFullHealth: 1
   enableDamageFlash: 0
   damageFlashDuration: 0.5
   enableDualFill: 1

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: faacbedcf168fad4f836b76c9d905273, type: 3}
   m_Name: FW_Enemy_Telegraph
   m_EditorClassIdentifier: 
-  id: fa0f6dac-910a-4d50-9775-9f42bbec5865
+  id: fa0f6dac-910a-4d50-9775-9f42bbec5861
   type: 0
   prefab: {fileID: 5804272120283705923, guid: d7977e5e4508ad045bee73a3b444d516, type: 3}
   autoReturnDuration: 2

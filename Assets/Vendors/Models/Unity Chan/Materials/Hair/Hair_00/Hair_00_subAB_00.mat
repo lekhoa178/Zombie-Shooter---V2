@@ -353,7 +353,7 @@ Material:
     - _RimPower: 0.55
     - _Rotate_MatCapUV: 0
     - _Rotate_NormalMapForMatCapUV: 0
-    - _SelfShadingSize: 0.5
+    - _SelfShadingSize: 0.279
     - _SelfShadingSizeExtra: 0.6
     - _Set_SystemShadowsToBase: 1
     - _ShadeColor_Step: 0

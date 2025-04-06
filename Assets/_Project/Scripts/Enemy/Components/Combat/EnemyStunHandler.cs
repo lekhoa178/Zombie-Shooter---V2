@@ -328,24 +328,21 @@ public class EnemyStunHandler : MonoBehaviour, IStunnable
         // Handle stun duration
         if (isStunned && Time.time >= stunEndTime)
         {
-            if (stunStressLevel >= enemyData.stunResistanceThreshold && enemyData.enableStunResistance)
+            CombatEventManager.TriggerStunEnded(gameObject, gameObject);
+            EndStun();
+            
+            // Start decaying stun stress when not stunned
+            if (stunDecayCoroutine != null)
             {
-                CombatEventManager.TriggerStunEnded(gameObject, gameObject);
-                CombatEventManager.TriggerRecoveryStarted(gameObject, gameObject, "Stun", enemyData.stunRecoveryDuration);
-                StartStunRecovery();
+                StopCoroutine(stunDecayCoroutine);
             }
-            else
-            {
-                CombatEventManager.TriggerStunEnded(gameObject, gameObject);
-                EndStun();
-                
-                // Start decaying stun stress when not stunned
-                if (stunDecayCoroutine != null)
-                {
-                    StopCoroutine(stunDecayCoroutine);
-                }
-                stunDecayCoroutine = StartCoroutine(DecayStunStress());
-            }
+            stunDecayCoroutine = StartCoroutine(DecayStunStress());
+        }
+        
+        if (stunStressLevel >= enemyData.stunResistanceThreshold && enemyData.enableStunResistance && !isInStunRecovery)
+        {
+            CombatEventManager.TriggerRecoveryStarted(gameObject, gameObject, "Stun", enemyData.stunRecoveryDuration);
+            StartStunRecovery();
         }
         
         // Handle stun resistance decay when not stunned

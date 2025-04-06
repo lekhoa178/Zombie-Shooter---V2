@@ -2,190 +2,350 @@ using Flyweight;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace Flyweight
 {
     public class HealthBarFlyweight : Flyweight
     {
+        #region Private Fields
         // References to the UI components
-        private Image _backgroundImage;
-        private Image _fillImage;
-        private Image _secondaryFillImage;
-        private Text _healthText;
-        private CanvasGroup _canvasGroup;
+        private Image m_BackgroundImage;
+        private Image m_FillImage;
+        private Image m_SecondaryFillImage;
+        private Text m_HealthText;
+        private TextMeshProUGUI m_TMPHealthText;
+        private TextMeshProUGUI m_BossNameText;
+        private Image m_BossIconImage;
+        private CanvasGroup m_CanvasGroup;
         
         // Reference to the associated enemy
-        private BaseEnemy _targetEnemy;
-        private Transform _mainCamera;
-        private float _lastHealthPercent = 1f;
-        private float _currentFillAmount = 1f;
-        private Coroutine _updateCoroutine;
-        private Coroutine _damageFlashCoroutine;
-        private Coroutine _delayFillCoroutine;
-        private Coroutine _anticipateFillCoroutine;
-        private Coroutine _primaryFillCoroutine;
-        private Coroutine _secondaryFillCoroutine;
-        private Vector3 _displayOffset = Vector3.up * 2f;
-        private bool _isInitialized = false;
+        private BaseEnemy m_TargetEnemy;
+        private Transform m_MainCamera;
+        private float m_LastHealthPercent = 1f;
+        private float m_CurrentFillAmount = 1f;
+        private Coroutine m_UpdateCoroutine;
+        private Coroutine m_DamageFlashCoroutine;
+        private Coroutine m_DelayFillCoroutine;
+        private Coroutine m_AnticipateFillCoroutine;
+        private Coroutine m_PrimaryFillCoroutine;
+        private Coroutine m_SecondaryFillCoroutine;
+        private Vector3 m_DisplayOffset = Vector3.up * 2f;
+        private bool m_IsInitialized = false;
         
         // New fields for tracking health changes
-        private float _actualHealthPercent = 1f;    // The current real health
-        private float _primaryFillPercent = 1f;       // Currently displayed primary fill
-        private float _secondaryFillPercent = 1f;     // Currently displayed secondary fill
-        private bool _isAnimatingPrimary = false;
-        private bool _isAnimatingSecondary = false;
+        private float m_ActualHealthPercent = 1f;    // The current real health
+        private float m_PrimaryFillPercent = 1f;     // Currently displayed primary fill
+        private float m_SecondaryFillPercent = 1f;   // Currently displayed secondary fill
+        private bool m_IsAnimatingPrimary = false;
+        private bool m_IsAnimatingSecondary = false;
         
+        // Boss health bar fields
+        private bool m_IsBossHealthBar = false;
+        private string m_BossName = "";
+        private Color m_BossColor = Color.red;
+        private Sprite m_BossIcon;
+
+        // Animation settings
+        private float m_PrimaryHealthDropDuration = 0.2f;  // Duration for primary health bar drop animation
+        #endregion
+        
+        #region Properties
         // Get settings from our FlyweightSettings
         private HealthBarFlyweightSettings Settings => settings as HealthBarFlyweightSettings;
         
-        // Used by HealthBarFlyweightSettings to set up components from prefab
+        /// <summary>
+        /// Whether this health bar is for a boss
+        /// </summary>
+        public bool IsBossHealthBar => m_IsBossHealthBar;
+        
+        /// <summary>
+        /// The target enemy this health bar is tracking
+        /// </summary>
+        public BaseEnemy TargetEnemy => m_TargetEnemy;
+        #endregion
+        
+        #region Initialization
+        /// <summary>
+        /// Used by HealthBarFlyweightSettings to set up components from prefab
+        /// </summary>
         public void InitializeComponents(Image background, Image fill, Image secondaryFill, Text text, CanvasGroup group)
         {
-            _backgroundImage = background;
-            _fillImage = fill;
-            _secondaryFillImage = secondaryFill;
-            _healthText = text;
-            _canvasGroup = group;
+            m_BackgroundImage = background;
+            m_FillImage = fill;
+            m_SecondaryFillImage = secondaryFill;
+            m_HealthText = text;
+            m_CanvasGroup = group;
+            
+            // Check if we have TextMeshPro texts already assigned
+            m_TMPHealthText = GetComponentInChildren<TextMeshProUGUI>(true);
+            m_BossNameText = transform.Find("BossName")?.GetComponent<TextMeshProUGUI>();
+            m_BossIconImage = transform.Find("BossIcon")?.GetComponent<Image>();
             
             // Set up the secondary fill if available
-            if (_secondaryFillImage != null)
+            if (m_SecondaryFillImage != null)
             {
-                _secondaryFillImage.color = Settings.secondaryFillColor;
+                m_SecondaryFillImage.color = Settings.secondaryFillColor;
                 
                 // Ensure the secondary fill is behind the primary fill in render order
-                _secondaryFillImage.transform.SetAsFirstSibling();
-                if (_fillImage != null)
+                m_SecondaryFillImage.transform.SetAsFirstSibling();
+                if (m_FillImage != null)
                 {
-                    _fillImage.transform.SetAsLastSibling();
+                    m_FillImage.transform.SetAsLastSibling();
                 }
             }
         }
         
+        /// <summary>
+        /// Initialize for a standard enemy in world space
+        /// </summary>
         public void Initialize(BaseEnemy enemy, Vector3 offset)
         {
-            _targetEnemy = enemy;
-            _mainCamera = Camera.main.transform;
-            _displayOffset = offset;
-            _isInitialized = true;
+            m_TargetEnemy = enemy;
+            m_MainCamera = Camera.main.transform;
+            m_DisplayOffset = offset;
+            m_IsInitialized = true;
+            m_IsBossHealthBar = false;
             
-            transform.SetParent(_targetEnemy.transform);
-            transform.localPosition = _displayOffset;
+            // Attach to enemy transform for world-space tracking
+            transform.SetParent(m_TargetEnemy.transform);
+            transform.localPosition = m_DisplayOffset;
             
             // Setup initial state
-            _actualHealthPercent = _targetEnemy.CurrentHealth / _targetEnemy.MaxHealth;
-            _primaryFillPercent = _actualHealthPercent;
-            _secondaryFillPercent = _actualHealthPercent;
+            m_ActualHealthPercent = m_TargetEnemy.CurrentHealth / m_TargetEnemy.MaxHealth;
+            m_PrimaryFillPercent = m_ActualHealthPercent;
+            m_SecondaryFillPercent = m_ActualHealthPercent;
             
-            UpdateFillAmount(_primaryFillPercent, _secondaryFillPercent);
+            UpdateFillAmount(m_PrimaryFillPercent, m_SecondaryFillPercent);
             
             // Stop any existing update routine
-            if (_updateCoroutine != null)
-                StopCoroutine(_updateCoroutine);
+            if (m_UpdateCoroutine != null)
+                StopCoroutine(m_UpdateCoroutine);
                 
             // Start update routine
-            _updateCoroutine = StartCoroutine(UpdateHealthBarRoutine());
+            m_UpdateCoroutine = StartCoroutine(UpdateHealthBarRoutine());
         }
         
+        /// <summary>
+        /// Initialize as a boss health bar for HUD display
+        /// </summary>
+        public void InitializeAsBossBar(BaseEnemy enemy, Color bossColor, string bossName = "", Sprite bossIcon = null)
+        {
+            m_TargetEnemy = enemy;
+            m_IsBossHealthBar = true;
+            m_BossName = string.IsNullOrEmpty(bossName) ? enemy.name : bossName;
+            m_BossColor = bossColor;
+            m_BossIcon = bossIcon;
+            m_IsInitialized = true;
+            
+            // Set up UI elements for boss display
+            SetupBossUI();
+            
+            // Setup initial state
+            m_ActualHealthPercent = m_TargetEnemy.CurrentHealth / m_TargetEnemy.MaxHealth;
+            m_PrimaryFillPercent = m_ActualHealthPercent;
+            m_SecondaryFillPercent = m_ActualHealthPercent;
+            
+            UpdateFillAmount(m_PrimaryFillPercent, m_SecondaryFillPercent);
+            UpdateHealthText();
+            
+            // Stop any existing update routine
+            if (m_UpdateCoroutine != null)
+                StopCoroutine(m_UpdateCoroutine);
+                
+            // Start update routine
+            m_UpdateCoroutine = StartCoroutine(UpdateHealthBarRoutine());
+        }
+        
+        /// <summary>
+        /// Setup the UI elements for a boss health bar
+        /// </summary>
+        private void SetupBossUI()
+        {
+            // Update boss name text if available
+            if (m_BossNameText != null)
+            {
+                m_BossNameText.text = m_BossName;
+                m_BossNameText.gameObject.SetActive(true);
+            }
+            
+            // Update boss icon if available
+            if (m_BossIconImage != null)
+            {
+                if (m_BossIcon != null)
+                {
+                    m_BossIconImage.sprite = m_BossIcon;
+                    m_BossIconImage.gameObject.SetActive(true);
+                }
+                else
+                {
+                    m_BossIconImage.gameObject.SetActive(false);
+                }
+            }
+            
+            // Apply boss color to background or fill if desired
+            if (m_BackgroundImage != null)
+            {
+                // Keep alpha the same but use the boss color
+                m_BackgroundImage.color = new Color(
+                    m_BossColor.r,
+                    m_BossColor.g,
+                    m_BossColor.b,
+                    m_BackgroundImage.color.a
+                );
+            }
+            
+            // Make sure boss health bars are visible
+            if (m_CanvasGroup != null)
+            {
+                m_CanvasGroup.alpha = 1f;
+            }
+        }
+        #endregion
+        
+        #region State Management
+        /// <summary>
+        /// Reset internal state when retrieved from pool
+        /// </summary>
         public void ResetState()
         {
             // Reset internal state when retrieved from pool
-            _lastHealthPercent = 1f;
-            _currentFillAmount = 1f;
-            _actualHealthPercent = 1f;
-            _primaryFillPercent = 1f;
-            _secondaryFillPercent = 1f;
-            _isInitialized = false;
-            _isAnimatingPrimary = false;
-            _isAnimatingSecondary = false;
+            m_LastHealthPercent = 1f;
+            m_CurrentFillAmount = 1f;
+            m_ActualHealthPercent = 1f;
+            m_PrimaryFillPercent = 1f;
+            m_SecondaryFillPercent = 1f;
+            m_IsInitialized = false;
+            m_IsAnimatingPrimary = false;
+            m_IsAnimatingSecondary = false;
+            m_IsBossHealthBar = false;
             
             // Reset visuals
-            if (_fillImage != null)
+            if (m_FillImage != null)
             {
-                _fillImage.fillAmount = 1f;
-                _fillImage.color = Settings.healthyColor;
+                m_FillImage.fillAmount = 1f;
+                m_FillImage.color = Settings.healthyColor;
             }
             
-            if (_secondaryFillImage != null)
+            if (m_SecondaryFillImage != null)
             {
-                _secondaryFillImage.fillAmount = 1f;
-                _secondaryFillImage.color = Settings.secondaryFillColor;
+                m_SecondaryFillImage.fillAmount = 1f;
+                m_SecondaryFillImage.color = Settings.secondaryFillColor;
             }
             
-            if (_canvasGroup != null)
+            if (m_CanvasGroup != null)
             {
-                _canvasGroup.alpha = 1f;
+                m_CanvasGroup.alpha = 1f;
+            }
+            
+            // Hide boss elements
+            if (m_BossNameText != null)
+            {
+                m_BossNameText.gameObject.SetActive(false);
+            }
+            
+            if (m_BossIconImage != null)
+            {
+                m_BossIconImage.gameObject.SetActive(false);
             }
         }
         
+        /// <summary>
+        /// Clean up resources when released
+        /// </summary>
         public void Cleanup()
         {
             // Stop all coroutines
-            if (_updateCoroutine != null)
-                StopCoroutine(_updateCoroutine);
+            if (m_UpdateCoroutine != null)
+                StopCoroutine(m_UpdateCoroutine);
                 
-            if (_damageFlashCoroutine != null)
-                StopCoroutine(_damageFlashCoroutine);
+            if (m_DamageFlashCoroutine != null)
+                StopCoroutine(m_DamageFlashCoroutine);
                 
-            if (_delayFillCoroutine != null)
-                StopCoroutine(_delayFillCoroutine);
+            if (m_DelayFillCoroutine != null)
+                StopCoroutine(m_DelayFillCoroutine);
                 
-            if (_anticipateFillCoroutine != null)
-                StopCoroutine(_anticipateFillCoroutine);
+            if (m_AnticipateFillCoroutine != null)
+                StopCoroutine(m_AnticipateFillCoroutine);
                 
-            if (_primaryFillCoroutine != null)
-                StopCoroutine(_primaryFillCoroutine);
+            if (m_PrimaryFillCoroutine != null)
+                StopCoroutine(m_PrimaryFillCoroutine);
                 
-            if (_secondaryFillCoroutine != null)
-                StopCoroutine(_secondaryFillCoroutine);
+            if (m_SecondaryFillCoroutine != null)
+                StopCoroutine(m_SecondaryFillCoroutine);
                 
-            _targetEnemy = null;
-            _isInitialized = false;
+            m_TargetEnemy = null;
+            m_IsInitialized = false;
         }
+        #endregion
         
+        #region Update Routines
+        /// <summary>
+        /// Updates the health bar continuously
+        /// </summary>
         private IEnumerator UpdateHealthBarRoutine()
         {
-            while (_isInitialized && _targetEnemy != null)
+            while (m_IsInitialized && m_TargetEnemy != null)
             {
                 // Skip updates if the enemy is dead or the game is paused
-                if (_targetEnemy.IsDead || Time.timeScale <= 0.01f)
+                if (m_TargetEnemy.IsDead || Time.timeScale <= 0.01f)
                 {
+                    // Hide this health bar
                     SetBarVisibility(false);
+                    
+                    // For boss bars, also signal for removal
+                    if (m_IsBossHealthBar)
+                    {
+                        EnemyHealthBarComponent component = m_TargetEnemy.GetComponent<EnemyHealthBarComponent>();
+                        if (component != null)
+                        {
+                            EnemyHealthBarManager.Instance?.UnregisterBossHealthBar(component);
+                        }
+                    }
+                    
                     yield return null;
                     continue;
                 }
                 
-                // Always face camera
-                if (_mainCamera != null)
+                // For world space bars only: face camera
+                if (!m_IsBossHealthBar && m_MainCamera != null)
                 {
-                    transform.LookAt(transform.position + _mainCamera.forward); 
+                    transform.LookAt(transform.position + m_MainCamera.forward); 
                 }
                 
                 // Check if health changed
-                float currentHealthPercent = _targetEnemy.CurrentHealth / _targetEnemy.MaxHealth;
+                float currentHealthPercent = m_TargetEnemy.CurrentHealth / m_TargetEnemy.MaxHealth;
                 
-                if (Mathf.Abs(currentHealthPercent - _actualHealthPercent) > 0.001f)
+                if (Mathf.Abs(currentHealthPercent - m_ActualHealthPercent) > 0.001f)
                 {
-                    bool healthDecreased = currentHealthPercent < _actualHealthPercent;
-                    bool healthIncreased = currentHealthPercent > _actualHealthPercent;
+                    bool healthDecreased = currentHealthPercent < m_ActualHealthPercent;
+                    bool healthIncreased = currentHealthPercent > m_ActualHealthPercent;
                     
-                    float previousHealth = _actualHealthPercent;
-                    _actualHealthPercent = currentHealthPercent;
+                    float previousHealth = m_ActualHealthPercent;
+                    m_ActualHealthPercent = currentHealthPercent;
                     
                     // Handle health change with dual fill system
-                    if (Settings.enableDualFill && _secondaryFillImage != null)
+                    if (Settings.enableDualFill && m_SecondaryFillImage != null)
                     {
                         if (healthDecreased)
                         {
                             // HEALTH DECREASED:
-                            // - Primary fill drops instantly
+                            // - Primary fill animates down quickly
                             // - Secondary fill animates down with delay
-                            _primaryFillPercent = currentHealthPercent;
+                            
+                            // Stop any existing primary fill animation
+                            if (m_PrimaryFillCoroutine != null)
+                                StopCoroutine(m_PrimaryFillCoroutine);
+                                
+                            m_PrimaryFillCoroutine = StartCoroutine(
+                                AnimatePrimaryFillDown(previousHealth, currentHealthPercent)
+                            );
                             
                             // Stop any existing secondary fill animation
-                            if (_secondaryFillCoroutine != null)
-                                StopCoroutine(_secondaryFillCoroutine);
+                            if (m_SecondaryFillCoroutine != null)
+                                StopCoroutine(m_SecondaryFillCoroutine);
                                 
-                            _secondaryFillCoroutine = StartCoroutine(
+                            m_SecondaryFillCoroutine = StartCoroutine(
                                 AnimateSecondaryFill(previousHealth, currentHealthPercent, true)
                             );
                         }
@@ -194,67 +354,80 @@ namespace Flyweight
                             // HEALTH INCREASED:
                             // - Secondary fill jumps up instantly
                             // - Primary fill animates up with delay
-                            _secondaryFillPercent = currentHealthPercent;
+                            m_SecondaryFillPercent = currentHealthPercent;
                             
                             // Stop any existing primary fill animation
-                            if (_primaryFillCoroutine != null)
-                                StopCoroutine(_primaryFillCoroutine);
+                            if (m_PrimaryFillCoroutine != null)
+                                StopCoroutine(m_PrimaryFillCoroutine);
                                 
-                            _primaryFillCoroutine = StartCoroutine(
+                            m_PrimaryFillCoroutine = StartCoroutine(
                                 AnimatePrimaryFill(previousHealth, currentHealthPercent)
                             );
                         }
                     }
                     else
                     {
-                        // If dual fill is disabled, just update normally
-                        _primaryFillPercent = currentHealthPercent;
-                        _secondaryFillPercent = currentHealthPercent;
+                        // If dual fill is disabled, just animate primary
+                        // Stop any existing primary fill animation
+                        if (m_PrimaryFillCoroutine != null)
+                            StopCoroutine(m_PrimaryFillCoroutine);
+                            
+                        m_PrimaryFillCoroutine = StartCoroutine(
+                            healthDecreased ? 
+                            AnimatePrimaryFillDown(previousHealth, currentHealthPercent) : 
+                            AnimatePrimaryFill(previousHealth, currentHealthPercent)
+                        );
                     }
                     
                     // Apply damage flash if enabled and health decreased
                     if (healthDecreased && Settings.enableDamageFlash)
                     {
-                        if (_damageFlashCoroutine != null)
-                            StopCoroutine(_damageFlashCoroutine);
+                        if (m_DamageFlashCoroutine != null)
+                            StopCoroutine(m_DamageFlashCoroutine);
                             
-                        _damageFlashCoroutine = StartCoroutine(DamageFlashEffect());
+                        m_DamageFlashCoroutine = StartCoroutine(DamageFlashEffect());
                     }
                     
-                    // Update fill instantly for simple mode
-                    if (!Settings.enableDualFill || _secondaryFillImage == null)
-                    {
-                        UpdateFillAmount(_primaryFillPercent, _secondaryFillPercent);
-                    }
-                    else
-                    {
-                        // Update fills to current values for dual fill mode
-                        UpdateFillAmount(_primaryFillPercent, _secondaryFillPercent);
-                    }
-                    
-                    _lastHealthPercent = currentHealthPercent;
+                    m_LastHealthPercent = currentHealthPercent;
                     
                     // Always update text immediately
                     UpdateHealthText();
                 }
                 
-                // Check visibility conditions
-                bool shouldBeVisible = ShouldBeVisible();
-                SetBarVisibility(shouldBeVisible);
+                // Check visibility conditions (for world-space bars only)
+                if (!m_IsBossHealthBar)
+                {
+                    bool shouldBeVisible = ShouldBeVisible();
+                    SetBarVisibility(shouldBeVisible);
+                }
                 
                 yield return null;
             }
             
             // Return to pool when target is gone
-            if (_targetEnemy == null || _targetEnemy.IsDead)
+            if (m_TargetEnemy == null || m_TargetEnemy.IsDead)
             {
-                FlyweightFactory.ReturnToPool(this);
+                if (m_IsBossHealthBar)
+                {
+                    EnemyHealthBarComponent component = m_TargetEnemy?.GetComponent<EnemyHealthBarComponent>();
+                    if (component != null)
+                    {
+                        EnemyHealthBarManager.Instance?.UnregisterBossHealthBar(component);
+                    }
+                }
+                else
+                {
+                    FlyweightFactory.ReturnToPool(this);
+                }
             }
         }
         
+        /// <summary>
+        /// Animate primary fill when health increases (slow animation with delay)
+        /// </summary>
         private IEnumerator AnimatePrimaryFill(float fromHealth, float toHealth)
         {
-            _isAnimatingPrimary = true;
+            m_IsAnimatingPrimary = true;
             
             // Wait before starting the animation (delay)
             yield return new WaitForSeconds(Settings.secondaryFillDelay);
@@ -267,24 +440,57 @@ namespace Flyweight
                 float t = timer / duration;
                 t = Mathf.SmoothStep(0, 1, t); // Smooth the animation
                 
-                _primaryFillPercent = Mathf.Lerp(fromHealth, toHealth, t);
-                UpdateFillAmount(_primaryFillPercent, _secondaryFillPercent);
+                m_PrimaryFillPercent = Mathf.Lerp(fromHealth, toHealth, t);
+                UpdateFillAmount(m_PrimaryFillPercent, m_SecondaryFillPercent);
                 
                 timer += Time.deltaTime;
                 yield return null;
             }
             
             // Ensure we end exactly at the target value
-            _primaryFillPercent = toHealth;
-            UpdateFillAmount(_primaryFillPercent, _secondaryFillPercent);
+            m_PrimaryFillPercent = toHealth;
+            UpdateFillAmount(m_PrimaryFillPercent, m_SecondaryFillPercent);
             
-            _isAnimatingPrimary = false;
-            _primaryFillCoroutine = null;
+            m_IsAnimatingPrimary = false;
+            m_PrimaryFillCoroutine = null;
+        }
+
+        /// <summary>
+        /// Animate primary fill when health decreases (quick animation)
+        /// </summary>
+        private IEnumerator AnimatePrimaryFillDown(float fromHealth, float toHealth)
+        {
+            m_IsAnimatingPrimary = true;
+            
+            float timer = 0f;
+            float duration = m_PrimaryHealthDropDuration;
+            
+            while (timer < duration)
+            {
+                float t = timer / duration;
+                t = Mathf.SmoothStep(0, 1, t); // Smooth the animation
+                
+                m_PrimaryFillPercent = Mathf.Lerp(fromHealth, toHealth, t);
+                UpdateFillAmount(m_PrimaryFillPercent, m_SecondaryFillPercent);
+                
+                timer += Time.deltaTime;
+                yield return null;
+            }
+            
+            // Ensure we end exactly at the target value
+            m_PrimaryFillPercent = toHealth;
+            UpdateFillAmount(m_PrimaryFillPercent, m_SecondaryFillPercent);
+            
+            m_IsAnimatingPrimary = false;
+            m_PrimaryFillCoroutine = null;
         }
         
+        /// <summary>
+        /// Animate secondary fill
+        /// </summary>
         private IEnumerator AnimateSecondaryFill(float fromHealth, float toHealth, bool isDecrease)
         {
-            _isAnimatingSecondary = true;
+            m_IsAnimatingSecondary = true;
             
             // For health decrease, add a delay before the secondary bar starts moving
             if (isDecrease)
@@ -309,74 +515,24 @@ namespace Flyweight
                     t = 1 - (1 - t) * (1 - t); // Ease out for increase
                 }
                 
-                _secondaryFillPercent = Mathf.Lerp(fromHealth, toHealth, t);
-                UpdateFillAmount(_primaryFillPercent, _secondaryFillPercent);
+                m_SecondaryFillPercent = Mathf.Lerp(fromHealth, toHealth, t);
+                UpdateFillAmount(m_PrimaryFillPercent, m_SecondaryFillPercent);
                 
                 timer += Time.deltaTime;
                 yield return null;
             }
             
             // Ensure we end exactly at the target value
-            _secondaryFillPercent = toHealth;
-            UpdateFillAmount(_primaryFillPercent, _secondaryFillPercent);
+            m_SecondaryFillPercent = toHealth;
+            UpdateFillAmount(m_PrimaryFillPercent, m_SecondaryFillPercent);
             
-            _isAnimatingSecondary = false;
-            _secondaryFillCoroutine = null;
+            m_IsAnimatingSecondary = false;
+            m_SecondaryFillCoroutine = null;
         }
         
-        private void UpdateFillAmount(float primaryFill, float secondaryFill)
-        {
-            // Update primary fill
-            if (_fillImage != null)
-            {
-                _fillImage.fillAmount = primaryFill;
-                
-                // Only change color if not flashing
-                if (_damageFlashCoroutine == null)
-                {
-                    _fillImage.color = GetHealthColor(primaryFill);
-                }
-            }
-            
-            // Update secondary fill if available
-            if (_secondaryFillImage != null)
-            {
-                _secondaryFillImage.fillAmount = secondaryFill;
-            }
-        }
-        
-        private void UpdateHealthText()
-        {
-            if (_healthText != null)
-            {
-                _healthText.text = $"{Mathf.CeilToInt(_targetEnemy.CurrentHealth)}/{_targetEnemy.MaxHealth}";
-            }
-        }
-        
-        private bool ShouldBeVisible()
-        {
-            // Don't show for dead enemies
-            if (_targetEnemy == null || _targetEnemy.IsDead)
-                return false;
-                
-            // Check full health hide option - only hide if not animating
-            if (Settings.hideAtFullHealth && _actualHealthPercent >= 0.99f && 
-                !_isAnimatingPrimary && !_isAnimatingSecondary)
-                return false;
-                
-            // Check camera distance
-            if (_mainCamera != null)
-            {
-                float maxDistance = Settings.maxVisibleDistance;
-                
-                float distanceToCamera = Vector3.Distance(_mainCamera.position, _targetEnemy.transform.position);
-                if (distanceToCamera > maxDistance)
-                    return false;
-            }
-            
-            return true;
-        }
-        
+        /// <summary>
+        /// Flash effect when taking damage
+        /// </summary>
         private IEnumerator DamageFlashEffect()
         {
             float duration = Settings.damageFlashDuration;
@@ -384,11 +540,11 @@ namespace Flyweight
             
             while (timer > 0)
             {
-                if (_fillImage != null)
+                if (m_FillImage != null)
                 {
                     float flashIntensity = Mathf.PingPong(timer * 10f, 1f);
-                    Color baseColor = GetHealthColor(_primaryFillPercent);
-                    _fillImage.color = Color.Lerp(baseColor, Color.white, flashIntensity);
+                    Color baseColor = GetHealthColor(m_PrimaryFillPercent);
+                    m_FillImage.color = Color.Lerp(baseColor, Color.white, flashIntensity);
                 }
                 
                 timer -= Time.deltaTime;
@@ -396,14 +552,65 @@ namespace Flyweight
             }
             
             // Reset to normal color
-            if (_fillImage != null)
+            if (m_FillImage != null)
             {
-                _fillImage.color = GetHealthColor(_primaryFillPercent);
+                m_FillImage.color = GetHealthColor(m_PrimaryFillPercent);
             }
             
-            _damageFlashCoroutine = null;
+            m_DamageFlashCoroutine = null;
+        }
+        #endregion
+        
+        #region UI Updates
+        /// <summary>
+        /// Update the fill amounts
+        /// </summary>
+        private void UpdateFillAmount(float primaryFill, float secondaryFill)
+        {
+            // Update primary fill
+            if (m_FillImage != null)
+            {
+                m_FillImage.fillAmount = primaryFill;
+                
+                // Only change color if not flashing
+                if (m_DamageFlashCoroutine == null)
+                {
+                    m_FillImage.color = GetHealthColor(primaryFill);
+                }
+            }
+            
+            // Update secondary fill if available
+            if (m_SecondaryFillImage != null)
+            {
+                m_SecondaryFillImage.fillAmount = secondaryFill;
+            }
         }
         
+        /// <summary>
+        /// Update health text
+        /// </summary>
+        private void UpdateHealthText()
+        {
+            if (m_TargetEnemy == null) return;
+            
+            string healthText = $"{Mathf.CeilToInt(m_TargetEnemy.CurrentHealth)}/{m_TargetEnemy.MaxHealth}";
+            
+            // Update legacy UI Text
+            if (m_HealthText != null)
+            {
+                m_HealthText.text = healthText;
+            }
+            
+            // Update TextMeshPro text if available (for boss bars)
+            if (m_TMPHealthText != null)
+            {
+                m_TMPHealthText.text = healthText;
+            }
+        }
+        
+        /// <summary>
+        /// Get the appropriate color based on health percentage
+        /// </summary>
         private Color GetHealthColor(float healthPercent)
         {
             if (healthPercent > Settings.healthyThreshold)
@@ -414,11 +621,14 @@ namespace Flyweight
                 return Settings.criticalColor;
         }
         
+        /// <summary>
+        /// Set bar visibility
+        /// </summary>
         private void SetBarVisibility(bool visible)
         {
-            if (_canvasGroup != null)
+            if (m_CanvasGroup != null)
             {
-                _canvasGroup.alpha = visible ? 1f : 0f;
+                m_CanvasGroup.alpha = visible ? 1f : 0f;
             }
             else
             {
@@ -426,14 +636,62 @@ namespace Flyweight
             }
         }
         
+        /// <summary>
+        /// Check if the health bar should be visible
+        /// </summary>
+        private bool ShouldBeVisible()
+        {
+            // Boss health bars are always visible when enemy is alive
+            if (m_IsBossHealthBar)
+                return m_TargetEnemy != null && !m_TargetEnemy.IsDead;
+                
+            // Don't show for dead enemies
+            if (m_TargetEnemy == null || m_TargetEnemy.IsDead)
+                return false;
+                
+            // Check full health hide option - only hide if not animating
+            if (Settings.hideAtFullHealth && m_ActualHealthPercent >= 0.99f && 
+                !m_IsAnimatingPrimary && !m_IsAnimatingSecondary)
+                return false;
+                
+            // Check camera distance for world-space bars
+            if (!m_IsBossHealthBar && m_MainCamera != null)
+            {
+                float maxDistance = Settings.maxVisibleDistance;
+                
+                float distanceToCamera = Vector3.Distance(m_MainCamera.position, m_TargetEnemy.transform.position);
+                if (distanceToCamera > maxDistance)
+                    return false;
+            }
+            
+            return true;
+        }
+        #endregion
+        
+        #region Public Methods
+        /// <summary>
+        /// Update health bar manually
+        /// </summary>
         public void UpdateHealthBar(float healthPercent)
         {
-            _actualHealthPercent = healthPercent;
-            _primaryFillPercent = healthPercent;
-            _secondaryFillPercent = healthPercent;
+            m_ActualHealthPercent = healthPercent;
+            m_PrimaryFillPercent = healthPercent;
+            m_SecondaryFillPercent = healthPercent;
             
-            UpdateFillAmount(_primaryFillPercent, _secondaryFillPercent);
+            UpdateFillAmount(m_PrimaryFillPercent, m_SecondaryFillPercent);
             UpdateHealthText();
         }
+        
+        /// <summary>
+        /// Update the health bar's position (for world-space bars)
+        /// </summary>
+        public void UpdatePosition()
+        {
+            if (m_IsBossHealthBar || m_TargetEnemy == null) return;
+            
+            transform.SetParent(m_TargetEnemy.transform);
+            transform.localPosition = m_DisplayOffset;
+        }
+        #endregion
     }
 } 
