@@ -15,6 +15,16 @@ public class AnimatorStateClipMapping : ScriptableObject
     private Dictionary<string, string> _stateToClipMap;
     private Dictionary<string, string> _clipToStateMap;
     
+    private void Awake()
+    {
+        Initialize();
+    }
+    
+    private void OnValidate()
+    {
+        Initialize();
+    }
+    
     public void Initialize()
     {
         _stateToClipMap = new Dictionary<string, string>();

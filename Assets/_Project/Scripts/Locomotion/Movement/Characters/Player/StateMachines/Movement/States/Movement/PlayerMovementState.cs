@@ -24,7 +24,7 @@ namespace LocomotionSystem
         {
             base.Enter();
             
-            StateMachine.Player.WeaponManager?.ClearAllWeapons();
+            StateMachine.Player.SocketManager?.ClearAllWeapons();
         }
 
         public override void PhysicsUpdate()

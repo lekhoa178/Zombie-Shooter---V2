@@ -15,9 +15,9 @@ MonoBehaviour:
   Shape: 1
   FallbackToDefaultOnNoHits: 0
   Radius: 1
-  ArcAngle: 120
+  ArcAngle: 360
   BoxSize: {x: 5, y: 0.5, z: 5}
-  Offset: {x: 0, y: 0, z: 1}
+  Offset: {x: 0, y: 0, z: 0}
   OffsetFromColliderCenter: 1
   Damage: 10
   EnableHitStop: 0
@@ -30,13 +30,18 @@ MonoBehaviour:
   HitVfxSettings: {fileID: 0}
   OverrideHitVfxScale: 0
   HitVfxScale: {x: 1, y: 1, z: 1}
-  EnableAdditionalVfx: 0
-  AdditionalVfxSettings: {fileID: 11400000, guid: 262cbe435cb596544a797138cb8cc4ad, type: 2}
-  SpawnAtHitLocation: 1
-  SpawnAtPlayerLocation: 0
-  AdditionalVfxOffset: {x: 0, y: 0, z: 0}
+  EnableAdditionalVfx: 1
+  AdditionalVfxSettings: {fileID: 11400000, guid: 9b363f54d2ddf0047abba9b5a30f7b91, type: 2}
+  SpawnEvenWithoutHit: 1
+  SpawnPerCollision: 0
+  SpawnAtHitLocation: 0
+  SpawnAtPlayerLocation: 1
+  AdditionalVfxOffset: {x: 0, y: 0.25, z: 0}
+  AdditionalVfxRotation: {x: 0, y: 0, z: 0}
+  FaceHitDirection: 0
+  InheritPlayerRotation: 0
   OverrideAdditionalVfxScale: 1
-  AdditionalVfxScale: {x: 1, y: 1, z: 1}
+  AdditionalVfxScale: {x: 0.25, y: 0.25, z: 0.25}
   AdditionalVfxDelay: 0
   EnableCriticalHit: 0
   CriticalHitChance: 10
@@ -70,3 +75,55 @@ MonoBehaviour:
   HitTiming: 0.5
   EnableAttackIFrames: 0
   AttackIFrameDuration: 0.2
+  UseWeapon: 0
+  WeaponPrefab: {fileID: 0}
+  WeaponSlot: 2
+  RemoveWeaponAfterAttack: 1
+  WeaponPositionOffset: {x: 0, y: 0, z: 0}
+  WeaponRotationOffset: {x: 0, y: 0, z: 0}
+  OverrideTargetDetectionSettings: 0
+  DetectionRange: 10
+  DotProductThreshold: 0.15
+  EnablePushBack: 1
+  PushBackDistance: 2
+  PushBackDuration: 0.2
+  PushBackCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  DeathPushBackMultiplier: 2
+  DestroyProjectiles: 0
+  ProjectileLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  ProjectileDestructionVfx: {fileID: 0}
+  MaxProjectilesToDestroy: 0
+  ProjectileDetectionRangeMultiplier: 1
+  ProjectileDestructionEffect: 0
+  ReflectionDirection: {x: 0, y: 0, z: 1}
+  ReflectionSpeedMultiplier: 1
+  ProjectileDamage: 10
+  OverrideProjectileDamage: 1
+  EnableStun: 1
+  StunThresholdDamage: 5
+  StunDuration: 1.5

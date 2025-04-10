@@ -44,6 +44,56 @@ public static class AnimatorStateMapper
         }
     }
     
+    [MenuItem("Assets/Update Animator State Mapping", true)]
+    private static bool ValidateUpdateAnimatorMapping()
+    {
+        return Selection.activeObject is AnimatorStateClipMapping;
+    }
+    
+    [MenuItem("Assets/Update Animator State Mapping")]
+    public static void UpdateAnimatorMapping()
+    {
+        var mapping = Selection.activeObject as AnimatorStateClipMapping;
+        if (mapping == null) return;
+        
+        // Prompt user to select the animator controller
+        string path = EditorUtility.OpenFilePanel("Select Animator Controller", "Assets", "controller");
+        if (string.IsNullOrEmpty(path)) return;
+        
+        // Convert to asset path
+        path = FileUtil.GetProjectRelativePath(path);
+        var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+        if (controller == null) return;
+        
+        // Update the mapping
+        UpdateMappingFromController(mapping, controller);
+    }
+    
+    /// <summary>
+    /// Updates an existing AnimatorStateClipMapping from an AnimatorController programmatically.
+    /// Can be called from other scripts without requiring user interaction.
+    /// </summary>
+    /// <param name="mapping">The mapping to update</param>
+    /// <param name="controller">The animator controller to read from</param>
+    public static void UpdateMappingFromController(AnimatorStateClipMapping mapping, AnimatorController controller)
+    {
+        if (mapping == null || controller == null) return;
+        
+        // Clear existing mappings
+        mapping.stateClipPairs.Clear();
+        
+        // Process all layers in the animator controller
+        foreach (var layer in controller.layers)
+        {
+            ProcessStateMachine(layer.stateMachine, mapping);
+        }
+        
+        // Save the updated mapping
+        EditorUtility.SetDirty(mapping);
+        AssetDatabase.SaveAssets();
+        Debug.Log($"Updated animator mapping: {mapping.name}");
+    }
+    
     private static void ProcessStateMachine(AnimatorStateMachine stateMachine, AnimatorStateClipMapping mapping)
     {
         // Process all states in this state machine

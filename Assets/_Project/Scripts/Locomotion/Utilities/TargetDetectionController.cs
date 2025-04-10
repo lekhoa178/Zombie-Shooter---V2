@@ -64,6 +64,12 @@ namespace LocomotionSystem
             {
             Input = FindAnyObjectByType<PlayerInput>();
             }
+
+            // Subscribe to EnemyFactory events
+            if (EnemyFactory.Instance != null)
+            {
+                EnemyFactory.Instance.OnEnemySpawned.AddListener(HandleNewEnemySpawned);
+            }
         }
 
         private void Start()
@@ -84,6 +90,12 @@ namespace LocomotionSystem
             {
                 StartDetectionRoutine();
             }
+
+            // Subscribe to EnemyFactory events
+            if (EnemyFactory.Instance != null)
+            {
+                EnemyFactory.Instance.OnEnemySpawned.AddListener(HandleNewEnemySpawned);
+            }
         }
 
         private void OnDisable()
@@ -96,11 +108,28 @@ namespace LocomotionSystem
                 StopCoroutine(detectionRoutine);
                 detectionRoutine = null;
             }
+
+            // Unsubscribe from EnemyFactory events
+            if (EnemyFactory.Instance != null)
+            {
+                EnemyFactory.Instance.OnEnemySpawned.RemoveListener(HandleNewEnemySpawned);
+            }
         }
 
         #endregion
 
         #region Target Detection and Management
+
+        /// <summary>
+        /// Handle newly spawned enemies from EnemyFactory
+        /// </summary>
+        private void HandleNewEnemySpawned(BaseEnemy _enemy)
+        {
+            if (_enemy != null && IsInLayerMask(_enemy.gameObject.layer, targetLayers))
+            {
+                RegisterTarget(_enemy.transform);
+            }
+        }
 
         /// <summary>
         /// Scan the scene for available targets using the targetLayers
@@ -157,15 +186,86 @@ namespace LocomotionSystem
         {
             while (true)
             {
-                yield return new WaitForSeconds(detectionInterval);
+                // Scan for new targets within range
+                ScanForTargetsInRange();
                 
-                // First validate our current target is still valid
+                // Validate our current target is still valid
                 ValidateCurrentTarget();
                 
-                // Then try to get a new target if we don't have one or if we're allowed to change targets
+                // Try to get a new target if we don't have one or if we're allowed to change targets
                 if (currentTarget == null || canChangeTarget)
                 {
                     GetTargetInInputDirection();
+                }
+                
+                yield return new WaitForSeconds(detectionInterval);
+            }
+        }
+        
+        /// <summary>
+        /// Scan for targets within detection range around the player
+        /// </summary>
+        private void ScanForTargetsInRange()
+        {
+            // Get all colliders on the target layers within detection range
+            Collider[] targetColliders = Physics.OverlapSphere(transform.position, detectionRange, targetLayers);
+            
+            // Create a set of current targets to track which ones are still valid
+            HashSet<Transform> currentValidTargets = new HashSet<Transform>();
+            
+            // Process each collider
+            foreach (var collider in targetColliders)
+            {
+                if (collider == null || !collider.gameObject.activeInHierarchy)
+                    continue;
+                    
+                GameObject targetObject = collider.gameObject;
+                Transform targetTransform = targetObject.transform;
+                
+                // Add to our set of current valid targets
+                currentValidTargets.Add(targetTransform);
+                
+                // If not already in our available targets, add it
+                if (!availableTargets.Contains(targetTransform))
+                {
+                    availableTargets.Add(targetTransform);
+                    TrySubscribeToTargetEvents(targetObject);
+                    
+                    if (debug)
+                    {
+                        Debug.Log($"New target detected and added: {targetObject.name}");
+                    }
+                }
+            }
+            
+            // Create a list of targets to remove (ones that are no longer in range or active)
+            List<Transform> targetsToRemove = new List<Transform>();
+            
+            // Check which existing targets are no longer valid
+            foreach (var existingTarget in availableTargets)
+            {
+                if (existingTarget == null || 
+                    !existingTarget.gameObject.activeInHierarchy ||
+                    !currentValidTargets.Contains(existingTarget))
+                {
+                    targetsToRemove.Add(existingTarget);
+                }
+            }
+            
+            // Remove invalid targets
+            foreach (var targetToRemove in targetsToRemove)
+            {
+                availableTargets.Remove(targetToRemove);
+                
+                // If it was the current target, clear it
+                if (currentTarget != null && currentTarget.transform == targetToRemove)
+                {
+                    SetTarget(null);
+                }
+                
+                if (debug && targetToRemove != null)
+                {
+                    Debug.Log($"Target removed: {targetToRemove.name}");
                 }
             }
         }
@@ -259,7 +359,7 @@ namespace LocomotionSystem
         private void GetTargetInInputDirection()
         {
             if (!canChangeTarget) return;
-            if (Input == null) return;
+            if (!Input || Input.PlayerActions.Movement == null) return;
 
             var moveDirection = Input.PlayerActions.Movement.ReadValue<Vector2>();
             
@@ -279,7 +379,7 @@ namespace LocomotionSystem
             }
             
             var inputDirection = new Vector3(moveDirection.x, 0, moveDirection.y);
-            
+
             if (mainCamera != null)
             {
             inputDirection = mainCamera.transform.TransformDirection(inputDirection);
@@ -292,10 +392,11 @@ namespace LocomotionSystem
                     (Vector3.Distance(transform.position, closestTarget.position)) <= detectionRange)
                 {
                     SetTarget(closestTarget.gameObject);
-                    
+
                     if (debug)
                     {
-                        Debug.Log($"Found target: {currentTarget.name} at distance {Vector3.Distance(transform.position, closestTarget.position)}");
+                        Debug.Log(
+                            $"Found target: {currentTarget.name} at distance {Vector3.Distance(transform.position, closestTarget.position)}");
                     }
                 }
             }
@@ -316,7 +417,7 @@ namespace LocomotionSystem
             foreach (var target in validTargets)
             {
                 // Skip null or inactive targets
-                if (target == null || !target.gameObject.activeInHierarchy) 
+                if (!target || !target.gameObject.activeInHierarchy) 
                     continue;
                 
                 // Skip targets not on the target layers

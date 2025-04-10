@@ -1,12 +1,25 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditor.Animations;
+#endif
 
 namespace LocomotionSystem
 {
     [Serializable]
     public class PlayerAnimationData
     {
+        public static class AnimationLayers
+        {
+            public const int Movement = 0; // state machine architecture-based
+            public const int Combat = 1; // state machine architecture-based
+            public const int Interaction = 2; // triggering via play / cross-fade
+
+            public static readonly int[] AdditiveLayers = { Interaction };
+        }
+
         [Header("State Group Parameter Names")] [SerializeField]
         private string groundedParameterName = "Grounded";
 
@@ -38,16 +51,18 @@ namespace LocomotionSystem
         private string normalAttackParameterName = "isNormalAttacking";
 
         [SerializeField] private string chargeAttackParameterName = "isChargeAttacking";
-        
-        [Header("Damage Parameter Names")]
-        [SerializeField] private string damagedParameterName = "isDamaged";
+
+        [Header("Damage Parameter Names")] [SerializeField]
+        private string damagedParameterName = "isDamaged";
 
         [Header("Util Parameter Names")] [SerializeField]
         private string rotationName = "Rotation";
 
         [SerializeField] private string jumpIndexName = "JumpIndex";
-        
+
+        [Header("Animator Mapping")]
         [SerializeField] private AnimatorStateClipMapping animatorMapping;
+        [SerializeField] private bool updateMappingOnInitialize = true;
 
 
         public int GroundedParameterHash { get; private set; }
@@ -76,9 +91,9 @@ namespace LocomotionSystem
 
         public int RotationHash { get; private set; }
         public int JumpIndexHash { get; private set; }
-        
+
         public int DamagedParameterHash { get; private set; }
-        
+
         public void Initialize(Player player)
         {
             // *** State Group Parameter Names ***
@@ -112,14 +127,41 @@ namespace LocomotionSystem
             // *** Util Parameter Names ***
             RotationHash = Animator.StringToHash(rotationName);
             JumpIndexHash = Animator.StringToHash(jumpIndexName);
-            
+
             // *** Damage Parameter Names ***
             DamagedParameterHash = Animator.StringToHash(damagedParameterName);
 
             if (player == null || player.Animator == null) return;
-            
+
+            // Update animator mapping from controller if needed
+            if (updateMappingOnInitialize && animatorMapping != null)
+            {
+                UpdateAnimatorMapping(player.Animator);
+            }
+
             InitializeOverrideData(player.Animator);
         }
+
+        #if UNITY_EDITOR
+        /// <summary>
+        /// Updates the animator mapping from the animator controller.
+        /// </summary>
+        /// <param name="animator">The animator with the controller to map.</param>
+        public void UpdateAnimatorMapping(Animator animator)
+        {
+            if (!animator || !animatorMapping) return;
+            
+            var controller = animator.runtimeAnimatorController as AnimatorController;
+            if (controller == null)
+            {
+                Debug.LogWarning("Animator does not have an AnimatorController.");
+                return;
+            }
+            
+            AnimatorStateMapper.UpdateMappingFromController(animatorMapping, controller);
+            Debug.Log("Updated animator mapping on initialize.");
+        }
+        #endif
 
         private void InitializeOverrideData(Animator animator)
         {
@@ -141,11 +183,11 @@ namespace LocomotionSystem
         public void OverrideAnimation(string stateName, AnimationClip newClip)
         {
             if (string.IsNullOrEmpty(stateName) || newClip == null) return;
-    
+
             // Get the runtime animator controller
             var controller = _animatorOverrideController;
             if (controller == null) return;
-    
+
             // Try to find clip name from state name using the mapping
             string clipName = animatorMapping.GetClipName(stateName);
             if (!string.IsNullOrEmpty(clipName))
@@ -161,7 +203,7 @@ namespace LocomotionSystem
                     }
                 }
             }
-    
+
             // Fallback to the original approach if mapping doesn't work
             foreach (var clip in _animClips)
             {
@@ -173,13 +215,48 @@ namespace LocomotionSystem
                 }
             }
         }
-        
+
         // Add this method to reset to original animations
         public void ResetAnimationOverrides()
         {
             foreach (var pair in _clipOverrides)
             {
                 _animatorOverrideController[pair.Key] = pair.Value;
+            }
+        }
+
+        public void PlayAnimation(Animator animator, string stateName, float duration = 0f,
+            int layer = AnimationLayers.Interaction)
+        {
+            if (animator == null) return;
+
+            var clipName = animatorMapping.GetClipName(stateName);
+            if (!string.IsNullOrEmpty(clipName))
+            {
+                animator.SetLayerWeight(layer, 1f);
+
+                if (Mathf.Approximately(duration, 0))
+                {
+                    animator.Play(clipName, layer);
+                }
+                else
+                {
+                    animator.CrossFade(clipName, duration, layer);
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"No clip found for state {stateName}");
+            }
+        }
+
+        public void ResetAdditiveLayers(Animator animator)
+        {
+            if (animator == null) return;
+
+            foreach (var layer in AnimationLayers.AdditiveLayers)
+            {
+                animator.SetLayerWeight(layer, 0f);
             }
         }
     }

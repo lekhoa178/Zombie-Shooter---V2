@@ -2,8 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Climbing;
+using LocomotionSystem.LootSystem;
 using MoreMountains.Feedbacks;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace LocomotionSystem
 {
@@ -26,6 +28,12 @@ namespace LocomotionSystem
         [field: Header("Hit boxes")]
         [field: SerializeField] public List<GameObject> HitSockets { get; private set; }
         
+        [field: Header("Loot & Weapons")]
+        [field: SerializeField] public InputActionReference CollectAction { get; private set; }
+        [field: SerializeField] public InputActionReference WeaponSwitch1Action { get; private set; }
+        [field: SerializeField] public InputActionReference WeaponSwitch2Action { get; private set; }
+        [field: SerializeField] public InputActionReference WeaponSwitch3Action { get; private set; }
+        
         [field: SerializeField] public MMF_Player DashEndFeedback { get; private set; }
         
         public Rigidbody Rigidbody { get; private set; }
@@ -44,7 +52,7 @@ namespace LocomotionSystem
         public GameObject TargetAvatar { get; private set; }
         public SkinnedMeshRenderer TargetAvatarRenderer { get; private set; }
         
-        public WeaponManager WeaponManager { get; private set; }
+        public SocketManager SocketManager { get; private set; }
         
         // Components for stun and knockback
         private PlayerStunHandler _stunHandler;
@@ -96,7 +104,7 @@ namespace LocomotionSystem
             TargetDetector = GetComponent<TargetDetectionController>();
             LedgeDetector = GetComponent<LedgeDetectionController>();
             
-            WeaponManager = GetComponent<WeaponManager>();
+            SocketManager = GetComponent<SocketManager>();
             
             // Get or add the stun and knockback handlers
             _stunHandler = GetComponent<PlayerStunHandler>();
@@ -122,6 +130,12 @@ namespace LocomotionSystem
 
             TargetAvatar = transform.GetChild(0).gameObject;
             TargetAvatarRenderer = TargetAvatar.GetComponentInChildren<SkinnedMeshRenderer>();
+            
+            // Initialize weapon switch input actions
+            SetupWeaponSwitchInputs();
+            
+            // Initialize collect input action
+            SetupCollectInput();
         }
 
         private void Start()
@@ -318,5 +332,73 @@ namespace LocomotionSystem
                 _knockbackHandler.HandleKnockbackEvent(context);
             }
         }
+        
+        #region Weapon System
+        private void SetupWeaponSwitchInputs()
+        {
+            if (WeaponSwitch1Action != null)
+            {
+                WeaponSwitch1Action.action.performed += ctx => SwitchWeapon(0);
+                WeaponSwitch1Action.action.Enable();
+            }
+            
+            if (WeaponSwitch2Action != null)
+            {
+                WeaponSwitch2Action.action.performed += ctx => SwitchWeapon(1);
+                WeaponSwitch2Action.action.Enable();
+            }
+            
+            if (WeaponSwitch3Action != null)
+            {
+                WeaponSwitch3Action.action.performed += ctx => SwitchWeapon(2);
+                WeaponSwitch3Action.action.Enable();
+            }
+        }
+        
+        private void SetupCollectInput()
+        {
+            if (CollectAction != null)
+            {
+                CollectAction.action.Enable();
+            }
+        }
+        
+        /// <summary>
+        /// Switch to a weapon slot
+        /// </summary>
+        public void SwitchWeapon(int _slot)
+        {
+            if (WeaponManager.Instance != null)
+            {
+                WeaponManager.Instance.SwitchWeapon(this, _slot);
+            }
+        }
+        
+        /// <summary>
+        /// Get the currently equipped weapon
+        /// </summary>
+        public IWeaponCollectable GetEquippedWeapon()
+        {
+            if (WeaponManager.Instance != null)
+            {
+                return WeaponManager.Instance.GetEquippedWeapon(this);
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Get the weapon inventory
+        /// </summary>
+        public List<IWeaponCollectable> GetWeaponInventory()
+        {
+            if (WeaponManager.Instance != null)
+            {
+                return WeaponManager.Instance.GetWeaponInventory(this);
+            }
+            
+            return new List<IWeaponCollectable>();
+        }
+        #endregion
     }
 }

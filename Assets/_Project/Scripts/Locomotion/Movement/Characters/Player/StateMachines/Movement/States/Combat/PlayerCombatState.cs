@@ -39,7 +39,7 @@ namespace LocomotionSystem
             var config = StateMachine.Player.Data.ComboConfig?.AttackConfigs[StateMachine.ReusableData.CurrentComboIndex];
             if (config)
             {
-                StateMachine.Player.WeaponManager.HandleWeaponForAttack(config);
+                StateMachine.Player.SocketManager.HandleWeaponForAttack(config);
             }
             
             if (config && config.EnableAttackIFrames)
@@ -250,12 +250,14 @@ namespace LocomotionSystem
                 // Get hit position
                 Vector3 hitPosition = collider.bounds.center - StateMachine.Player.transform.forward * collider.bounds.extents.z 
                                     + Vector3.up * Random.Range(-0.1f, 0.1f) - Vector3.up * 0.2f;
+                // Calculate hit direction
+                var hitDirection = StateMachine.Player.transform.forward;
                 
                 // Use config VFX if available, otherwise use default
                 VFXFlyweightHelper.SpawnVfxAtPosition(
                     attackConfig.HitVfxSettings ? attackConfig.HitVfxSettings : StateMachine.Player.Data.DefaultHitVfxSettings, 
                     hitPosition, 
-                    Quaternion.identity, 
+                    Quaternion.LookRotation(hitDirection), 
                     attackConfig.GetHitVfxScale()
                 );
 
@@ -264,9 +266,6 @@ namespace LocomotionSystem
                 // Process critical hit chance
                 bool isCriticalHit = attackConfig.EnableCriticalHit && Random.Range(0f, 100f) <= attackConfig.CriticalHitChance;
                 float finalDamage = isCriticalHit ? attackConfig.Damage * attackConfig.CriticalHitDamageMultiplier : attackConfig.Damage;
-                
-                // Calculate hit direction
-                var hitDirection = StateMachine.Player.transform.forward;
                 
                 // Create a hit context if available
                 if (typeof(HitContext).IsClass)
@@ -332,7 +331,7 @@ namespace LocomotionSystem
                 // Show critical hit VFX if applicable
                 if (isCriticalHit && attackConfig.CriticalHitVfxSettings)
                 {
-                    VFXFlyweightHelper.SpawnVfxAtPosition(attackConfig.CriticalHitVfxSettings, hitPosition, Quaternion.identity, attackConfig.CriticalVfxScale);
+                    VFXFlyweightHelper.SpawnVfxAtPosition(attackConfig.CriticalHitVfxSettings, hitPosition, Quaternion.LookRotation(hitDirection), attackConfig.CriticalVfxScale);
                 }
                 
                 // Apply hit stop with new configuration
@@ -542,7 +541,7 @@ namespace LocomotionSystem
             var config = StateMachine.Player.Data.ComboConfig?.AttackConfigs[StateMachine.ReusableData.CurrentComboIndex];
             if (config != null && config.RemoveWeaponAfterAttack)
             {
-                StateMachine.Player.WeaponManager.ClearAllWeapons();
+                StateMachine.Player.SocketManager.ClearAllWeapons();
             }
             
             Debug.Log("Finish Attack");

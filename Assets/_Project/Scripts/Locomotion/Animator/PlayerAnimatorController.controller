@@ -782,7 +782,7 @@ AnimatorStateMachine:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Damage Layer
+  m_Name: Interaction Layer
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 6587701506621986629}
@@ -1309,7 +1309,7 @@ AnimatorStateMachine:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Attack Layer
+  m_Name: Combat Layer
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: -2782054376350091308}
@@ -2190,7 +2190,7 @@ AnimatorController:
     m_SyncedLayerAffectsTiming: 0
     m_Controller: {fileID: 9100000}
   - serializedVersion: 5
-    m_Name: Attack Layer
+    m_Name: Combat Layer
     m_StateMachine: {fileID: -3708224489378473270}
     m_Mask: {fileID: 0}
     m_Motions: []
@@ -2202,7 +2202,7 @@ AnimatorController:
     m_SyncedLayerAffectsTiming: 0
     m_Controller: {fileID: 9100000}
   - serializedVersion: 5
-    m_Name: Damage Layer
+    m_Name: Interaction Layer
     m_StateMachine: {fileID: -5200665449419058522}
     m_Mask: {fileID: 0}
     m_Motions: []

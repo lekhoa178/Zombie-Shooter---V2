@@ -43,3 +43,5 @@ MonoBehaviour:
     clipName: Combo_02-4
   - stateName: ChargeAttack
     clipName: Charge_Attack_Loop
+  - stateName: Damaged
+    clipName: damaged_front

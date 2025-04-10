@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LocomotionSystem
 {
-    public class WeaponManager : MonoBehaviour
+    public class SocketManager : MonoBehaviour
     {
         [SerializeField] private WeaponSocket leftHandSocket;
         [SerializeField] private WeaponSocket rightHandSocket;

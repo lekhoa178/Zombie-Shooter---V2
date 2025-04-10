@@ -1,0 +1,129 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7666e94212cf1249b02457f2f81eba0, type: 3}
+  m_Name: GreatSwordAttack_2
+  m_EditorClassIdentifier: 
+  Shape: 1
+  FallbackToDefaultOnNoHits: 0
+  Radius: 2
+  ArcAngle: 180
+  BoxSize: {x: 1, y: 0.5, z: 1}
+  Offset: {x: 0, y: 0, z: 0.2}
+  OffsetFromColliderCenter: 1
+  Damage: 10
+  EnableHitStop: 0
+  HitStopDuration: 0.1
+  HitStopTimeScale: 0.1
+  HitStopAffects: 2
+  EnableCameraShake: 1
+  CameraShakeIntensity: 0.1
+  CameraShakeDuration: 0.1
+  HitVfxSettings: {fileID: 11400000, guid: 6f725a0d84954c94ab7f0a8574c1783a, type: 2}
+  OverrideHitVfxScale: 1
+  HitVfxScale: {x: 0.15, y: 0.15, z: 0.15}
+  EnableAdditionalVfx: 1
+  AdditionalVfxSettings: {fileID: 11400000, guid: a37b6c71a70bca3419a335dfe92eeb3a, type: 2}
+  SpawnEvenWithoutHit: 1
+  SpawnPerCollision: 0
+  SpawnAtHitLocation: 0
+  SpawnAtPlayerLocation: 1
+  AdditionalVfxOffset: {x: 0, y: 0.5, z: 0}
+  AdditionalVfxRotation: {x: 0, y: 220, z: 180}
+  FaceHitDirection: 0
+  InheritPlayerRotation: 1
+  OverrideAdditionalVfxScale: 1
+  AdditionalVfxScale: {x: 0.25, y: 0.25, z: 0.25}
+  AdditionalVfxDelay: 0
+  EnableCriticalHit: 0
+  CriticalHitChance: 10
+  CriticalHitDamageMultiplier: 2
+  CriticalHitVfxSettings: {fileID: 0}
+  OverrideCriticalVfxScale: 1
+  CriticalVfxScale: {x: 1, y: 1, z: 1}
+  CriticalHitColor: {r: 1, g: 0, b: 0, a: 1}
+  EnableAreaEffect: 0
+  AreaEffectRadius: 2
+  AreaEffectVfxSettings: {fileID: 11400000, guid: 262cbe435cb596544a797138cb8cc4ad, type: 2}
+  OverrideAreaEffectVfxScale: 0
+  AreaEffectVfxScale: {x: 1, y: 1, z: 1}
+  AreaEffectDamage: 5
+  EnableAreaHitStop: 1
+  AreaHitStopDuration: 0.05
+  AreaHitStopTimeScale: 0.2
+  AreaHitStopAffects: 2
+  EnableAreaCameraShake: 1
+  AreaCameraShakeIntensity: 0.08
+  AreaCameraShakeDuration: 0.08
+  DebugEnabled: 1
+  DebugColor: {r: 1, g: 0, b: 0, a: 1}
+  DebugDuration: 1
+  UseCustomAnimation: 1
+  AnimationClip: {fileID: 7400002, guid: 821e96bef080fcd42b74f33b691f5c10, type: 3}
+  AnimatorStateName: NormalAttack 2
+  OverrideAnimationSpeed: 1
+  AnimationSpeedMultiplier: 1
+  UseRootMotion: 1
+  HitTiming: 0
+  EnableAttackIFrames: 1
+  AttackIFrameDuration: 0.5
+  UseWeapon: 1
+  WeaponPrefab: {fileID: 813804303346526664, guid: 582eddc09314f1746bcd616037b66eb4, type: 3}
+  WeaponSlot: 2
+  RemoveWeaponAfterAttack: 0
+  WeaponPositionOffset: {x: 0, y: 0, z: 0}
+  WeaponRotationOffset: {x: 0, y: 0, z: 0}
+  OverrideTargetDetectionSettings: 0
+  DetectionRange: 10
+  DotProductThreshold: 0.15
+  EnablePushBack: 1
+  PushBackDistance: 0.5
+  PushBackDuration: 0.2
+  PushBackCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  DeathPushBackMultiplier: 2
+  DestroyProjectiles: 1
+  ProjectileLayerMask:
+    serializedVersion: 2
+    m_Bits: 8192
+  ProjectileDestructionVfx: {fileID: 11400000, guid: e37f2caa0250b9844a29d1db9e5abcc8, type: 2}
+  MaxProjectilesToDestroy: 0
+  ProjectileDetectionRangeMultiplier: 1.2
+  ProjectileDestructionEffect: 0
+  ReflectionDirection: {x: 0, y: 0, z: 1}
+  ReflectionSpeedMultiplier: 1
+  ProjectileDamage: 10
+  OverrideProjectileDamage: 1
+  EnableStun: 1
+  StunThresholdDamage: 5
+  StunDuration: 1.7

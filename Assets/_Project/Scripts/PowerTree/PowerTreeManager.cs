@@ -210,4 +210,24 @@ namespace PowerTree
 
         #endregion
     }
+    
+    /// <summary>
+    /// Serializable data for saving player's power tree progress
+    /// </summary>
+    [System.Serializable]
+    public class PowerTreeData
+    {
+        public int aetherShards;
+        public List<PowerNodeState> unlockedNodes = new List<PowerNodeState>();
+    }
+
+    /// <summary>
+    /// State of a specific power node for the player
+    /// </summary>
+    [System.Serializable]
+    public class PowerNodeState
+    {
+        public string nodeID;
+        public int level;
+    }
 }

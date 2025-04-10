@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DG.Tweening;
 using Locomotion;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -36,7 +37,8 @@ namespace LocomotionSystem
             float attackAnimSpeedMultiplier = timingInfo.animSpeedMultiplier;
             
             // Apply root motion setting from configuration
-            StateMachine.Player.Animator.applyRootMotion = !config || config.UseRootMotion;
+            bool useRootMotion = !config || config.UseRootMotion;
+            StateMachine.Player.Animator.applyRootMotion = useRootMotion;
             
             // Calculate base animation speed from attack speed
             float finalAnimSpeed = attackAnimSpeedMultiplier;
@@ -65,13 +67,19 @@ namespace LocomotionSystem
                 Debug.Log($"Attack animation speed scaled to: {finalAnimSpeed:F2}x due to high attack speed");
             }
             
+            // If no target and we have movement input, apply initial rotation
             if (!StateMachine.Player.TargetDetector.GetCurrentTarget())
             {
                 if (StateMachine.ReusableData.MovementInput != Vector2.zero)
                 {
-                    float directionAngle = UpdateTargetRotation(StateMachine.ReusableData.MovementInput);
-                    RotateTowardsTargetRotation(true);
-                    
+                    float directionAngle = Mathf.Atan2(StateMachine.ReusableData.MovementInput.x, StateMachine.ReusableData.MovementInput.y) * Mathf.Rad2Deg;
+                    directionAngle += StateMachine.Player.MainCameraTransform.eulerAngles.y;
+
+                    StateMachine.Player.transform.DOLocalRotate(
+                        new Vector3(0, directionAngle, 0),
+                        0f,
+                        RotateMode.Fast
+                    ).SetEase(Ease.Linear);
                 }
             }
             
@@ -86,7 +94,7 @@ namespace LocomotionSystem
             IsAttackFrame = false;
             IsFinished = false;
         }
-
+        
         private void SetTargetingParameters(AttackHitConfiguration config)
         {
             // Get default values from combo config

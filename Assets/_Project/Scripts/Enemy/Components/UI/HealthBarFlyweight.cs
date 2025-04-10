@@ -397,8 +397,8 @@ namespace Flyweight
                 // Check visibility conditions (for world-space bars only)
                 if (!m_IsBossHealthBar)
                 {
-                    bool shouldBeVisible = ShouldBeVisible();
-                    SetBarVisibility(shouldBeVisible);
+                bool shouldBeVisible = ShouldBeVisible();
+                SetBarVisibility(shouldBeVisible);
                 }
                 
                 yield return null;
@@ -416,8 +416,8 @@ namespace Flyweight
                     }
                 }
                 else
-                {
-                    FlyweightFactory.ReturnToPool(this);
+            {
+                FlyweightFactory.ReturnToPool(this);
                 }
             }
         }
