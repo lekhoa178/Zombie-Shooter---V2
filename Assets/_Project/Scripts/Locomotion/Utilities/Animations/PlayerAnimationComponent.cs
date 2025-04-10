@@ -107,9 +107,8 @@ namespace LocomotionSystem
         // ** Animation Event - Damage State ** // -> temporarily
         public void ResetDamagedState()
         {
-            Animator.SetBool(AnimationData.DamagedParameterHash, false);
+            player.AnimationData.StopInteractionAnimation(Animator);
         }
-
 
         // *** Utility Methods ***
         public void SetAnimationFloatParameter(int parameterHash, float value, float dampTime = 0f, float deltaTime = 0f)

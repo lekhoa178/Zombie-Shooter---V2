@@ -16,8 +16,6 @@ namespace LocomotionSystem
             public const int Movement = 0; // state machine architecture-based
             public const int Combat = 1; // state machine architecture-based
             public const int Interaction = 2; // triggering via play / cross-fade
-
-            public static readonly int[] AdditiveLayers = { Interaction };
         }
 
         [Header("State Group Parameter Names")] [SerializeField]
@@ -52,9 +50,6 @@ namespace LocomotionSystem
 
         [SerializeField] private string chargeAttackParameterName = "isChargeAttacking";
 
-        [Header("Damage Parameter Names")] [SerializeField]
-        private string damagedParameterName = "isDamaged";
-
         [Header("Util Parameter Names")] [SerializeField]
         private string rotationName = "Rotation";
 
@@ -64,6 +59,9 @@ namespace LocomotionSystem
         [SerializeField] private AnimatorStateClipMapping animatorMapping;
         [SerializeField] private bool updateMappingOnInitialize = true;
 
+        [Header("Interaction State Names")]
+        [field: SerializeField] public string DamagedStateName { get; private set; } = "Damaged";
+        [field: SerializeField] public string CollectStateName { get; private set; } = "Collect";
 
         public int GroundedParameterHash { get; private set; }
         public int MovingParameterHash { get; private set; }
@@ -91,8 +89,16 @@ namespace LocomotionSystem
 
         public int RotationHash { get; private set; }
         public int JumpIndexHash { get; private set; }
+        
+        // Track currently playing interaction animation
+        private string m_CurrentInteractionAnimation;
+        private float m_CurrentInteractionNormalizedTime;
+        private bool m_IsInteractionActive;
 
-        public int DamagedParameterHash { get; private set; }
+        // Interaction animation event callbacks
+        public delegate void InteractionAnimationEvent(string stateName);
+        public event InteractionAnimationEvent OnInteractionAnimationStarted;
+        public event InteractionAnimationEvent OnInteractionAnimationCompleted;
 
         public void Initialize(Player player)
         {
@@ -127,16 +133,26 @@ namespace LocomotionSystem
             // *** Util Parameter Names ***
             RotationHash = Animator.StringToHash(rotationName);
             JumpIndexHash = Animator.StringToHash(jumpIndexName);
-
-            // *** Damage Parameter Names ***
-            DamagedParameterHash = Animator.StringToHash(damagedParameterName);
-
+            
             if (player == null || player.Animator == null) return;
 
             // Update animator mapping from controller if needed
             if (updateMappingOnInitialize && animatorMapping != null)
             {
-                UpdateAnimatorMapping(player.Animator);
+                try
+                {
+                    #if UNITY_EDITOR
+                    // Only try to update mapping in editor mode
+                    if (Application.isEditor && !Application.isPlaying)
+                    {
+                        UpdateAnimatorMapping(player.Animator);
+                    }
+                    #endif
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"Failed to update animator mapping: {e.Message}");
+                }
             }
 
             InitializeOverrideData(player.Animator);
@@ -151,15 +167,22 @@ namespace LocomotionSystem
         {
             if (!animator || !animatorMapping) return;
             
-            var controller = animator.runtimeAnimatorController as AnimatorController;
-            if (controller == null)
+            try
             {
-                Debug.LogWarning("Animator does not have an AnimatorController.");
-                return;
+                var controller = animator.runtimeAnimatorController as AnimatorController;
+                if (controller == null)
+                {
+                    Debug.LogWarning("Animator does not have an AnimatorController.");
+                    return;
+                }
+                
+                AnimatorStateMapper.UpdateMappingFromController(animatorMapping, controller);
+                Debug.Log("Updated animator mapping on initialize.");
             }
-            
-            AnimatorStateMapper.UpdateMappingFromController(animatorMapping, controller);
-            Debug.Log("Updated animator mapping on initialize.");
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error updating animator mapping: {e.Message}");
+            }
         }
         #endif
 
@@ -225,39 +248,132 @@ namespace LocomotionSystem
             }
         }
 
-        public void PlayAnimation(Animator animator, string stateName, float duration = 0f,
-            int layer = AnimationLayers.Interaction)
+        #region Interaction Animation Handling
+
+        /// <summary>
+        /// Plays an interaction animation with full control over all parameters
+        /// </summary>
+        public void PlayInteractionAnimation(Animator animator, string stateName, float crossFadeDuration = 0.2f, float layerWeight = 1.0f)
         {
             if (animator == null) return;
 
-            var clipName = animatorMapping.GetClipName(stateName);
-            if (!string.IsNullOrEmpty(clipName))
+            // string clipName = animatorMapping.GetClipName(stateName);
+            string clipName = stateName;
+            if (string.IsNullOrEmpty(clipName))
             {
-                animator.SetLayerWeight(layer, 1f);
+                Debug.LogWarning($"No clip found for interaction state {stateName}");
+                return;
+            }
 
-                if (Mathf.Approximately(duration, 0))
-                {
-                    animator.Play(clipName, layer);
-                }
-                else
-                {
-                    animator.CrossFade(clipName, duration, layer);
-                }
+            // Set the layer weight
+            animator.SetLayerWeight(AnimationLayers.Interaction, layerWeight);
+            
+            // Play the animation with crossfade
+            if (crossFadeDuration <= 0)
+            {
+                animator.Play(clipName, AnimationLayers.Interaction, 0);
             }
             else
             {
-                Debug.LogWarning($"No clip found for state {stateName}");
+                animator.CrossFade(clipName, crossFadeDuration, AnimationLayers.Interaction);
+            }
+            
+            // Track current interaction animation
+            m_CurrentInteractionAnimation = stateName;
+            m_CurrentInteractionNormalizedTime = 0f;
+            m_IsInteractionActive = true;
+            OnInteractionAnimationStarted?.Invoke(stateName);
+        }
+
+        /// <summary>
+        /// Stops the currently playing interaction animation by fading out the layer
+        /// </summary>
+        public void StopInteractionAnimation(Animator animator, float blendOutDuration = 0.2f)
+        {
+            if (animator == null || !m_IsInteractionActive) return;
+            
+            // Start the blend out
+            StartBlendOutInteractionLayer(animator, blendOutDuration);
+            
+            // Signal animation completed
+            OnInteractionAnimationCompleted?.Invoke(m_CurrentInteractionAnimation);
+            m_IsInteractionActive = false;
+        }
+
+        /// <summary>
+        /// Updates the interaction animation system. Should be called from Update.
+        /// </summary>
+        public void UpdateInteractionAnimations(Animator animator)
+        {
+            if (animator == null || !m_IsInteractionActive) return;
+
+            // Get current state info
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(AnimationLayers.Interaction);
+            
+            // Update normalized time
+            m_CurrentInteractionNormalizedTime = stateInfo.normalizedTime;
+            
+            // Check if the animation has completed (normalized time >= 1.0)
+            if (m_CurrentInteractionNormalizedTime >= 0.99f && !stateInfo.loop)
+            {
+                // Auto-stop interaction animations that have completed
+                ResetInteractionLayer(animator);
+                
+                // Signal animation completed
+                OnInteractionAnimationCompleted?.Invoke(m_CurrentInteractionAnimation);
+                m_IsInteractionActive = false;
             }
         }
 
-        public void ResetAdditiveLayers(Animator animator)
+        /// <summary>
+        /// Returns whether an interaction animation is currently active
+        /// </summary>
+        public bool IsInteractionAnimationActive()
+        {
+            return m_IsInteractionActive;
+        }
+
+        /// <summary>
+        /// Returns the normalized playback time (0-1) of the current interaction animation
+        /// </summary>
+        public float GetInteractionAnimationNormalizedTime()
+        {
+            return m_CurrentInteractionNormalizedTime;
+        }
+
+        /// <summary>
+        /// Returns the name of the currently playing interaction animation
+        /// </summary>
+        public string GetCurrentInteractionAnimation()
+        {
+            return m_CurrentInteractionAnimation;
+        }
+
+        /// <summary>
+        /// Gradually blends out the interaction layer weight
+        /// </summary>
+        private void StartBlendOutInteractionLayer(Animator animator, float duration)
         {
             if (animator == null) return;
-
-            foreach (var layer in AnimationLayers.AdditiveLayers)
-            {
-                animator.SetLayerWeight(layer, 0f);
-            }
+            
+            // Since we can't easily create a coroutine in this non-MonoBehaviour class,
+            // we'll set the weight to 0 and let the animation system blend it
+            animator.SetLayerWeight(AnimationLayers.Interaction, 0f);
         }
+
+        /// <summary>
+        /// Resets the interaction layer by setting weight to 0 and playing default animation
+        /// </summary>
+        private void ResetInteractionLayer(Animator animator)
+        {
+            if (animator == null) return;
+            
+            animator.SetLayerWeight(AnimationLayers.Interaction, 0f);
+            
+            // Play default animation for interaction layer
+            animator.Play("Idle", AnimationLayers.Interaction, 0f);
+        }
+
+        #endregion
     }
 }

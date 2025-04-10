@@ -17,8 +17,8 @@ namespace LocomotionSystem
         public virtual void Enter()
         {
             Debug.Log("Entered " + GetType().Name);
-            
-            StateMachine.Player.Animator.SetBool(StateMachine.Player.AnimationData.DamagedParameterHash, false);
+
+            StateMachine.Player.AnimationData.StopInteractionAnimation(StateMachine.Player.Animator, 0);
 
             AddInputActionsCallbacks();
         }

@@ -79,36 +79,56 @@ public static class AnimatorStateMapper
     {
         if (mapping == null || controller == null) return;
         
-        // Clear existing mappings
-        mapping.stateClipPairs.Clear();
-        
-        // Process all layers in the animator controller
-        foreach (var layer in controller.layers)
+        try
         {
-            ProcessStateMachine(layer.stateMachine, mapping);
+            // Clear existing mappings
+            mapping.stateClipPairs.Clear();
+            
+            // Process all layers in the animator controller
+            foreach (var layer in controller.layers)
+            {
+                if (layer.stateMachine == null) continue;
+                ProcessStateMachine(layer.stateMachine, mapping);
+            }
+            
+            // Save the updated mapping
+            EditorUtility.SetDirty(mapping);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"Updated animator mapping: {mapping.name}");
         }
-        
-        // Save the updated mapping
-        EditorUtility.SetDirty(mapping);
-        AssetDatabase.SaveAssets();
-        Debug.Log($"Updated animator mapping: {mapping.name}");
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error updating animator mapping: {e.Message}");
+        }
     }
     
     private static void ProcessStateMachine(AnimatorStateMachine stateMachine, AnimatorStateClipMapping mapping)
     {
-        // Process all states in this state machine
-        foreach (var state in stateMachine.states)
+        if (stateMachine == null || mapping == null) return;
+        
+        try
         {
-            if (state.state.motion is AnimationClip clip)
+            // Process all states in this state machine
+            foreach (var state in stateMachine.states)
             {
-                mapping.AddMapping(state.state.name, clip.name);
+                if (state.state == null) continue;
+                
+                if (state.state.motion is AnimationClip clip)
+                {
+                    mapping.AddMapping(state.state.name, clip.name);
+                }
+            }
+            
+            // Process all sub-state machines
+            foreach (var childStateMachine in stateMachine.stateMachines)
+            {
+                if (childStateMachine.stateMachine == null) continue;
+                ProcessStateMachine(childStateMachine.stateMachine, mapping);
             }
         }
-        
-        // Process all sub-state machines
-        foreach (var childStateMachine in stateMachine.stateMachines)
+        catch (System.Exception e)
         {
-            ProcessStateMachine(childStateMachine.stateMachine, mapping);
+            Debug.LogError($"Error processing state machine: {e.Message}");
         }
     }
 }

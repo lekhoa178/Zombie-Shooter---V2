@@ -148,6 +148,8 @@ namespace LocomotionSystem
             MovementStateMachine.HandleInput();
 
             MovementStateMachine.Update();
+            
+            AnimationData.UpdateInteractionAnimations(Animator);
         }
 
         private void FixedUpdate()
@@ -230,8 +232,7 @@ namespace LocomotionSystem
             
             OnDamaged?.Invoke(this, hitContext.Damage, hitContext.HitDirection);
             
-            Animator.SetBool(AnimationData.DamagedParameterHash, false);
-            Animator.SetBool(AnimationData.DamagedParameterHash, true);
+            AnimationData.PlayInteractionAnimation(Animator, AnimationData.DamagedStateName);
             
             // Face towards hit direction
             Vector3 hitDirection = hitContext.HitDirection;
