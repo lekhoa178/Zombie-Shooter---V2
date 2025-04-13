@@ -109,8 +109,7 @@ namespace LocomotionSystem
                 detectionRoutine = null;
             }
 
-            // Unsubscribe from EnemyFactory events
-            if (EnemyFactory.Instance != null)
+            if (EnemyFactory.Instance != null && EnemyFactory.Instance.OnEnemySpawned != null)
             {
                 EnemyFactory.Instance.OnEnemySpawned.RemoveListener(HandleNewEnemySpawned);
             }
@@ -186,13 +185,10 @@ namespace LocomotionSystem
         {
             while (true)
             {
-                // Scan for new targets within range
                 ScanForTargetsInRange();
                 
-                // Validate our current target is still valid
                 ValidateCurrentTarget();
                 
-                // Try to get a new target if we don't have one or if we're allowed to change targets
                 if (currentTarget == null || canChangeTarget)
                 {
                     GetTargetInInputDirection();

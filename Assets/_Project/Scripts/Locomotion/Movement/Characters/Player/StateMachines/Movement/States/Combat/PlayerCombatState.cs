@@ -28,6 +28,21 @@ namespace LocomotionSystem
             _attackIntervalTimer = new CountdownTimer(AttackInterval);
             HitEnemies = new HashSet<IHittable>();
         }
+        
+        // Helper method to get the active ComboConfiguration
+        protected ComboConfiguration GetActiveComboConfig()
+        {
+            // First check if there's a debug override in PlayerSO
+            if (StateMachine.Player.Data.DebugComboConfigOverride != null)
+            {
+                if (StateMachine.Player.Animator.updateMode == AnimatorUpdateMode.Fixed)
+                    Debug.Log("[Debug] Using ComboConfiguration override from PlayerSO");
+                return StateMachine.Player.Data.DebugComboConfigOverride;
+            }
+            
+            // If no override, use the WeaponManager's configuration
+            return WeaponManager.Instance.GetActiveComboConfiguration(StateMachine.Player);
+        }
 
         public override void Enter()
         {
@@ -36,15 +51,19 @@ namespace LocomotionSystem
             _attackIntervalTimer.Reset();
 
             // Handle weapon attachment at the start of the attack
-            var config = StateMachine.Player.Data.ComboConfig?.AttackConfigs[StateMachine.ReusableData.CurrentComboIndex];
-            if (config)
+            var comboConfig = GetActiveComboConfig();
+            if (comboConfig != null)
             {
-                StateMachine.Player.SocketManager.HandleWeaponForAttack(config);
-            }
-            
-            if (config && config.EnableAttackIFrames)
-            {
-                IFrameManager.Instance.StartInvincibility(config.AttackIFrameDuration);
+                var config = comboConfig.AttackConfigs[StateMachine.ReusableData.CurrentComboIndex];
+                if (config)
+                {
+                    StateMachine.Player.SocketManager.HandleWeaponForAttack(config);
+                }
+                
+                if (config && config.EnableAttackIFrames)
+                {
+                    IFrameManager.Instance.StartInvincibility(config.AttackIFrameDuration);
+                }
             }
         }
 
@@ -169,8 +188,11 @@ namespace LocomotionSystem
 
         private void DetectAndHandleAttackHits()
         {
+            // Get the active ComboConfig
+            var comboConfig = GetActiveComboConfig();
+            
             // Fall back to default if ComboConfig is null
-            if (StateMachine.Player.Data.ComboConfig == null)
+            if (comboConfig == null)
             {
                 DefaultSphereDetection();
                 return;
@@ -178,21 +200,21 @@ namespace LocomotionSystem
 
             // Get current combo index and verify AttackConfigs exists
             var comboIndex = StateMachine.ReusableData.CurrentComboIndex;
-            if (StateMachine.Player.Data.ComboConfig.AttackConfigs == null)
+            if (comboConfig.AttackConfigs == null)
             {
                 DefaultSphereDetection();
                 return;
             }
 
             // Verify comboIndex is within range
-            if (comboIndex < 0 || comboIndex >= StateMachine.Player.Data.ComboConfig.AttackConfigs.Length)
+            if (comboIndex < 0 || comboIndex >= comboConfig.AttackConfigs.Length)
             {
                 DefaultSphereDetection();
                 return;
             }
 
             // Get the current attack configuration
-            var attackConfig = StateMachine.Player.Data.ComboConfig.AttackConfigs[comboIndex];
+            var attackConfig = comboConfig.AttackConfigs[comboIndex];
 
             // Fall back to default if config is null
             if (!attackConfig)
@@ -537,11 +559,17 @@ namespace LocomotionSystem
             // Handle any area effects at the end of the attack
             HandleAreaEffect();
             
+            // Get the active ComboConfiguration
+            ComboConfiguration comboConfig = GetActiveComboConfig();
+            
             // Clear weapons if configured to do so
-            var config = StateMachine.Player.Data.ComboConfig?.AttackConfigs[StateMachine.ReusableData.CurrentComboIndex];
-            if (config != null && config.RemoveWeaponAfterAttack)
+            if (comboConfig != null && StateMachine.ReusableData.CurrentComboIndex < comboConfig.AttackConfigs.Length)
             {
-                StateMachine.Player.SocketManager.ClearAllWeapons();
+                var config = comboConfig.AttackConfigs[StateMachine.ReusableData.CurrentComboIndex];
+                if (config != null && config.RemoveWeaponAfterAttack)
+                {
+                    StateMachine.Player.SocketManager.ClearAllWeapons();
+                }
             }
             
             Debug.Log("Finish Attack");
@@ -560,7 +588,11 @@ namespace LocomotionSystem
         {
             // Get current combo index and its configuration
             var comboIndex = StateMachine.ReusableData.CurrentComboIndex;
-            var currentAttackConfig = StateMachine.Player.Data.ComboConfig.AttackConfigs[comboIndex];
+            var comboConfig = GetActiveComboConfig();
+            
+            if (comboConfig == null) return;
+            
+            var currentAttackConfig = comboConfig.AttackConfigs[comboIndex];
             
             if (!currentAttackConfig || !currentAttackConfig.EnableAreaEffect || !currentAttackConfig.AreaEffectVfxSettings) return;
             

@@ -82,8 +82,8 @@ namespace LocomotionSystem
             // Wait for duration
             yield return new WaitForSecondsRealtime(duration);
             
-            // Recovery phase
-            if (recoveryDuration > 0 && !Linear)
+            // Recovery phase - only if recoveryDuration is greater than zero and Linear is false
+            if (recoveryDuration > 0.001f && !Linear) // Use a small epsilon to avoid floating point issues
             {
                 float recoveryTimer = 0f;
                 while (recoveryTimer < 1f)
@@ -97,8 +97,14 @@ namespace LocomotionSystem
                     yield return null;
                 }
             }
+            else
+            {
+                // If recoveryDuration is zero or Linear is true, instantly restore the original values
+                if (targetAnimator)
+                    targetAnimator.speed = originalAnimatorSpeed;
+            }
             
-            // Restore original values
+            // Restore original values (ensures everything is reset properly)
             if (targetAnimator)
                 targetAnimator.speed = originalAnimatorSpeed;
                 
@@ -115,26 +121,45 @@ namespace LocomotionSystem
         {
             if (hitStopDuration <= 0)
             {
+                Time.timeScale = originalTimeScale;
+                isTimeStopped = false;
                 yield break;
             }
             
-            var hitStopTimer = 0f;
+            // Calculate the non-recovery part of the hit stop duration
+            float mainDuration = hitStopDuration;
+            if (!Linear && recoveryDuration > 0.001f) // Use a small epsilon to avoid floating point issues
+            {
+                mainDuration = Mathf.Max(0f, hitStopDuration - recoveryDuration);
+            }
 
-            while (hitStopTimer < hitStopDuration - recoveryDuration)
+            // Wait for the main hit stop duration
+            var hitStopTimer = 0f;
+            while (hitStopTimer < mainDuration)
             {
                 hitStopTimer += Time.unscaledDeltaTime;
                 yield return null;
             }
 
-            var recoveryTimer = 0f;
-            while (recoveryTimer < 1f && !Linear)
+            // Recovery phase - only if recoveryDuration is greater than zero and Linear is false
+            if (recoveryDuration > 0.001f && !Linear) // Use a small epsilon to avoid floating point issues
             {
-                recoveryTimer += Time.unscaledDeltaTime / recoveryDuration;
-                var curveValue = MMTween.Tween(recoveryTimer, 0f, 1f, 0f, originalTimeScale, animatePositionTween);
-                Time.timeScale = curveValue;
-                yield return null;
+                float recoveryTimer = 0f;
+                while (recoveryTimer < 1f)
+                {
+                    recoveryTimer += Time.unscaledDeltaTime / recoveryDuration;
+                    var curveValue = MMTween.Tween(recoveryTimer, 0f, 1f, 0f, originalTimeScale, animatePositionTween);
+                    Time.timeScale = curveValue;
+                    yield return null;
+                }
+            }
+            else
+            {
+                // If recoveryDuration is zero or Linear is true, instantly restore the original time scale
+                Time.timeScale = originalTimeScale;
             }
 
+            // Ensure time scale is reset to the original value
             Time.timeScale = originalTimeScale;
             isTimeStopped = false;
         }

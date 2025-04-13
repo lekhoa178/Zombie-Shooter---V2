@@ -188,8 +188,24 @@ namespace LocomotionSystem
                 return;
             }
             
+            ComboConfiguration activeComboConfig = null;
+            
+            if (StateMachine.Player.Data.DebugComboConfigOverride)
+            {
+                activeComboConfig = StateMachine.Player.Data.DebugComboConfigOverride;
+            }
+            else if (WeaponManager.HasInstance)
+            {
+                activeComboConfig = WeaponManager.Instance.GetActiveComboConfiguration(StateMachine.Player);
+            }
+            
+            if (activeComboConfig == null)
+            {
+                return;
+            }
+            
             // Get the actual number of attack configurations in the ComboConfig
-            int attackConfigCount = StateMachine.Player.Data.ComboConfig?.AttackConfigs?.Length ?? 1;
+            int attackConfigCount = activeComboConfig?.AttackConfigs?.Length ?? 1;
             
             // Make sure we don't divide by zero
             if (attackConfigCount <= 0) attackConfigCount = 1;

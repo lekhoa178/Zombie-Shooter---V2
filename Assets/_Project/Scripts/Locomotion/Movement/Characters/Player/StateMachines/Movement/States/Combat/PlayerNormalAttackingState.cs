@@ -27,13 +27,21 @@ namespace LocomotionSystem
     
             // Get current combo configuration
             var comboIndex = StateMachine.ReusableData.CurrentComboIndex;
-            var config = StateMachine.Player.Data.ComboConfig.AttackConfigs[comboIndex];
+            var comboConfig = GetActiveComboConfig();
+            
+            if (comboConfig == null)
+            {
+                Debug.LogWarning("No active ComboConfiguration found!");
+                return;
+            }
+            
+            var config = comboConfig.AttackConfigs[comboIndex];
     
             // Set targeting parameters based on configuration
             SetTargetingParameters(config);
             
             // Get attack timing info including animation speed
-            var timingInfo = StateMachine.Player.Data.ComboConfig.GetAttackTimingInfo();
+            var timingInfo = comboConfig.GetAttackTimingInfo();
             float attackAnimSpeedMultiplier = timingInfo.animSpeedMultiplier;
             
             // Apply root motion setting from configuration
@@ -97,9 +105,13 @@ namespace LocomotionSystem
         
         private void SetTargetingParameters(AttackHitConfiguration config)
         {
+            // Get active ComboConfiguration
+            var comboConfig = GetActiveComboConfig();
+            if (comboConfig == null) return;
+            
             // Get default values from combo config
-            float detectionRange = StateMachine.Player.Data.ComboConfig.DefaultDetectionRange;
-            float dotProductThreshold = StateMachine.Player.Data.ComboConfig.DefaultDotProductThreshold;
+            float detectionRange = comboConfig.DefaultDetectionRange;
+            float dotProductThreshold = comboConfig.DefaultDotProductThreshold;
             
             // Override with attack-specific values if configured
             if (config != null && config.OverrideTargetDetectionSettings)
@@ -121,11 +133,17 @@ namespace LocomotionSystem
             
             StateMachine.Player.AnimationData.ResetAnimationOverrides();
             
+            // Get active ComboConfiguration
+            var comboConfig = GetActiveComboConfig();
+            
             // Reset target detection parameters to defaults when exiting
-            StateMachine.Player.TargetDetector.ResetToDefaultParameters(
-                StateMachine.Player.Data.ComboConfig.DefaultDetectionRange,
-                StateMachine.Player.Data.ComboConfig.DefaultDotProductThreshold
-            );
+            if (comboConfig != null)
+            {
+                StateMachine.Player.TargetDetector.ResetToDefaultParameters(
+                    comboConfig.DefaultDetectionRange,
+                    comboConfig.DefaultDotProductThreshold
+                );
+            }
 
             StopAnimation(StateMachine.Player.AnimationData.NormalAttackParameterHash);
         }
@@ -163,9 +181,13 @@ namespace LocomotionSystem
             if (IsCombo && !StateMachine.ReusableData.IsOnCooldown)
             {
                 IsCombo = false;
+                
+                // Get the active ComboConfiguration
+                var comboConfig = GetActiveComboConfig();
+                if (comboConfig == null) return;
 
                 // Get the actual number of attack configurations in the ComboConfig
-                int attackConfigCount = StateMachine.Player.Data.ComboConfig?.AttackConfigs?.Length ?? 1;
+                int attackConfigCount = comboConfig.AttackConfigs?.Length ?? 1;
                 
                 // Make sure we don't divide by zero
                 if (attackConfigCount <= 0) attackConfigCount = 1;
@@ -174,7 +196,7 @@ namespace LocomotionSystem
                 StateMachine.ReusableData.CurrentComboIndex = (StateMachine.ReusableData.CurrentComboIndex + 1) % attackConfigCount;
                 
                 // Get attack timing info including animation speed scaling
-                var timingInfo = StateMachine.Player.Data.ComboConfig.GetAttackTimingInfo();
+                var timingInfo = comboConfig.GetAttackTimingInfo();
                 var countdown = timingInfo.interval;
                 
                 // Apply attack speed settings from ComboConfiguration
@@ -187,7 +209,7 @@ namespace LocomotionSystem
                 }
                 else
                 {
-                    Debug.Log($"Attack cooldown set: {countdown:F2}s (Speed Multiplier: {StateMachine.Player.Data.ComboConfig.AttackSpeedMultiplier:F2}x)");
+                    Debug.Log($"Attack cooldown set: {countdown:F2}s (Speed Multiplier: {comboConfig.AttackSpeedMultiplier:F2}x)");
                 }
                 
                 Debug.Log($"Combo Index: {StateMachine.ReusableData.CurrentComboIndex} of {attackConfigCount}");

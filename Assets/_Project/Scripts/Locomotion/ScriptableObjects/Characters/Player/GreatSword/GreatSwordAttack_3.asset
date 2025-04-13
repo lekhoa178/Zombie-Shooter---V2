@@ -20,7 +20,7 @@ MonoBehaviour:
   Offset: {x: 0, y: 0, z: 0.2}
   OffsetFromColliderCenter: 1
   Damage: 10
-  EnableHitStop: 0
+  EnableHitStop: 1
   HitStopDuration: 0.1
   HitStopTimeScale: 0.1
   HitStopAffects: 2

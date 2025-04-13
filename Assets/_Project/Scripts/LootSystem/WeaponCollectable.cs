@@ -1,13 +1,20 @@
+using Locomotion.LootSystem;
 using UnityEngine;
 using UnityEngine.VFX;
+using System;
 
-namespace LocomotionSystem.LootSystem
+namespace LocomotionSystem
 {
     /// <summary>
-    /// Concrete implementation of a weapon collectable
+    /// Concrete implementation of a weapon collectable.
+    /// This class automatically sets its CollectableType to Weapon.
     /// </summary>
-    public class WeaponCollectable : CollectableBase, IWeaponCollectable
+    [AddComponentMenu("Loot System/Weapon Collectable")]
+    public class WeaponCollectable : CollectableBase
     {
+        // Note: The m_Type field from the base class will be set to Weapon
+        // by the custom editor. This is handled automatically.
+
         #region Private Fields
         [Header("Weapon Configuration")]
         [SerializeField] private ComboConfiguration m_WeaponConfig;
@@ -21,9 +28,11 @@ namespace LocomotionSystem.LootSystem
         [SerializeField] private GameObject m_CollectionVfxPrefab;
         
         private VisualEffect m_RarityVfx;
+        private WeaponCollectableData _mWeaponCollectableData;
         #endregion
 
         #region Public Properties
+        // IWeaponCollectable implementation
         public ComboConfiguration WeaponConfig => m_WeaponConfig;
         public GameObject WeaponVisualPrefab => m_WeaponVisualPrefab;
         public WeaponRarity Rarity => m_Rarity;
@@ -35,16 +44,28 @@ namespace LocomotionSystem.LootSystem
         {
             base.Awake();
             
-            // Set default type for weapon collectables
-            if (Type == CollectableType.Weapon)
+            // Initialize weapon data
+            _mWeaponCollectableData = new WeaponCollectableData
             {
-                var serField = typeof(CollectableBase).GetField("m_Type", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (serField != null)
-                {
-                    serField.SetValue(this, CollectableType.Weapon);
-                }
-            }
+                Config = m_WeaponConfig,
+                Type = m_WeaponType,
+                Rarity = m_Rarity
+            };
+            
+            // Ensure type is set correctly
+            m_Type = CollectableType.Weapon;
         }
+
+        #if UNITY_EDITOR
+        /// <summary>
+        /// Ensure the CollectableType is always set to Weapon in the inspector
+        /// </summary>
+        private void OnValidate()
+        {
+            // Set type directly since it's now protected in the base class
+            m_Type = CollectableType.Weapon;
+        }
+        #endif
 
         protected override void Start()
         {
@@ -56,45 +77,52 @@ namespace LocomotionSystem.LootSystem
         #endregion
 
         #region Public Methods
-        public override bool OnCollected(GameObject _collector)
+        public override bool OnCollected(GameObject collector)
         {
-            // Get the player component
-            Player player = _collector.GetComponent<Player>();
+            var player = collector.GetComponent<Player>();
+
+            if (!player) return false;
             
-            if (player != null)
+            var weaponHandler = player.GetComponent<PlayerWeaponHandler>();
+            
+            if (weaponHandler && !weaponHandler.OnWeaponCollecting(this))
             {
-                // Attempt to equip the weapon
-                bool equipped = WeaponManager.Instance.EquipWeapon(player, this);
-                
-                if (equipped)
-                {
-                    // Spawn collection VFX if available
-                    if (m_CollectionVfxPrefab != null)
-                    {
-                        GameObject vfx = Instantiate(m_CollectionVfxPrefab, transform.position, Quaternion.identity);
-                        Destroy(vfx, 2f); // Auto-destroy VFX after 2 seconds
-                    }
-                    
-                    // Return to base class for standard collection behavior
-                    return base.OnCollected(_collector);
-                }
-                else
-                {
-                    return false; // Collection failed
-                }
+                return false;
             }
             
-            return false;
+            var equipped = WeaponManager.Instance.EquipWeapon(player, this);
+            
+            if (m_CollectionVfxPrefab)
+            {
+                GameObject vfx = Instantiate(m_CollectionVfxPrefab, transform.position, Quaternion.identity);
+                Destroy(vfx);
+            }
+                
+            // CameraShakeManager.Instance.Shake(1.5f, 0.5f, 0.5f);
+
+            return base.OnCollected(collector);
+        }
+        
+        /// <summary>
+        /// Implementation of GetTypeData for weapons
+        /// </summary>
+        public override T GetTypeData<T>()
+        {
+            if (typeof(T) == typeof(WeaponCollectableData))
+            {
+                return _mWeaponCollectableData as T;
+            }
+            
+            return base.GetTypeData<T>();
         }
         #endregion
 
         #region Private Methods
         private void SetupRarityVfx()
         {
-            // Create rarity-based visual effects based on rarity
             if (m_RarityVfxPrefab != null)
             {
-                GameObject vfxObj = Instantiate(m_RarityVfxPrefab, transform);
+                var vfxObj = Instantiate(m_RarityVfxPrefab, transform);
                 vfxObj.transform.localPosition = Vector3.zero;
                 
                 m_RarityVfx = vfxObj.GetComponent<VisualEffect>();
@@ -121,17 +149,17 @@ namespace LocomotionSystem.LootSystem
                             break;
                     }
                     
-                    // // Set VFX parameters if available
+                    // Set VFX parameters if available
                     // if (m_RarityVfx.HasColor("GlowColor"))
                     // {
                     //     m_RarityVfx.SetVector4("GlowColor", m_RarityGlowColor);
                     // }
-                    //
-                    // // Set intensity based on rarity
-                    // if (m_RarityVfx.HasFloat("Intensity"))
-                    // {
-                    //     m_RarityVfx.SetFloat("Intensity", (float)m_Rarity + 1);
-                    // }
+                    
+                    // Set intensity based on rarity
+                    if (m_RarityVfx.HasFloat("Intensity"))
+                    {
+                        m_RarityVfx.SetFloat("Intensity", (float)m_Rarity + 1);
+                    }
                 }
             }
         }

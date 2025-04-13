@@ -9,11 +9,10 @@ namespace LocomotionSystem
         [field: SerializeField] public PlayerGroundedData GroundedData { get; private set; }
         [field: SerializeField] public PlayerAirborneData AirborneData { get; private set; }
 
-        [field: Header("Combat Configuration")]
-        [field: SerializeField]
-        public ComboConfiguration ComboConfig { get; private set; }
-        
-        // Add this to your existing PlayerSO class:
+        [field: Header("Debug Combat Configuration")]
+        [Tooltip("If assigned, this will override the WeaponManager's ComboConfiguration (for debugging purposes)")]
+        [field: SerializeField] public ComboConfiguration DebugComboConfigOverride { get; private set; }
+
         [field: Header("Default VFX Settings")]
         [field: SerializeField] public VFXFlyweightSettings DefaultHitVfxSettings { get; private set; }
 

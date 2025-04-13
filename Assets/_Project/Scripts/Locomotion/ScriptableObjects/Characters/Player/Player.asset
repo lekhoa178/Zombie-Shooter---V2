@@ -233,6 +233,6 @@ MonoBehaviour:
     <FallData>k__BackingField:
       <FallSpeedLimit>k__BackingField: 25
       <MinimumDistanceToBeConsideredHardFall>k__BackingField: 4
-  <ComboConfig>k__BackingField: {fileID: 11400000, guid: f67fea74f5f1c304e84614fe23faf884, type: 2}
+  <DebugComboConfigOverride>k__BackingField: {fileID: 0}
   <DefaultHitVfxSettings>k__BackingField: {fileID: 11400000, guid: 7599c7172fe8408429198924f6171180, type: 2}
   <LastHitVfx>k__BackingField: {fileID: 1392472177120628003, guid: 9f6615f6ff472c7449a117419620c20f, type: 3}

@@ -1,6 +1,7 @@
+using Locomotion.LootSystem;
 using UnityEngine;
 
-namespace LocomotionSystem.LootSystem
+namespace LocomotionSystem
 {
     /// <summary>
     /// Component to spawn loot items when triggered, such as when an enemy is defeated
@@ -76,13 +77,9 @@ namespace LocomotionSystem.LootSystem
         /// Force spawn a specific weapon
         /// </summary>
         /// <param name="_weaponConfig">Weapon configuration</param>
-        /// <param name="_weaponVisual">Weapon visual</param>
-        /// <param name="_type">Weapon type</param>
         /// <param name="_rarity">Weapon rarity</param>
         public void SpawnSpecificWeapon(
             ComboConfiguration _weaponConfig,
-            GameObject _weaponVisual = null,
-            WeaponType _type = WeaponType.Sword,
             WeaponRarity _rarity = WeaponRarity.Common)
         {
             if (m_WeaponFactory == null)
@@ -97,7 +94,7 @@ namespace LocomotionSystem.LootSystem
             spawnPosition.y = transform.position.y + m_DropOffset.y;
             
             // Spawn the weapon
-            m_WeaponFactory.CreateWeaponCollectable(spawnPosition, _weaponConfig, _weaponVisual, _type, _rarity);
+            m_WeaponFactory.CreateWeaponCollectable(spawnPosition, _weaponConfig, _rarity);
         }
         #endregion
 

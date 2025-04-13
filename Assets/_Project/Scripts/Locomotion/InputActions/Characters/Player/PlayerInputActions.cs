@@ -127,6 +127,15 @@ namespace LocomotionSystem
                     ""processors"": """",
                     ""interactions"": ""Hold(duration=0.3)"",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Interact"",
+                    ""type"": ""Button"",
+                    ""id"": ""371f1a3e-dbaa-495d-8919-53bc7db057f3"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -316,6 +325,17 @@ namespace LocomotionSystem
                     ""action"": ""BoostDash"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6542faa9-4680-4e7d-a43f-aea622cdfe7d"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -335,6 +355,7 @@ namespace LocomotionSystem
             m_Player_NormalAttack = m_Player.FindAction("NormalAttack", throwIfNotFound: true);
             m_Player_ChargeAttack = m_Player.FindAction("ChargeAttack", throwIfNotFound: true);
             m_Player_BoostDash = m_Player.FindAction("BoostDash", throwIfNotFound: true);
+            m_Player_Interact = m_Player.FindAction("Interact", throwIfNotFound: true);
         }
 
         ~@PlayerInputActions()
@@ -412,6 +433,7 @@ namespace LocomotionSystem
         private readonly InputAction m_Player_NormalAttack;
         private readonly InputAction m_Player_ChargeAttack;
         private readonly InputAction m_Player_BoostDash;
+        private readonly InputAction m_Player_Interact;
         public struct PlayerActions
         {
             private @PlayerInputActions m_Wrapper;
@@ -427,6 +449,7 @@ namespace LocomotionSystem
             public InputAction @NormalAttack => m_Wrapper.m_Player_NormalAttack;
             public InputAction @ChargeAttack => m_Wrapper.m_Player_ChargeAttack;
             public InputAction @BoostDash => m_Wrapper.m_Player_BoostDash;
+            public InputAction @Interact => m_Wrapper.m_Player_Interact;
             public InputActionMap Get() { return m_Wrapper.m_Player; }
             public void Enable() { Get().Enable(); }
             public void Disable() { Get().Disable(); }
@@ -469,6 +492,9 @@ namespace LocomotionSystem
                 @BoostDash.started += instance.OnBoostDash;
                 @BoostDash.performed += instance.OnBoostDash;
                 @BoostDash.canceled += instance.OnBoostDash;
+                @Interact.started += instance.OnInteract;
+                @Interact.performed += instance.OnInteract;
+                @Interact.canceled += instance.OnInteract;
             }
 
             private void UnregisterCallbacks(IPlayerActions instance)
@@ -506,6 +532,9 @@ namespace LocomotionSystem
                 @BoostDash.started -= instance.OnBoostDash;
                 @BoostDash.performed -= instance.OnBoostDash;
                 @BoostDash.canceled -= instance.OnBoostDash;
+                @Interact.started -= instance.OnInteract;
+                @Interact.performed -= instance.OnInteract;
+                @Interact.canceled -= instance.OnInteract;
             }
 
             public void RemoveCallbacks(IPlayerActions instance)
@@ -536,6 +565,7 @@ namespace LocomotionSystem
             void OnNormalAttack(InputAction.CallbackContext context);
             void OnChargeAttack(InputAction.CallbackContext context);
             void OnBoostDash(InputAction.CallbackContext context);
+            void OnInteract(InputAction.CallbackContext context);
         }
     }
 }
