@@ -16,9 +16,6 @@ namespace PowerTree
         [SerializeField] private float currentBlueHearts = 0f;
         [SerializeField] private float currentBlackHearts = 0f;
 
-        [Header("Combat Stats")] [SerializeField]
-        private float baseDamage = 1f;
-
         [SerializeField] private float damageMultiplier = 1f;
         [SerializeField] private float attackSpeedMultiplier = 1f;
         [SerializeField] private float moveSpeedMultiplier = 1f;
@@ -37,6 +34,7 @@ namespace PowerTree
         public UnityEvent<float> OnRedHeartGained = new UnityEvent<float>();
         public UnityEvent<float> OnBlueHeartGained = new UnityEvent<float>();
         public UnityEvent<float> OnBlackHeartGained = new UnityEvent<float>();
+        public UnityEvent<HeartType, float, float> OnHeartChanged = new UnityEvent<HeartType, float, float>();
         public UnityEvent OnPlayerDeath = new UnityEvent();
         public UnityEvent OnEnemyKilled = new UnityEvent(); // Modified to not pass consecutive kills
         public UnityEvent OnLevelCompleted = new UnityEvent();
@@ -48,6 +46,19 @@ namespace PowerTree
         private Dictionary<string, Counter> nodeCounters = new Dictionary<string, Counter>();
 
         private bool damageTakenThisLevel = false;
+
+        private void Start()
+        {
+            OnHeartChanged.Invoke(HeartType.Red, currentRedHearts, maxRedHearts);
+            OnHeartChanged.Invoke(HeartType.Blue, currentBlueHearts, 0);
+            OnHeartChanged.Invoke(HeartType.Black, currentBlackHearts, 0);
+        }
+
+        private void OnValidate()
+        {
+            OnHeartChanged.Invoke(HeartType.Red, currentRedHearts, maxRedHearts);
+            OnHeartChanged.Invoke(HeartType.Blue, currentBlueHearts, 0);
+            OnHeartChanged.Invoke(HeartType.Black, currentBlackHearts, 0);        }
 
         private void Update()
         {
@@ -137,6 +148,7 @@ namespace PowerTree
                 float heartsTaken = Mathf.Min(amount, currentBlackHearts);
                 currentBlackHearts -= heartsTaken;
                 OnBlackHeartLost.Invoke(heartsTaken, hitPosition);
+                OnHeartChanged.Invoke(HeartType.Black, currentBlackHearts, 0);
 
                 if (amount > heartsTaken)
                 {
@@ -149,6 +161,7 @@ namespace PowerTree
                 float heartsTaken = Mathf.Min(amount, currentBlueHearts);
                 currentBlueHearts -= heartsTaken;
                 OnBlueHeartLost.Invoke(heartsTaken);
+                OnHeartChanged.Invoke(HeartType.Blue, currentBlueHearts, 0);
 
                 if (amount > heartsTaken)
                 {
@@ -160,6 +173,7 @@ namespace PowerTree
             {
                 currentRedHearts -= amount;
                 OnRedHeartLost.Invoke(amount);
+                OnHeartChanged.Invoke(HeartType.Red, currentRedHearts, maxRedHearts);
 
                 if (currentRedHearts <= 0)
                 {
@@ -178,14 +192,17 @@ namespace PowerTree
                 case HeartType.Red:
                     currentRedHearts = Mathf.Min(currentRedHearts + amount, maxRedHearts);
                     OnRedHeartGained.Invoke(amount);
+                    OnHeartChanged.Invoke(type, currentRedHearts, maxRedHearts);
                     break;
                 case HeartType.Blue:
                     currentBlueHearts += amount;
                     OnBlueHeartGained.Invoke(amount);
+                    OnHeartChanged.Invoke(type, currentBlueHearts, 0);
                     break;
                 case HeartType.Black:
                     currentBlackHearts += amount;
                     OnBlackHeartGained.Invoke(amount);
+                    OnHeartChanged.Invoke(type, currentBlackHearts, 0);
                     break;
             }
         }
@@ -205,10 +222,10 @@ namespace PowerTree
         #endregion
 
         #region Stat Management
-
-        public float GetDamage()
+        
+        public float GetDamageMultiplier()
         {
-            return baseDamage * damageMultiplier;
+            return damageMultiplier;
         }
 
         public float GetAttackSpeed()

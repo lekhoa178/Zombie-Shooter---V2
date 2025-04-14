@@ -19,16 +19,16 @@ MonoBehaviour:
   fillImageName: BorderFill/Fill
   secondaryFillImageName: BorderSecondaryFill/SecondaryFill
   healthTextName: HealthText
-  healthyColor: {r: 1, g: 0.22272147, b: 0, a: 1}
-  damagedColor: {r: 0.8113208, g: 0.1874765, b: 0, a: 1}
-  criticalColor: {r: 0.6830188, g: 0.034795243, b: 0.034795243, a: 1}
+  healthyColor: {r: 1, g: 1, b: 1, a: 1}
+  damagedColor: {r: 1, g: 1, b: 1, a: 1}
+  criticalColor: {r: 1, g: 1, b: 1, a: 1}
   healthyThreshold: 0.7
   criticalThreshold: 0.3
   hideAtFullHealth: 0
   enableDamageFlash: 0
   damageFlashDuration: 0.5
   enableDualFill: 1
-  secondaryFillColor: {r: 0.7, g: 0.7, b: 0.7, a: 0.6}
+  secondaryFillColor: {r: 0.99607843, g: 0.003921569, b: 0, a: 1}
   secondaryFillDuration: 0.5
   secondaryFillDelay: 0.2
   enableAnticipateFill: 0

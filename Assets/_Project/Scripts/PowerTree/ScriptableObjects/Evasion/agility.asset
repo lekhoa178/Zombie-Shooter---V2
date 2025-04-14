@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: agility
+  m_EditorClassIdentifier: Assembly-CSharp:PowerTree:AgilityNode
+  m_UniqueID: _bcb1b276-a273-4420-ad16-cff38b347795
+  nodeID: agility
+  displayName: Agility
+  descriptions:
+  - When HP below 1 red heart, movement speed +10%
+  - Increases to +20%
+  - When HP below 1 red heart, dodge +10%
+  icon: {fileID: 0}
+  branch: 2
+  unlocksNodes: []
+  requiredNodes:
+  - {fileID: 11400000, guid: 8002a84b16ca20a44b962fd755d5a1c1, type: 2}
+  - {fileID: 11400000, guid: 28f8ef9526cc1e84fa568d8009f1f352, type: 2}
+  aetherCosts: 010000000200000003000000
+  moveSpeedBoost:
+  - 0.1
+  - 0.15
+  - 0.2
+  dodgeChanceBoost:
+  - 0
+  - 0
+  - 0.05
+  lowHealthThreshold: 1

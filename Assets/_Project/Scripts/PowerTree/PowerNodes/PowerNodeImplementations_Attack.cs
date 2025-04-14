@@ -23,9 +23,9 @@ namespace PowerTree
             // Auto-populate descriptions with field values
             descriptions = new string[]
             {
-                "When health is above {healthThreshold} of maximum, gain {damageBoost[0]} increased damage",
-                "Damage boost increased to {damageBoost[1]}",
-                "Damage boost increased to {damageBoost[2]}"
+                "Increase damage by {damageBoost[0]} when above {healthThreshold} health",
+                "Increases to {damageBoost[1]}",
+                "Increases to {damageBoost[2]}"
             };
         }
         
@@ -97,9 +97,9 @@ namespace PowerTree
             // Auto-populate descriptions with field values
             descriptions = new string[]
             {
-                "When losing a red heart, gain {damageBoost[0]} increased damage for {boostDuration[0]} seconds",
-                "Damage boost increased to {damageBoost[1]}",
-                "Damage boost increased to {damageBoost[2]} and duration increased to {boostDuration[2]} seconds"
+                "When losing a red heart, increase damage by {damageBoost[0]} for {boostDuration[0]} seconds",
+                "Increases to {damageBoost[1]}",
+                "Increases to {damageBoost[2]} and lasts for {boostDuration[2]} seconds"
             };
         }
         
@@ -147,9 +147,9 @@ namespace PowerTree
             // Auto-populate descriptions with field values
             descriptions = new string[]
             {
-                "Increases attack speed by {attackSpeedBoost[0]}",
-                "Attack speed increased to {attackSpeedBoost[1]}",
-                "Attack speed increased to {attackSpeedBoost[2]} and adds {doubleDamageChance} chance to deal double damage"
+                "Attack speed increases by {attackSpeedBoost[0]}",
+                "Increases to {attackSpeedBoost[1]}",
+                "Increases to {attackSpeedBoost[2]} and {doubleDamageChance} chance for attacks to deal double damage"
             };
         }
         
@@ -212,9 +212,9 @@ namespace PowerTree
             // Auto-populate descriptions with field values
             descriptions = new string[]
             {
-                "{procChance[0]} chance when hitting an enemy to gain {speedBoost[0]} attack speed for {boostDuration} seconds",
-                "Chance increased to {procChance[1]} and attack speed bonus to {speedBoost[1]}",
-                "Chance increased to {procChance[2]}, attack speed bonus to {speedBoost[2]}, and the effect can stack twice"
+                "{procChance[0]} chance to increase attack speed by {speedBoost[0]} for {boostDuration} seconds when hitting",
+                "Increases to {procChance[1]} chance, {speedBoost[1]} attack speed",
+                "Increases to {procChance[2]} chance, {speedBoost[2]} attack speed, can stack twice"
             };
         }
         
@@ -345,9 +345,9 @@ namespace PowerTree
             // Auto-populate descriptions with field values
             descriptions = new string[]
             {
-                "Deal {damageBoost[0]} increased damage to enemies with more than {healthThreshold} health",
-                "Damage boost increased to {damageBoost[1]}",
-                "Damage boost increased to {damageBoost[2]}"
+                "Damage increases by {damageBoost[0]} if enemy has above {healthThreshold} health",
+                "Increases to {damageBoost[1]}",
+                "Increases to {damageBoost[2]}"
             };
         }
         

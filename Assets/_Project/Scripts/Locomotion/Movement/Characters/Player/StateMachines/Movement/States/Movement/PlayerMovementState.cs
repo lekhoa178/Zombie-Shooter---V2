@@ -160,7 +160,7 @@ namespace LocomotionSystem
                 movementSpeed *= StateMachine.ReusableData.MovementOnSlopesSpeedModifier;
             }
 
-            return movementSpeed;
+            return movementSpeed * StateMachine.Player.PlayerStats.GetMoveSpeed();
         }
         
         protected void UpdateCameraRecenteringState(Vector2 movementInput)

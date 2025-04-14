@@ -15,7 +15,7 @@ namespace PowerTree
         private static TooltipDisplay tooltipDisplay;
 
         // Initialize the tooltip singleton
-        static TooltipTrigger()
+        private void Awake()
         {
             if (tooltipInstance == null)
             {

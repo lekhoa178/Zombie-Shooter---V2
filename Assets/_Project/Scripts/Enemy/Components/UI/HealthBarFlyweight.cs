@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Unity.VisualScripting;
 
 namespace Flyweight
 {
@@ -255,25 +256,41 @@ namespace Flyweight
         /// </summary>
         public void Cleanup()
         {
-            // Stop all coroutines
-            if (m_UpdateCoroutine != null)
-                StopCoroutine(m_UpdateCoroutine);
-                
-            if (m_DamageFlashCoroutine != null)
-                StopCoroutine(m_DamageFlashCoroutine);
-                
-            if (m_DelayFillCoroutine != null)
-                StopCoroutine(m_DelayFillCoroutine);
-                
-            if (m_AnticipateFillCoroutine != null)
-                StopCoroutine(m_AnticipateFillCoroutine);
-                
-            if (m_PrimaryFillCoroutine != null)
-                StopCoroutine(m_PrimaryFillCoroutine);
-                
-            if (m_SecondaryFillCoroutine != null)
-                StopCoroutine(m_SecondaryFillCoroutine);
-                
+            // Check if this object has been destroyed
+            if (this == null || !this.gameObject)
+            {
+                // Object is already destroyed, don't try to stop coroutines
+                m_TargetEnemy = null;
+                m_IsInitialized = false;
+                return;
+            }
+
+            try
+            {
+                // Stop all coroutines
+                if (m_UpdateCoroutine != null)
+                    StopCoroutine(m_UpdateCoroutine);
+            
+                if (m_DamageFlashCoroutine != null)
+                    StopCoroutine(m_DamageFlashCoroutine);
+            
+                if (m_DelayFillCoroutine != null)
+                    StopCoroutine(m_DelayFillCoroutine);
+            
+                if (m_AnticipateFillCoroutine != null)
+                    StopCoroutine(m_AnticipateFillCoroutine);
+            
+                if (m_PrimaryFillCoroutine != null)
+                    StopCoroutine(m_PrimaryFillCoroutine);
+            
+                if (m_SecondaryFillCoroutine != null)
+                    StopCoroutine(m_SecondaryFillCoroutine);
+            }
+            catch (System.Exception)
+            {
+                // Catch any exceptions that might occur during shutdown
+            }
+    
             m_TargetEnemy = null;
             m_IsInitialized = false;
         }
@@ -288,7 +305,7 @@ namespace Flyweight
             while (m_IsInitialized && m_TargetEnemy != null)
             {
                 // Skip updates if the enemy is dead or the game is paused
-                if (m_TargetEnemy.IsDead || Time.timeScale <= 0.01f)
+                if (m_TargetEnemy.IsDead)
                 {
                     // Hide this health bar
                     SetBarVisibility(false);

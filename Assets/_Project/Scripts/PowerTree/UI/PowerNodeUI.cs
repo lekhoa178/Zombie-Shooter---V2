@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,14 +12,20 @@ namespace PowerTree
     {
         [SerializeField] private Image iconImage;
         [SerializeField] private Image backgroundImage;
-        [SerializeField] private Text nameText;
-        [SerializeField] private Text levelText;
+        [SerializeField] private TextMeshProUGUI nameText;
+        [SerializeField] private TextMeshProUGUI levelText;
         [SerializeField] private GameObject[] levelIndicators;
+        
+        [Header("Connection Points")]
+        [SerializeField] private Transform m_ConnectionPointBottom;
+        [SerializeField] private Transform m_ConnectionPointTop;
         
         private PowerNode node;
         private PowerTreeManager treeManager;
         
         public PowerNode Node => node;
+        public Transform ConnectionPoint => m_ConnectionPointBottom != null ? m_ConnectionPointBottom : transform;
+        public Transform ConnectionPointTop => m_ConnectionPointTop != null ? m_ConnectionPointTop : transform;
         
         public void Initialize(PowerNode powerNode, PowerTreeManager manager)
         {
@@ -31,7 +38,7 @@ namespace PowerTree
             
             // Add click handler
             GetComponent<Button>().onClick.AddListener(() => {
-                var uiManager = FindObjectOfType<PowerTreeUI>();
+                var uiManager = FindAnyObjectByType<PowerTreeUI>();
                 if (uiManager != null)
                 {
                     uiManager.OnNodeClicked(node.nodeID);
@@ -51,7 +58,7 @@ namespace PowerTree
             if (isUnlocked)
             {
                 backgroundImage.color = Color.green; // Unlocked
-                levelText.text = $"Level {level}/3";
+                levelText.text = $"{level}";
                 
                 // Update level indicators
                 for (int i = 0; i < levelIndicators.Length; i++)
@@ -62,7 +69,7 @@ namespace PowerTree
             else if (canUnlock)
             {
                 backgroundImage.color = Color.yellow; // Can unlock
-                levelText.text = "Available";
+                levelText.text = "";
                 
                 foreach (var indicator in levelIndicators)
                 {
@@ -72,7 +79,7 @@ namespace PowerTree
             else
             {
                 backgroundImage.color = Color.gray; // Locked
-                levelText.text = "Locked";
+                levelText.text = "";
                 
                 foreach (var indicator in levelIndicators)
                 {

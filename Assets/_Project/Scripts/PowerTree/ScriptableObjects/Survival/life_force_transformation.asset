@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: life_force_transformation
+  m_EditorClassIdentifier: Assembly-CSharp:PowerTree:LifeForceTransformationNode
+  m_UniqueID: _75182c3a-6047-4844-8c70-7f67fc0c7821
+  nodeID: life_force_transformation
+  displayName: Life Force Transformation
+  descriptions:
+  - 30% chance to create 0.5 blue heart when receiving a red heart
+  - Increases chance to 50%
+  - Increases chance to 70%, created blue heart can be a black heart
+  icon: {fileID: 0}
+  branch: 0
+  unlocksNodes: []
+  requiredNodes:
+  - {fileID: 11400000, guid: 3291d69211141e549a55772881b891d5, type: 2}
+  aetherCosts: 010000000200000003000000
+  chanceValues:
+  - 0.3
+  - 0.5
+  - 0.7
+  blackHeartChance: 0.3

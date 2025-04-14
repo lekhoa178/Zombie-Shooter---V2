@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Climbing;
 using MoreMountains.Feedbacks;
+using PowerTree;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -49,6 +50,8 @@ namespace LocomotionSystem
         public SkinnedMeshRenderer TargetAvatarRenderer { get; private set; }
         
         public SocketManager SocketManager { get; private set; }
+        
+        public PlayerStats PlayerStats { get; private set; }
         
         // Components for stun and knockback
         private PlayerStunHandler _stunHandler;
@@ -130,6 +133,8 @@ namespace LocomotionSystem
 
             TargetAvatar = transform.GetChild(0).gameObject;
             TargetAvatarRenderer = TargetAvatar.GetComponentInChildren<SkinnedMeshRenderer>();
+            
+            PlayerStats = GetComponent<PlayerStats>();
         }
 
         private void Start()
@@ -224,7 +229,17 @@ namespace LocomotionSystem
         {
             if (IFrameManager.Instance.IsInvincible) return;
             
+            var hitDirection = hitContext.HitDirection;
+            hitDirection.y = 0f;
+            
             // Process damage
+            if (PlayerStats && !PlayerStats.TakeDamage(0.5f, hitDirection))
+            {
+                FloatingTextManager.Instance.ShowDamageText("Dodge", transform);
+                IFrameManager.Instance.StartDamageInvincibility();
+                return;
+            }
+            
             Debug.Log($"Player took {hitContext.Damage} damage");
             
             OnDamaged?.Invoke(this, hitContext.Damage, hitContext.HitDirection);
@@ -232,8 +247,6 @@ namespace LocomotionSystem
             AnimationData.PlayInteractionAnimation(Animator, AnimationData.DamagedStateName);
             
             // Face towards hit direction
-            Vector3 hitDirection = hitContext.HitDirection;
-            hitDirection.y = 0f; // Ignore vertical component
             Quaternion targetRotation = Quaternion.LookRotation(hitDirection);
             transform.rotation = targetRotation;
             

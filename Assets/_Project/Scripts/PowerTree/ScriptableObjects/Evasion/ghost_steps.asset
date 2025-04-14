@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a9ed07883c99654f976ddef896b0755, type: 3}
+  m_Name: ghost_steps
+  m_EditorClassIdentifier: 
+  m_UniqueID: _276d1ec5-c468-4ce8-97b1-91e122e85c77
+  nodeID: ghost_steps
+  displayName: Ghost Steps
+  descriptions:
+  - Increase movement speed by 10%
+  - Increases to 20%
+  - When successfully dodging, gain 50% movement speed for 2 seconds
+  icon: {fileID: 0}
+  branch: 2
+  unlocksNodes:
+  - {fileID: 0}
+  requiredNodes: []
+  aetherCosts: 010000000200000003000000
+  moveSpeedBoost:
+  - 0.1
+  - 0.15
+  - 0.2
+  dodgeBoost:
+  - 0.1
+  - 0.15
+  - 0.2
+  dodgeBoostDuration: 2

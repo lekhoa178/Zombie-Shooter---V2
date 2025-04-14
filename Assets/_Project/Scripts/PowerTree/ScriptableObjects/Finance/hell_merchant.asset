@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: hell_merchant
+  m_EditorClassIdentifier: Assembly-CSharp:PowerTree:HellMerchantNode
+  m_UniqueID: _bb3a07a8-b591-473c-b9fe-3530ea425a04
+  nodeID: hell_merchant
+  displayName: Hell Merchant
+  descriptions:
+  - Reduce card price in shop by 5%
+  - Reduce by 10%
+  - Reduce by 15%
+  icon: {fileID: 0}
+  branch: 3
+  unlocksNodes:
+  - {fileID: 0}
+  requiredNodes: []
+  aetherCosts: 010000000200000003000000
+  discountPercent:
+  - 5
+  - 10
+  - 15

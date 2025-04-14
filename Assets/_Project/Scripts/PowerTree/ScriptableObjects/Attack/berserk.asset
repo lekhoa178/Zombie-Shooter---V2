@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: berserk
+  m_EditorClassIdentifier: Assembly-CSharp:PowerTree:BerserkNode
+  m_UniqueID: _220d496c-7ab8-4a4b-b643-29aea82b5ac5
+  nodeID: berserk
+  displayName: Berserk
+  descriptions:
+  - 5% chance to increase attack speed by 20% for 3 seconds when hitting
+  - Increases to 10% chance, 30% attack speed
+  - Increases to 15% chance, 40% attack speed, can stack twice
+  icon: {fileID: 0}
+  branch: 1
+  unlocksNodes: []
+  requiredNodes:
+  - {fileID: 11400000, guid: cbe2203b470a32b439c8b35680463ac8, type: 2}
+  aetherCosts: 010000000200000003000000
+  procChance:
+  - 0.05
+  - 0.1
+  - 0.15
+  speedBoost:
+  - 0.2
+  - 0.3
+  - 0.4
+  boostDuration: 3
+  maxStacks: 1

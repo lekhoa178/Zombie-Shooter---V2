@@ -15,6 +15,17 @@ namespace PowerTree
         [SerializeField] private float[] chanceValues = new float[] { 0.1f, 0.2f, 0.3f }; // 10%, 20%, 30%
         private float currentChance = 0f;
         
+        private void OnValidate()
+        {
+            // Auto-populate descriptions with field values
+            descriptions = new string[]
+            {
+                "{chanceValues[0]} chance to prevent red heart loss when taking damage",
+                "Chance increased to {chanceValues[1]}",
+                "Chance increased to {chanceValues[2]}"
+            };
+        }
+        
         public override void ApplyEffect(PlayerStats player, int level)
         {
             if (level <= 0 || level > chanceValues.Length) return;
@@ -57,6 +68,17 @@ namespace PowerTree
     {
         [SerializeField] private int[] levelsToHealRed = new int[] { 2, 1, 1 };
         [SerializeField] private int[] levelsToHealBlue = new int[] { 0, 0, 3 };
+        
+        private void OnValidate()
+        {
+            // Auto-populate descriptions with field values
+            descriptions = new string[]
+            {
+                "Heal 1 red heart every {levelsToHealRed[0]} completed levels",
+                "Heal 1 red heart after every level",
+                "Heal 1 red heart after every level and 1 blue heart every {levelsToHealBlue[2]} completed levels"
+            };
+        }
         
         private int levelCounter = 0;
         private int currentRedThreshold = 0;
@@ -104,6 +126,17 @@ namespace PowerTree
     {
         [SerializeField] private float[] blueHeartsValues = new float[] { 2f, 3f, 3f };
         [SerializeField] private float[] nonLossChanceValues = new float[] { 0f, 0f, 0.1f };
+        
+        private void OnValidate()
+        {
+            // Auto-populate descriptions with field values
+            descriptions = new string[]
+            {
+                "Gain {blueHeartsValues[0]} blue hearts at the start of each level",
+                "Increased to {blueHeartsValues[1]} blue hearts",
+                "Gain {blueHeartsValues[2]} blue hearts and {nonLossChanceValues[2]} chance to not lose blue hearts"
+            };
+        }
         
         private float currentNonLossChance = 0f;
         
@@ -164,6 +197,17 @@ namespace PowerTree
         [SerializeField] private float blackHeartDamageBoostDuration = 5f; // 5 seconds boost
         [SerializeField] private float[] knockbackStrength = new float[] { 1f, 1f, 2f }; // Level 3 has stronger knockback
         [SerializeField] private bool hasAreaDamage = false; // Level 3 has area damage
+        
+        private void OnValidate()
+        {
+            // Auto-populate descriptions with field values
+            descriptions = new string[]
+            {
+                "{blueHeartRecoveryChance[0]} chance to recover blue hearts when taking damage, black hearts give {blackHeartDamageBoost[0]} damage boost for {blackHeartDamageBoostDuration} seconds when lost",
+                "Chances increased to {blueHeartRecoveryChance[1]}, damage boost to {blackHeartDamageBoost[1]}",
+                "Chances increased to {blueHeartRecoveryChance[2]}, damage boost to {blackHeartDamageBoost[2]}, stronger knockback and area damage"
+            };
+        }
         
         private float currentRecoveryChance = 0f;
         private float currentDamageBoost = 0f;
@@ -235,6 +279,17 @@ namespace PowerTree
         [SerializeField] private float[] pushRange = new float[] { 0f, 5f, 5f };
         [SerializeField] private float[] screenDamagePercent = new float[] { 0f, 0f, 0.5f };
         
+        private void OnValidate()
+        {
+            // Auto-populate descriptions with field values
+            descriptions = new string[]
+            {
+                "Negate {bulletNegationCount[0]} nearby bullets when losing a black heart",
+                "Negates {bulletNegationCount[1]} bullets and pushes enemies back {pushRange[1]} units",
+                "Negates {bulletNegationCount[2]} bullets, pushes enemies, and deals {screenDamagePercent[2]} damage to all enemies"
+            };
+        }
+        
         private int currentNegationCount = 0;
         private float currentPushRange = 0f;
         private float currentScreenDamage = 0f;
@@ -285,6 +340,17 @@ namespace PowerTree
         [SerializeField] private float[] redHeartsOnRevive = new float[] { 0f, 1f, 1f };
         [SerializeField] private float[] blueHeartsOnRevive = new float[] { 1f, 0f, 1f };
         
+        private void OnValidate()
+        {
+            // Auto-populate descriptions with field values
+            descriptions = new string[]
+            {
+                "{reviveChance[0]} chance to revive with {blueHeartsOnRevive[0]} blue heart when dying",
+                "Chance increased to {reviveChance[1]}, revive with {redHeartsOnRevive[1]} red heart instead",
+                "Chance increased to {reviveChance[2]}, revive with both {redHeartsOnRevive[2]} red heart and {blueHeartsOnRevive[2]} blue heart"
+            };
+        }
+        
         private float currentReviveChance = 0f;
         private float currentRedHearts = 0f;
         private float currentBlueHearts = 0f;
@@ -325,6 +391,17 @@ namespace PowerTree
     {
         [SerializeField] private float[] dodgeChance = new float[] { 0.3f, 0.5f, 0.5f };
         [SerializeField] private bool createPushWave = false; // Level 3 feature
+        
+        private void OnValidate()
+        {
+            // Auto-populate descriptions with field values
+            descriptions = new string[]
+            {
+                "Gain {dodgeChance[0]} chance to dodge attacks when at low health",
+                "Dodge chance increased to {dodgeChance[1]}",
+                "Successful dodges now push enemies away"
+            };
+        }
         
         private float currentDodgeChance = 0f;
         private bool dodgeApplied = false;
@@ -392,6 +469,17 @@ namespace PowerTree
     {
         [SerializeField] private float[] chanceValues = new float[] { 0.3f, 0.5f, 0.7f };
         [SerializeField] private float blackHeartChance = 0.3f; // For level 3
+        
+        private void OnValidate()
+        {
+            // Auto-populate descriptions with field values
+            descriptions = new string[]
+            {
+                "{chanceValues[0]} chance to transform red heart pickups into blue hearts",
+                "Chance increased to {chanceValues[1]}",
+                "Chance increased to {chanceValues[2]}, with {blackHeartChance} chance to create black hearts instead"
+            };
+        }
         
         private float currentChance = 0f;
         private bool canCreateBlackHeart = false;

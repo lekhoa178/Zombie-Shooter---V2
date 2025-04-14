@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b76d68dcdf54180429ca780b672267d6, type: 3}
+  m_Name: gentle_rebirth
+  m_EditorClassIdentifier: 
+  m_UniqueID: _685fb1cf-8961-4118-ac82-0daedb413965
+  nodeID: gentle_rebirth
+  displayName: Gentle Rebirth
+  descriptions:
+  - 10% chance to not lose a red heart when it would be lost
+  - Increases to 20%
+  - Increases to 30%
+  icon: {fileID: 0}
+  branch: 0
+  unlocksNodes:
+  - {fileID: 0}
+  - {fileID: 0}
+  requiredNodes: []
+  aetherCosts: 010000000200000003000000
+  chanceValues:
+  - 0.1
+  - 0.2
+  - 0.3

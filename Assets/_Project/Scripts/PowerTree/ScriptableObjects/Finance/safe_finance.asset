@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: safe_finance
+  m_EditorClassIdentifier: Assembly-CSharp:PowerTree:SafeFinanceNode
+  m_UniqueID: _1dc27f92-f9ca-4e7e-aeef-d8fc7dece11a
+  nodeID: safe_finance
+  displayName: Safe Finance
+  descriptions:
+  - When losing a red heart, receive 10 gold back
+  - Receive 15 gold back
+  - Receive 20 gold back and 10% chance to not lose heart
+  icon: {fileID: 0}
+  branch: 3
+  unlocksNodes: []
+  requiredNodes:
+  - {fileID: 11400000, guid: 840583a587c43ae41ad4061e35ff4753, type: 2}
+  aetherCosts: 010000000200000003000000
+  goldRefund: 0a0000000f00000014000000
+  heartSaveChance: 0.1

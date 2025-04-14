@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: blood_transforms_armor
+  m_EditorClassIdentifier: Assembly-CSharp:PowerTree:BloodTransformsIntoArmorNode
+  m_UniqueID: _caf96aa5-0899-4913-b55b-d5e5b65faa7c
+  nodeID: blood_transforms_armor
+  displayName: Blood Transforms into Armor
+  descriptions:
+  - 20% chance to recover 0.5 blue heart when losing a blue heart. When losing a
+    black heart, increase damage by 10% for 5 seconds
+  - Increases chance to 35%, black heart damage +15%
+  - Increases chance to 50%, black heart damage +20%, stronger knockback and small
+    area damage
+  icon: {fileID: 0}
+  branch: 0
+  unlocksNodes:
+  - {fileID: 0}
+  requiredNodes:
+  - {fileID: 11400000, guid: e4eb1dbf5a8e8c449881b05853255abf, type: 2}
+  aetherCosts: 010000000200000003000000
+  blueHeartRecoveryChance:
+  - 0.2
+  - 0.35
+  - 0.5
+  blackHeartDamageBoost:
+  - 0.1
+  - 0.15
+  - 0.2
+  blackHeartDamageBoostDuration: 5
+  knockbackStrength:
+  - 1
+  - 1
+  - 2
+  hasAreaDamage: 0

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: strong_life_drop
+  m_EditorClassIdentifier: Assembly-CSharp:PowerTree:StrongLifeDropNode
+  m_UniqueID: _41a85e94-b086-4136-a799-07928913d6a0
+  nodeID: strong_life_drop
+  displayName: Strong Life Drop
+  descriptions:
+  - Heal 1 red heart after every 2 levels
+  - Reduces to 1 level
+  - Heal 1 red heart per level and 1 blue heart after 3 levels
+  icon: {fileID: 0}
+  branch: 0
+  unlocksNodes:
+  - {fileID: 0}
+  - {fileID: 0}
+  requiredNodes: []
+  aetherCosts: 010000000200000003000000
+  levelsToHealRed: 020000000100000001000000
+  levelsToHealBlue: 000000000000000003000000

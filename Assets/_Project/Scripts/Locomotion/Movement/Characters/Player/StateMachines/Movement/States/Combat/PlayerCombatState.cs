@@ -288,6 +288,7 @@ namespace LocomotionSystem
                 // Process critical hit chance
                 bool isCriticalHit = attackConfig.EnableCriticalHit && Random.Range(0f, 100f) <= attackConfig.CriticalHitChance;
                 float finalDamage = isCriticalHit ? attackConfig.Damage * attackConfig.CriticalHitDamageMultiplier : attackConfig.Damage;
+                finalDamage *= StateMachine.Player.PlayerStats.GetDamageMultiplier();
                 
                 // Create a hit context if available
                 if (typeof(HitContext).IsClass)

@@ -9,11 +9,16 @@ namespace PowerTree
     /// </summary>
     public class PowerTreeSetup : MonoBehaviour
     {
-        [SerializeField] private PlayerStats playerStats;
-        [SerializeField] private PowerNodeFactory nodeFactory;
+        [SerializeField] private PlayerStats m_PlayerStats;
+        [SerializeField] private PowerNodeFactory m_NodeFactory;
         
-        private PowerTreeManager treeManager;
-        private PowerNodeDatabase nodeDatabase;
+        [Tooltip("The PowerNodeDatabase asset to use. If not set, one will be created at runtime.")]
+        [SerializeField] private PowerNodeDatabase m_NodeDatabase;
+        
+        [Tooltip("Whether to create a new database at runtime. Set to false to use the assigned database.")]
+        [SerializeField] private bool m_CreateDatabaseAtRuntime = true;
+        
+        private PowerTreeManager m_TreeManager;
         
         private void Awake()
         {
@@ -25,33 +30,52 @@ namespace PowerTree
         /// </summary>
         private void InitializePowerTree()
         {
-            // Create node database
-            nodeDatabase = ScriptableObject.CreateInstance<PowerNodeDatabase>();
-            
-            // Create all nodes using the factory
-            nodeDatabase.AllNodes = nodeFactory.CreatePowerTree().ToArray();
+            // Check if we need to create a database at runtime or use the existing one
+            if (m_CreateDatabaseAtRuntime)
+            {
+                if (m_NodeFactory == null)
+                {
+                    Debug.LogError("PowerTreeSetup: NodeFactory is required when creating database at runtime.");
+                    return;
+                }
+                
+                // Create node database at runtime
+                m_NodeDatabase = ScriptableObject.CreateInstance<PowerNodeDatabase>();
+                
+                // Create all nodes using the factory
+                m_NodeDatabase.AllNodes = m_NodeFactory.CreatePowerTree().ToArray();
+            }
+            else
+            {
+                // Use the assigned database
+                if (m_NodeDatabase == null)
+                {
+                    Debug.LogError("PowerTreeSetup: NodeDatabase is required when not creating at runtime. Set either m_CreateDatabaseAtRuntime=true or assign a database asset.");
+                    return;
+                }
+            }
             
             // Initialize the database
-            nodeDatabase.Initialize();
+            m_NodeDatabase.Initialize();
             
             // Create and set up the tree manager
-            treeManager = gameObject.AddComponent<PowerTreeManager>();
+            m_TreeManager = gameObject.AddComponent<PowerTreeManager>();
             
             // Set references
-            var managerField = treeManager.GetType().GetField("nodeDatabase", 
+            var managerField = m_TreeManager.GetType().GetField("nodeDatabase", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 
             if (managerField != null)
             {
-                managerField.SetValue(treeManager, nodeDatabase);
+                managerField.SetValue(m_TreeManager, m_NodeDatabase);
             }
             
-            var statsField = treeManager.GetType().GetField("playerStats", 
+            var statsField = m_TreeManager.GetType().GetField("playerStats", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 
             if (statsField != null)
             {
-                statsField.SetValue(treeManager, playerStats);
+                statsField.SetValue(m_TreeManager, m_PlayerStats);
             }
         }
         
@@ -61,25 +85,25 @@ namespace PowerTree
         public void ExampleNodeUsage()
         {
             // Add some Aether Shards to the player
-            treeManager.AddAetherShards(10);
+            m_TreeManager.AddAetherShards(10);
             
             // Unlock a node
-            bool unlocked = treeManager.UnlockNode("gentle_rebirth");
+            bool unlocked = m_TreeManager.UnlockNode("gentle_rebirth");
             Debug.Log($"Unlocked Gentle Rebirth: {unlocked}");
             
             // Upgrade a node (if unlocked)
-            if (treeManager.IsNodeUnlocked("gentle_rebirth"))
+            if (m_TreeManager.IsNodeUnlocked("gentle_rebirth"))
             {
-                bool upgraded = treeManager.UpgradeNode("gentle_rebirth");
-                Debug.Log($"Upgraded Gentle Rebirth to level {treeManager.GetNodeLevel("gentle_rebirth")}: {upgraded}");
+                bool upgraded = m_TreeManager.UpgradeNode("gentle_rebirth");
+                Debug.Log($"Upgraded Gentle Rebirth to level {m_TreeManager.GetNodeLevel("gentle_rebirth")}: {upgraded}");
             }
             
             // Check available nodes
-            var unlockableNodes = treeManager.GetUnlockableNodeIDs();
+            var unlockableNodes = m_TreeManager.GetUnlockableNodeIDs();
             Debug.Log($"Available nodes to unlock: {string.Join(", ", unlockableNodes)}");
             
             // Check upgradeable nodes
-            var upgradeableNodes = treeManager.GetUpgradeableNodeIDs();
+            var upgradeableNodes = m_TreeManager.GetUpgradeableNodeIDs();
             Debug.Log($"Available nodes to upgrade: {string.Join(", ", upgradeableNodes)}");
         }
         
@@ -89,24 +113,24 @@ namespace PowerTree
         public void ExampleAetherShardManagement()
         {
             // Add Aether Shards (could be from gameplay rewards)
-            treeManager.AddAetherShards(5);
+            m_TreeManager.AddAetherShards(5);
             
             // Get current Aether Shards
-            int currentShards = treeManager.GetAetherShards();
+            int currentShards = m_TreeManager.GetAetherShards();
             Debug.Log($"Player has {currentShards} Aether Shards");
             
             // Check if player can afford to unlock/upgrade
             string nodeID = "wild_strength";
             
-            if (treeManager.CanUnlockNode(nodeID))
+            if (m_TreeManager.CanUnlockNode(nodeID))
             {
                 Debug.Log($"Player can unlock {nodeID}");
-                treeManager.UnlockNode(nodeID);
+                m_TreeManager.UnlockNode(nodeID);
             }
-            else if (treeManager.CanUpgradeNode(nodeID))
+            else if (m_TreeManager.CanUpgradeNode(nodeID))
             {
                 Debug.Log($"Player can upgrade {nodeID}");
-                treeManager.UpgradeNode(nodeID);
+                m_TreeManager.UpgradeNode(nodeID);
             }
             else
             {
@@ -146,7 +170,7 @@ namespace PowerTree
                 
             if (treeMgrField != null)
             {
-                treeMgrField.SetValue(powerTreeUI, treeManager);
+                treeMgrField.SetValue(powerTreeUI, m_TreeManager);
             }
             
             var branchField = powerTreeUI.GetType().GetField("branchContainers", 

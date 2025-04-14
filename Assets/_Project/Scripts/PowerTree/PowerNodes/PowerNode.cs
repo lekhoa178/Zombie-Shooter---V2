@@ -7,6 +7,7 @@ using UnityEngine.Events;
 using System.Text;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using System.Text.RegularExpressions;
 
 namespace PowerTree
 {
@@ -38,8 +39,16 @@ namespace PowerTree
     public class PowerNode : ScriptableObject
     {
         [Header("Basic Info")]
+        [Tooltip("Unique ID for this node")]
+        [SerializeField] private string m_UniqueID;
+        
+        [Tooltip("Node identifier used in game logic")]
         public string nodeID;
+        
+        [Tooltip("Display name shown in the UI")]
         public string displayName;
+        
+        [Tooltip("Description for each level (0-2)")]
         public string[] descriptions = new string[3]; // One per level
         public Sprite icon;
         public PowerBranch branch;
@@ -50,6 +59,70 @@ namespace PowerTree
         
         [Header("Costs")]
         [SerializeField] private int[] aetherCosts = new int[] { 1, 2, 3 };
+        
+        // Track the asset name to detect changes
+        private string m_LastAssetName;
+        
+        /// <summary>
+        /// Gets the unique ID of this node
+        /// </summary>
+        public string UniqueID => m_UniqueID;
+        
+        private void OnEnable()
+        {
+            // Generate unique ID if not already set
+            if (string.IsNullOrEmpty(m_UniqueID))
+            {
+                GenerateUniqueID();
+            }
+            
+            m_LastAssetName = name;
+        }
+        
+        private void OnValidate()
+        {
+            // Check if the asset name has changed
+            if (m_LastAssetName != name)
+            {
+                UpdateUniqueIDPrefix();
+                m_LastAssetName = name;
+            }
+        }
+        
+        /// <summary>
+        /// Generates a unique ID based on the asset name
+        /// </summary>
+        private void GenerateUniqueID()
+        {
+            // Format: AssetName_GUID
+            m_UniqueID = $"{name}_{Guid.NewGuid().ToString()}";
+            m_LastAssetName = name;
+        }
+        
+        /// <summary>
+        /// Updates the ID prefix when asset name changes
+        /// </summary>
+        private void UpdateUniqueIDPrefix()
+        {
+            if (string.IsNullOrEmpty(m_UniqueID))
+            {
+                GenerateUniqueID();
+                return;
+            }
+            
+            // Extract the GUID part (everything after the last underscore)
+            int lastIndex = m_UniqueID.LastIndexOf('_');
+            if (lastIndex > 0)
+            {
+                string guidPart = m_UniqueID.Substring(lastIndex); // Includes the underscore
+                m_UniqueID = $"{name}{guidPart}";
+            }
+            else
+            {
+                // If ID doesn't have the expected format, generate a new one
+                GenerateUniqueID();
+            }
+        }
         
         public int GetLevelCost(int level)
         {
@@ -89,26 +162,30 @@ namespace PowerTree
         {
             if (string.IsNullOrEmpty(description)) return description;
             
-            // Find all placeholders in the format {fieldName}
-            var placeholderRegex = new System.Text.RegularExpressions.Regex(@"\{([^{}]+)\}");
-            var matches = placeholderRegex.Matches(description);
-            
-            string result = description;
-            
-            foreach (System.Text.RegularExpressions.Match match in matches)
-            {
-                string placeholder = match.Groups[1].Value;
-                object value = GetFieldValue(placeholder);
+            // Match placeholders like {fieldName} or {arrayName[index]}
+            return Regex.Replace(description, @"\{([^}\[]+)(?:\[(\d+)\])?\}", match => {
+                string fieldName = match.Groups[1].Value;
+                string indexStr = match.Groups[2].Value;
                 
-                if (value != null)
+                object value;
+                
+                if (!string.IsNullOrEmpty(indexStr) && int.TryParse(indexStr, out int index))
                 {
-                    // Format values based on their type
-                    string formattedValue = FormatFieldValue(value, placeholder);
-                    result = result.Replace("{" + placeholder + "}", formattedValue);
+                    // Array field access
+                    value = GetFieldValue($"{fieldName}[{index}]");
                 }
-            }
-            
-            return result;
+                else
+                {
+                    // Regular field access
+                    value = GetFieldValue(fieldName);
+                }
+                
+                if (value == null)
+                    return match.Value; // Keep original if field not found
+                
+                // Format based on field name and type
+                return FormatFieldValue(value, fieldName);
+            });
         }
         
         /// <summary>

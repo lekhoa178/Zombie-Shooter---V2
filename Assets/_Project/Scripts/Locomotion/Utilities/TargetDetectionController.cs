@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace LocomotionSystem
@@ -355,7 +356,7 @@ namespace LocomotionSystem
         private void GetTargetInInputDirection()
         {
             if (!canChangeTarget) return;
-            if (!Input || Input.PlayerActions.Movement == null) return;
+            if (!Input || Input.PlayerActions.IsUnityNull() || Input.PlayerActions.Movement == null) return;
 
             var moveDirection = Input.PlayerActions.Movement.ReadValue<Vector2>();
             

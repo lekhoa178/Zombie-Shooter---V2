@@ -187,8 +187,8 @@ namespace Flyweight
         {
             if (flyweight is HealthBarFlyweight healthBarFlyweight)
             {
-                healthBarFlyweight.Cleanup();
-                healthBarFlyweight.gameObject.SetActive(false);
+                healthBarFlyweight?.Cleanup();
+                healthBarFlyweight?.gameObject.SetActive(false);
             }
         }
     }

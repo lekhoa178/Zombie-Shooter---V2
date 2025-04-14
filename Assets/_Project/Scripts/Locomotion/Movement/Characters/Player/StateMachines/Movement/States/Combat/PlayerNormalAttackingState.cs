@@ -42,6 +42,8 @@ namespace LocomotionSystem
             
             // Get attack timing info including animation speed
             var timingInfo = comboConfig.GetAttackTimingInfo();
+            timingInfo.interval /= StateMachine.Player.PlayerStats.GetAttackSpeed();
+            timingInfo.animSpeedMultiplier *= StateMachine.Player.PlayerStats.GetAttackSpeed();
             float attackAnimSpeedMultiplier = timingInfo.animSpeedMultiplier;
             
             // Apply root motion setting from configuration

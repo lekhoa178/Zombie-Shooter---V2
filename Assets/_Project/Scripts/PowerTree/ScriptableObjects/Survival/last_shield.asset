@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: last_shield
+  m_EditorClassIdentifier: Assembly-CSharp:PowerTree:LastShieldNode
+  m_UniqueID: _3f528ac3-d916-406b-836c-5bbb12ee8cd6
+  nodeID: last_shield
+  displayName: Last Shield
+  descriptions:
+  - If only 0.5 red heart remains, 30% chance to completely dodge the next attack
+  - Increases dodge chance to 50%
+  - Successful dodge creates a wave that pushes back surrounding enemies
+  icon: {fileID: 0}
+  branch: 0
+  unlocksNodes:
+  - {fileID: 11400000, guid: c6eb59dfecf2250418e35c8237799e8c, type: 2}
+  requiredNodes:
+  - {fileID: 11400000, guid: 21632317b1edd3d438b76b006c6f7f82, type: 2}
+  aetherCosts: 010000000200000003000000
+  dodgeChance:
+  - 0.3
+  - 0.5
+  - 0.5
+  createPushWave: 0
