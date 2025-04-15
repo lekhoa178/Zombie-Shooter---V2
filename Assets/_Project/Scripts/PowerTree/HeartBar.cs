@@ -65,31 +65,35 @@ namespace PowerTree
             _heartValues[heartType] = amount;
 
             // Calculate how many hearts we need (full hearts + potentially one partial heart)
-            int neededHearts = Mathf.CeilToInt(amount);
+            int neededHearts = maxAmount > 0 ? Mathf.CeilToInt(maxAmount) : Mathf.CeilToInt(amount);
 
-            // If maxAmount is specified and amount is zero, keep showing empty hearts
-            int minHearts = (maxAmount > 0 && amount <= 0) ? Mathf.CeilToInt(maxAmount) : 0;
-            neededHearts = Mathf.Max(neededHearts, minHearts);
-
-            // Get all existing hearts of this type
+            // Get all existing hearts of this type, excluding those being destroyed
             List<Heart> existingHearts = new List<Heart>();
+            List<Heart> existingIncludeEmptyHearts = new List<Heart>();
             foreach (Transform child in heartContainer)
             {
                 Heart heart = child.GetComponent<Heart>();
-                if (heart != null && heart.gameObject.name.StartsWith(heartType.ToString()) && !heart.IsEmpty)
+                // Skip hearts that are being destroyed
+                if (heart != null && !heart.IsBeingDestroyed && heart.gameObject.name.StartsWith(heartType.ToString()))
                 {
-                    existingHearts.Add(heart);
+                    if (!heart.IsEmpty)
+                    {
+                        existingHearts.Add(heart);
+                    }
+            
+                    existingIncludeEmptyHearts.Add(heart);
                 }
             }
 
             // If we need more hearts than we have, create new ones
-            while (existingHearts.Count < neededHearts)
+            while (existingIncludeEmptyHearts.Count < neededHearts)
             {
                 GameObject heartPrefab = _heartPrefabs[heartType];
                 GameObject heartInstance = Instantiate(heartPrefab, heartContainer);
                 heartInstance.gameObject.name = $"{heartType}Heart_{existingHearts.Count}";
                 Heart heartComponent = heartInstance.GetComponent<Heart>();
                 existingHearts.Add(heartComponent);
+                existingIncludeEmptyHearts.Add(heartComponent);
             }
 
             // If we have too many hearts, handle them based on maxAmount
@@ -105,7 +109,7 @@ namespace PowerTree
                 }
                 else
                 {
-                    Destroy(heartToRemove.gameObject);
+                    heartToRemove.DestroyWithAnimation();
                 }
                 
                 existingHearts.RemoveAt(lastIndex);
@@ -113,7 +117,7 @@ namespace PowerTree
 
             // Set the appropriate fill amount for each heart
             float remainingAmount = amount;
-            for (int i = 0; i < existingHearts.Count; i++)
+            for (int i = 0; i < existingIncludeEmptyHearts.Count; i++)
             {
                 float fillAmount;
 
@@ -128,7 +132,7 @@ namespace PowerTree
                     remainingAmount = 0f;
                 }
 
-                existingHearts[i].SetHeartAmount(fillAmount);
+                existingIncludeEmptyHearts[i].SetHeartAmount(fillAmount);
             }
 
             // Reorder hearts if any were added or removed
@@ -140,13 +144,12 @@ namespace PowerTree
 
         private void ReorderHearts()
         {
-            // Collect all heart info
             List<(Heart heart, HeartType type, float amount)> heartInfos = new List<(Heart, HeartType, float)>();
 
             foreach (Transform child in heartContainer)
             {
                 Heart heart = child.GetComponent<Heart>();
-                if (heart != null)
+                if (heart != null && !heart.IsBeingDestroyed)
                 {
                     HeartType type = DetermineHeartTypeFromName(heart.gameObject.name);
                     float amount = _heartValues.TryGetValue(type, out var value) ? value : 0;

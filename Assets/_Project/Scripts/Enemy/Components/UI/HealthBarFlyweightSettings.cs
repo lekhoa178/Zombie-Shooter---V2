@@ -1,4 +1,5 @@
 using Flyweight;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -187,8 +188,10 @@ namespace Flyweight
         {
             if (flyweight is HealthBarFlyweight healthBarFlyweight)
             {
+                if (healthBarFlyweight.IsUnityNull()) return;
+                
                 healthBarFlyweight?.Cleanup();
-                healthBarFlyweight?.gameObject.SetActive(false);
+                healthBarFlyweight?.gameObject?.SetActive(false);
             }
         }
     }

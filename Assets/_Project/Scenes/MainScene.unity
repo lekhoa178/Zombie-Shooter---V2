@@ -54069,8 +54069,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxRedHearts: 3
-  currentRedHearts: 2.5
-  currentBlueHearts: 1
+  currentRedHearts: 0.5
+  currentBlueHearts: 0
   currentBlackHearts: 0
   damageMultiplier: 1
   attackSpeedMultiplier: 5

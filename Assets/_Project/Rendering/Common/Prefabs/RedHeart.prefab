@@ -55,6 +55,11 @@ MonoBehaviour:
   halfHeartSprite: {fileID: 21300000, guid: 452608f59bd2aa0468fe4bdb9ce7de2b, type: 3}
   emptyHeartSprite: {fileID: 21300000, guid: 8bd5431e9811df4499da048f8ba63f0f, type: 3}
   heartAmount: 1
+  increaseBounceScale: 1.2
+  increaseDuration: 0.2
+  decreaseDuration: 0.3
+  constructionDuration: 0.3
+  destructionDuration: 0.2
 --- !u!222 &463585399841845586
 CanvasRenderer:
   m_ObjectHideFlags: 0
