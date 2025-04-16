@@ -39,6 +39,8 @@ namespace PowerTree
         public UnityEvent OnEnemyKilled = new UnityEvent(); // Modified to not pass consecutive kills
         public UnityEvent OnLevelCompleted = new UnityEvent();
         public UnityEvent<bool> OnLevelCompletedWithoutDamage = new UnityEvent<bool>();
+        
+        public bool IsDied => currentRedHearts <= 0f;
 
         // Configuration system for PowerNodes
         private Dictionary<string, object> nodeConfiguration = new Dictionary<string, object>();

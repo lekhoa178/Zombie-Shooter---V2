@@ -669,6 +669,8 @@ namespace Flyweight
         
         private void UpdateParabolicHoming()
         {
+            if (homingTarget == null) return;
+            
             // Get the current homingTarget position - this is where we want to go
             Vector3 targetPos = homingTarget.position;
             

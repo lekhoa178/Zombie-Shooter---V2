@@ -184,6 +184,8 @@ namespace LocomotionSystem
 
         private IEnumerator DetectionRoutine()
         {
+            yield return new WaitForSeconds(2f);
+            
             while (true)
             {
                 ScanForTargetsInRange();
@@ -356,7 +358,7 @@ namespace LocomotionSystem
         private void GetTargetInInputDirection()
         {
             if (!canChangeTarget) return;
-            if (!Input || Input.PlayerActions.IsUnityNull() || Input.PlayerActions.Movement == null) return;
+            if (!Input || Input.PlayerActions.Movement == null) return;
 
             var moveDirection = Input.PlayerActions.Movement.ReadValue<Vector2>();
             

@@ -62,6 +62,7 @@ namespace LocomotionSystem
         [Header("Interaction State Names")]
         [field: SerializeField] public string DamagedStateName { get; private set; } = "Damaged";
         [field: SerializeField] public string CollectStateName { get; private set; } = "Collect";
+        [field: SerializeField] public string DieStateName { get; private set; } = "Die";
 
         public int GroundedParameterHash { get; private set; }
         public int MovingParameterHash { get; private set; }

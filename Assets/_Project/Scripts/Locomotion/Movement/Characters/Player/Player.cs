@@ -65,6 +65,7 @@ namespace LocomotionSystem
         public bool IsStunned => _stunHandler != null && _stunHandler.IsStunned;
         public bool IsInStunRecovery => _stunHandler != null && _stunHandler.IsInStunRecovery;
         public bool CanBeStunned => _stunHandler != null && _stunHandler.CanBeStunned;
+        public bool IsDied => PlayerStats.IsDied;
         public event Action<GameObject> OnStunBegin
         {
             add { if (_stunHandler != null) _stunHandler.OnStunBegin += value; }
@@ -139,11 +140,36 @@ namespace LocomotionSystem
 
         private void Start()
         {
+            AddInputActionsCallbacks();
+            
             MovementStateMachine.ChangeState(MovementStateMachine.DefaultState);
+        }
+
+        private void OnDisable()
+        {
+            RemoveInputActionsCallbacks();
+        }
+
+        private void AddInputActionsCallbacks()
+        {
+            if (PlayerStats != null)
+            {
+                PlayerStats.OnPlayerDeath.AddListener(OnDie);;
+            }
+        }
+        
+        private void RemoveInputActionsCallbacks()
+        {
+            if (PlayerStats != null)
+            {
+                PlayerStats.OnPlayerDeath.RemoveListener(OnDie);
+            }
         }
 
         private void Update()
         {
+            if (IsDied) return;
+            
             MovementStateMachine.HandleInput();
 
             MovementStateMachine.Update();
@@ -153,6 +179,8 @@ namespace LocomotionSystem
 
         private void FixedUpdate()
         {
+            if (IsDied) return;
+
             MovementStateMachine.PhysicsUpdate();
         }
 
@@ -240,11 +268,14 @@ namespace LocomotionSystem
                 return;
             }
             
+            if (!IsDied)
+            {
+                AnimationData.PlayInteractionAnimation(Animator, AnimationData.DamagedStateName);
+            }
+            
             Debug.Log($"Player took {hitContext.Damage} damage");
             
             OnDamaged?.Invoke(this, hitContext.Damage, hitContext.HitDirection);
-            
-            AnimationData.PlayInteractionAnimation(Animator, AnimationData.DamagedStateName);
             
             // Face towards hit direction
             Quaternion targetRotation = Quaternion.LookRotation(hitDirection);
@@ -289,6 +320,15 @@ namespace LocomotionSystem
                     }
                     break;
             }
+        }
+
+        private void OnDie()
+        {
+            Input.PlayerActions.Disable();
+            
+            ResizableCapsuleCollider.CapsuleColliderData.Collider.enabled = false;
+            
+            AnimationData.PlayInteractionAnimation(Animator, AnimationData.DieStateName, 0);
         }
         #endregion
         
