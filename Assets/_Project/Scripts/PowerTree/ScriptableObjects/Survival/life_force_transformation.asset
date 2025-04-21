@@ -16,10 +16,11 @@ MonoBehaviour:
   nodeID: life_force_transformation
   displayName: Life Force Transformation
   descriptions:
-  - 30% chance to create 0.5 blue heart when receiving a red heart
-  - Increases chance to 50%
-  - Increases chance to 70%, created blue heart can be a black heart
-  icon: {fileID: 0}
+  - '{chanceValues[0]} chance to transform red heart pickups into blue hearts'
+  - Chance increased to {chanceValues[1]}
+  - Chance increased to {chanceValues[2]}, with {blackHeartChance} chance to create
+    black hearts instead
+  icon: {fileID: 615246122, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 0
   unlocksNodes: []
   requiredNodes:

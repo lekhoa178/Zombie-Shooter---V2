@@ -16,10 +16,10 @@ MonoBehaviour:
   nodeID: piercing_damage
   displayName: Piercing Damage
   descriptions:
-  - Damage increases by 25% if enemy has above 75% health
-  - Increases to 35%
-  - Increases to 50%
-  icon: {fileID: 0}
+  - Damage increases by {damageBoost[0]} if enemy has above {healthThreshold} health
+  - Increases to {damageBoost[1]}
+  - Increases to {damageBoost[2]}
+  icon: {fileID: 1535099233, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 1
   unlocksNodes: []
   requiredNodes:

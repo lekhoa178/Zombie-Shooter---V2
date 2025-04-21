@@ -8,6 +8,7 @@ using System.Text;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using System.Text.RegularExpressions;
+using UnityEngine.Serialization;
 
 namespace PowerTree
 {
@@ -59,6 +60,8 @@ namespace PowerTree
         
         [Header("Costs")]
         [SerializeField] private int[] aetherCosts = new int[] { 1, 2, 3 };
+
+        public UnityEvent<int> onNodeUnlockedOrUpgraded = new UnityEvent<int>();
         
         // Track the asset name to detect changes
         private string m_LastAssetName;
@@ -150,7 +153,11 @@ namespace PowerTree
             if (level <= 0 || level > descriptions.Length) return string.Empty;
             return ProcessDescription(descriptions[level - 1]);
         }
-        
+
+        public virtual void ResetState()
+        {
+        }
+
         /// <summary>
         /// Processes a description string by replacing placeholders with actual field values.
         /// Placeholders are in the format {fieldName} and will be replaced with the
@@ -237,7 +244,7 @@ namespace PowerTree
             
             return null;
         }
-        
+
         /// <summary>
         /// Formats a field value based on its type and field name.
         /// </summary>
@@ -247,36 +254,59 @@ namespace PowerTree
         private string FormatFieldValue(object value, string fieldName)
         {
             if (value == null) return "null";
-            
+
+            string formattedValue = "";
+            string colorTag = "yellow"; // Default color
+
             // Handle specific field naming conventions
             if (fieldName.Contains("Boost") && value is float floatValue)
             {
                 // Convert boost values to percentages
-                return $"{floatValue * 100:0}";
+                formattedValue = $"{floatValue * 100:0}%";
             }
             else if (fieldName.EndsWith("Duration") && value is float durationValue)
             {
                 // Format durations with one decimal place
-                return $"{durationValue:0.0}";
+                formattedValue = $"{durationValue:0.0}";
             }
             else if (fieldName.Contains("Chance") && value is float chanceValue)
             {
                 // Convert chance values to percentages
-                return $"{chanceValue * 100:0}";
+                formattedValue = $"{chanceValue * 100:0}%";
             }
-            else if (value is float floatVal)
+            else if (fieldName.Contains("Percent") && value is float percentValue)
             {
-                // Default float formatting
-                return $"{floatVal:0.##}";
+                // Convert percentage values to percentages
+                formattedValue = $"{percentValue * 100:0}%";
             }
-            else if (value is int intVal)
+            else if (fieldName.Contains("Threshold") && value is float thresholdValue)
             {
-                // Default int formatting
-                return intVal.ToString();
+                // Convert percentage values to percentages
+                formattedValue = $"{thresholdValue * 100:0}%";
             }
-            
-            // Default formatting for other types
-            return value.ToString();
+            else
+                switch (value)
+                {
+                    case string strVal:
+                        // Default string formatting
+                        formattedValue = strVal;
+                        break;
+                    case float floatVal:
+                        // Default float formatting
+                        formattedValue = $"{floatVal:0.##}";
+                        break;
+                    case int intVal:
+                        // Default int formatting
+                        formattedValue = intVal.ToString();
+                        break;
+                    default:
+                        // Default formatting for other types
+                        formattedValue = value.ToString();
+                        break;
+                }
+
+            // Apply color formatting
+            return $"<color={colorTag}>{formattedValue}</color>";
         }
     }
     

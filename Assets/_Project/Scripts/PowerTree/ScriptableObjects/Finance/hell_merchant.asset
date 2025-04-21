@@ -16,13 +16,13 @@ MonoBehaviour:
   nodeID: hell_merchant
   displayName: Hell Merchant
   descriptions:
-  - Reduce card price in shop by 5%
-  - Reduce by 10%
-  - Reduce by 15%
-  icon: {fileID: 0}
+  - Shop prices are reduced by {discountPercent[0]}%
+  - Shop discount increased to {discountPercent[1]}%
+  - Shop discount increased to {discountPercent[2]}%
+  icon: {fileID: 432935020, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 3
   unlocksNodes:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: cdba6838364613648b5ca36096d72356, type: 2}
   requiredNodes: []
   aetherCosts: 010000000200000003000000
   discountPercent:

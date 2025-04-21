@@ -40,6 +40,8 @@ namespace PowerTree
         public UnityEvent OnLevelCompleted = new UnityEvent();
         public UnityEvent<bool> OnLevelCompletedWithoutDamage = new UnityEvent<bool>();
         
+        public UnityEvent OnAttributesChanged = new UnityEvent();
+        
         public bool IsDied => currentRedHearts <= 0f;
 
         // Configuration system for PowerNodes
@@ -255,6 +257,9 @@ namespace PowerTree
             {
                 damageMultiplier += amount;
             }
+            
+            OnAttributesChanged.Invoke();
+
         }
 
         public void ModifyAttackSpeedMultiplier(float amount, float duration = 0, bool canStack = false)
@@ -278,6 +283,8 @@ namespace PowerTree
             {
                 attackSpeedMultiplier += amount;
             }
+            
+            OnAttributesChanged.Invoke();
         }
 
         public void ModifyMoveSpeedMultiplier(float amount, float duration = 0)
@@ -295,6 +302,8 @@ namespace PowerTree
             {
                 moveSpeedMultiplier += amount;
             }
+            
+            OnAttributesChanged.Invoke();
         }
 
         public void ModifyDodgeChance(float amount, float duration = 0)
@@ -312,6 +321,8 @@ namespace PowerTree
             {
                 dodgeChance += amount;
             }
+            
+            OnAttributesChanged.Invoke();
         }
 
         #endregion
@@ -321,6 +332,8 @@ namespace PowerTree
         public void AddGold(int amount)
         {
             gold += amount;
+            
+            OnAttributesChanged.Invoke();
         }
 
         public bool SpendGold(int amount)
@@ -330,6 +343,8 @@ namespace PowerTree
                 gold -= amount;
                 return true;
             }
+            
+            OnAttributesChanged.Invoke();
 
             return false;
         }
@@ -342,11 +357,15 @@ namespace PowerTree
         public void ModifyShopDiscount(float percentAmount)
         {
             shopDiscountPercent += percentAmount;
+            
+            OnAttributesChanged.Invoke();
         }
 
         public void ModifyGoldDropMultiplier(float amount)
         {
             goldDropMultiplier += amount;
+            
+            OnAttributesChanged.Invoke();
         }
 
         #endregion
@@ -382,6 +401,10 @@ namespace PowerTree
         public float GetMaxRedHearts() => maxRedHearts;
         public float GetCurrentBlueHearts() => currentBlueHearts;
         public float GetCurrentBlackHearts() => currentBlackHearts;
+        public float GetDodgeChance() => dodgeChance;
+        public int GetGold() => gold;
+        public float GetGoldDropMultiplier() => goldDropMultiplier;
+        public float GetShopDiscountPercent() => shopDiscountPercent;
 
         #endregion
 
@@ -446,6 +469,8 @@ namespace PowerTree
             }
 
             activeEffects.RemoveAt(index);
+            
+            OnAttributesChanged.Invoke();
         }
 
         #endregion

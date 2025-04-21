@@ -16,15 +16,16 @@ MonoBehaviour:
   nodeID: blood_transforms_armor
   displayName: Blood Transforms into Armor
   descriptions:
-  - 20% chance to recover 0.5 blue heart when losing a blue heart. When losing a
-    black heart, increase damage by 10% for 5 seconds
-  - Increases chance to 35%, black heart damage +15%
-  - Increases chance to 50%, black heart damage +20%, stronger knockback and small
-    area damage
-  icon: {fileID: 0}
+  - '{blueHeartRecoveryChance[0]} chance to recover blue hearts when taking damage,
+    black hearts give {blackHeartDamageBoost[0]} damage boost for {blackHeartDamageBoostDuration}
+    seconds when lost'
+  - Chances increased to {blueHeartRecoveryChance[1]}, damage boost to {blackHeartDamageBoost[1]}
+  - Chances increased to {blueHeartRecoveryChance[2]}, damage boost to {blackHeartDamageBoost[2]},
+    stronger knockback and area damage
+  icon: {fileID: 1529646025, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 0
   unlocksNodes:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 736e4f6c99765d74f970a462a7a149a4, type: 2}
   requiredNodes:
   - {fileID: 11400000, guid: e4eb1dbf5a8e8c449881b05853255abf, type: 2}
   aetherCosts: 010000000200000003000000

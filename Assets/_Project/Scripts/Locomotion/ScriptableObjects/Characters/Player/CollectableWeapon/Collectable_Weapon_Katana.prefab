@@ -9864,7 +9864,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6815875362650266721
 Transform:
   m_ObjectHideFlags: 0
@@ -24753,6 +24753,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ID: Collectable_Weapon_Katana_f33b0121-5f08-49ac-997e-b30881cafd66
+  m_ItemName: 
   m_DisplayName: Press E to Collect
   m_Type: 0
   m_VisualObject: {fileID: 8616685257067868090}

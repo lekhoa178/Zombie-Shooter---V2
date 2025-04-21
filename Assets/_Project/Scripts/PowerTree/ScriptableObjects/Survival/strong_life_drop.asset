@@ -16,14 +16,15 @@ MonoBehaviour:
   nodeID: strong_life_drop
   displayName: Strong Life Drop
   descriptions:
-  - Heal 1 red heart after every 2 levels
-  - Reduces to 1 level
-  - Heal 1 red heart per level and 1 blue heart after 3 levels
-  icon: {fileID: 0}
+  - Heal 1 red heart every {levelsToHealRed[0]} completed levels
+  - Heal 1 red heart after every level
+  - Heal 1 red heart after every level and 1 blue heart every {levelsToHealBlue[2]}
+    completed levels
+  icon: {fileID: 882598686, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 0
   unlocksNodes:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 3291d69211141e549a55772881b891d5, type: 2}
+  - {fileID: 11400000, guid: 41e135b2574a72440b3b34e41c91fbb9, type: 2}
   requiredNodes: []
   aetherCosts: 010000000200000003000000
   levelsToHealRed: 020000000100000001000000

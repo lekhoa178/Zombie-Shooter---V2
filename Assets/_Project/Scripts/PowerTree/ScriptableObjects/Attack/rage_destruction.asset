@@ -16,10 +16,11 @@ MonoBehaviour:
   nodeID: rage_destruction
   displayName: Rage Destruction
   descriptions:
-  - When losing a red heart, increase damage by 15% for 5 seconds
-  - Increases to 25%
-  - Increases to 35% and lasts for 7 seconds
-  icon: {fileID: 0}
+  - When losing a red heart, increase damage by {damageBoost[0]} for {boostDuration[0]}
+    seconds
+  - Increases to {damageBoost[1]}
+  - Increases to {damageBoost[2]} and lasts for {boostDuration[2]} seconds
+  icon: {fileID: -1416437644, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 1
   unlocksNodes: []
   requiredNodes:

@@ -57,6 +57,8 @@ namespace PowerTree
                 player.ModifyDamageMultiplier(-currentBoost);
                 boostApplied = false;
             }
+            
+            ResetState();
         }
         
         private void CheckAndApplyDamageIfNeeded(PlayerStats player)
@@ -77,6 +79,12 @@ namespace PowerTree
                 player.ModifyDamageMultiplier(-currentBoost);
                 boostApplied = false;
             }
+        }
+
+        public override void ResetState()
+        {
+            currentBoost = 0f;
+            boostApplied = false;
         }
     }
 
@@ -117,6 +125,14 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             player.OnRedHeartLost.RemoveListener(OnRedHeartLost);
+            
+            ResetState();
+        }
+
+        public override void ResetState()
+        {
+            currentBoost = 0f;
+            currentDuration = 0f;
         }
         
         private void OnRedHeartLost(float amount)
@@ -189,6 +205,14 @@ namespace PowerTree
             {
                 WeaponSystem.RemoveDoubleDamageChance(doubleDamageChance);
             }
+            
+            ResetState();
+        }
+
+        public override void ResetState()
+        {
+            currentSpeedBoost = 0f;
+            hasDoubleDamageChance = false;
         }
     }
 
@@ -233,6 +257,15 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             WeaponSystem.OnEnemyHit.RemoveListener(() => OnEnemyHit(player));
+            
+            ResetState();
+        }
+
+        public override void ResetState()
+        {
+            currentMaxStacks = 1;
+            currentProcChance = 0f;
+            currentSpeedBoost = 0f;
         }
         
         private void OnEnemyHit(PlayerStats player)
@@ -299,6 +332,17 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             player.OnEnemyKilled.RemoveListener(OnEnemyKilled);
+            
+            ResetState();
+        }
+
+        public override void ResetState()
+        {
+            currentMaxStacks = 1;
+            currentAttackSpeedBoost = 0f;
+            currentDamageBoost = 0f;
+            killCounter?.Reset();
+            killTimer?.Reset();
         }
         
         private void OnEnemyKilled()
@@ -365,6 +409,13 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             WeaponSystem.OnCalculateDamage -= OnCalculateDamage;
+            
+            ResetState();
+        }
+
+        public override void ResetState()
+        {
+            currentDamageBoost = 0f;
         }
         
         private void OnCalculateDamage(Enemy target, ref float damage)

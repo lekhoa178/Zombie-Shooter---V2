@@ -16,13 +16,14 @@ MonoBehaviour:
   nodeID: luck
   displayName: Luck
   descriptions:
-  - 10% chance for enemies to drop gold
-  - Increases to 20%
-  - Increases to 30%, can drop x2 gold
-  icon: {fileID: 0}
+  - Enemies have a {goldDropChance[0]} chance to drop gold when defeated
+  - Gold drop chance increased to {goldDropChance[1]}
+  - Gold drop chance increased to {goldDropChance[2]} with {doubleGoldChance} chance
+    for double gold
+  icon: {fileID: 498534676, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 3
   unlocksNodes:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: e9e08e68f2ff66847bc4952b5afee448, type: 2}
   requiredNodes: []
   aetherCosts: 010000000200000003000000
   goldDropChance:

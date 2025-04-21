@@ -34,29 +34,28 @@ public class FloatingDamageText : MonoBehaviour
     {
         rectTransform = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
-        
+
         // Set up text and color
         damageText.text = $"{text}!!";
         damageText.color = damageColor;
-        
-        // Convert world position to canvas position
+
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(originTransform.position);
+
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             targetCanvas.GetComponent<RectTransform>(),
-            Camera.main.WorldToScreenPoint(originTransform.position),
-            targetCanvas.worldCamera,
-            out Vector2 localPos);
-        
-        // Set initial position
+            screenPos,
+            null,
+            out var localPos);
+
         rectTransform.localPosition = localPos;
         startPosition = rectTransform.localPosition + offset;
         rectTransform.localPosition = startPosition;
-        
-        // Calculate target position (moving upward)
+
         targetPosition = startPosition + new Vector3(0, moveDistance, 0);
-        
-        // Start animation
+
         StartCoroutine(AnimateText());
     }
+
 
     private IEnumerator AnimateText()
     {
@@ -71,15 +70,12 @@ public class FloatingDamageText : MonoBehaviour
             elapsedTime += Time.deltaTime;
             float normalizedTime = elapsedTime / lifetime;
             
-            // Position animation (float upward)
             float moveProgress = moveCurve.Evaluate(normalizedTime);
             rectTransform.localPosition = Vector3.Lerp(startPosition, targetPosition, moveProgress);
             
-            // Scale animation (bounce at start, gradually shrink)
             float scaleProgress = scaleCurve.Evaluate(normalizedTime);
             rectTransform.localScale = Vector3.Lerp(startScale, endScale, scaleProgress);
             
-            // Fade animation (start fading after initial display)
             if (elapsedTime > fadeStartTime)
             {
                 float fadeProgress = (elapsedTime - fadeStartTime) / (lifetime - fadeStartTime);

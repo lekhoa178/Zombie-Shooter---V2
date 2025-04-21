@@ -28,7 +28,6 @@ Material:
     MotionVector: User
   disabledShaderPasses:
   - DistortionVectors
-  - MOTIONVECTORS
   - TransparentBackface
   m_LockedProperties: 
   m_SavedProperties:
@@ -306,6 +305,7 @@ Material:
     - _UnlitColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
     - _WhiteColor: {r: 1, g: 0.8950032, b: 0, a: 0}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!114 &2610440129317487110
 MonoBehaviour:
   m_ObjectHideFlags: 11

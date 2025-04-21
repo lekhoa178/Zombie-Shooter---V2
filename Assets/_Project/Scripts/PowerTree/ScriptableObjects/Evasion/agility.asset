@@ -16,10 +16,12 @@ MonoBehaviour:
   nodeID: agility
   displayName: Agility
   descriptions:
-  - When HP below 1 red heart, movement speed +10%
-  - Increases to +20%
-  - When HP below 1 red heart, dodge +10%
-  icon: {fileID: 0}
+  - While at {lowHealthThreshold} hearts or below, gain {moveSpeedBoost[0]} movement
+    speed
+  - Movement speed boost increased to {moveSpeedBoost[1]}
+  - Movement speed boost increased to {moveSpeedBoost[2]} and gain {dodgeChanceBoost[2]}
+    dodge chance
+  icon: {fileID: 1833704431, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 2
   unlocksNodes: []
   requiredNodes:

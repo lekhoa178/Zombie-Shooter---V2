@@ -16,14 +16,15 @@ MonoBehaviour:
   nodeID: lightning_strike
   displayName: Lightning Strike
   descriptions:
-  - Attack speed increases by 10%
-  - Increases to 20%
-  - Increases to 30% and 5% chance for attacks to deal double damage
-  icon: {fileID: 0}
+  - Attack speed increases by {attackSpeedBoost[0]}
+  - Increases to {attackSpeedBoost[1]}
+  - Increases to {attackSpeedBoost[2]} and {doubleDamageChance} chance for attacks
+    to deal double damage
+  icon: {fileID: 1754567318, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 1
   unlocksNodes:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 03fb4f268abad12419638fedb5f7c17d, type: 2}
+  - {fileID: 11400000, guid: da529ef770571664c977377f5144c92e, type: 2}
   requiredNodes: []
   aetherCosts: 010000000200000003000000
   attackSpeedBoost:

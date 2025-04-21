@@ -15,10 +15,13 @@ namespace LocomotionSystem
 
         [Tooltip("If you're using Cinemachine 2.8.4 or under, untick this option.\nIf unticked, both Look and Zoom will be disabled.")]
         [SerializeField] private bool fixedCinemachineVersion;
+        
+        private bool isUICursorVisible;
 
         private void Awake()
         {
             cameraToggleInputAction.action.started += OnCameraCursorToggled;
+            cameraToggleInputAction.action.canceled += OnCameraCursorToggled;
 
             if (startHidden)
             {
@@ -28,21 +31,52 @@ namespace LocomotionSystem
 
         private void OnEnable()
         {
-            cameraToggleInputAction.asset.Enable();
+            cameraToggleInputAction.action.Enable();
         }
 
         private void OnDisable()
         {
-            cameraToggleInputAction.asset.Disable();
+            cameraToggleInputAction.action.Disable();
         }
 
         private void OnCameraCursorToggled(InputAction.CallbackContext context)
         {
             ToggleCursor();
         }
+        
+        public void UIToggleCursor(bool show)
+        {
+            isUICursorVisible = show;
+            
+            if (show)
+            {
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.None;
+
+                if (!fixedCinemachineVersion)
+                {
+                    inputAxisController.enabled = false;
+                }
+            }
+            else
+            {
+                Cursor.visible = false;
+                Cursor.lockState = CursorLockMode.Locked;
+
+                if (!fixedCinemachineVersion)
+                {
+                    inputAxisController.enabled = true;
+                }
+            }
+        }
 
         private void ToggleCursor()
         {
+            if (isUICursorVisible)
+            {
+                return;
+            }
+            
             Cursor.visible = !Cursor.visible;
 
             if (!Cursor.visible)

@@ -16,14 +16,17 @@ MonoBehaviour:
   nodeID: near_death_revival
   displayName: Near Death Revival
   descriptions:
-  - 5% chance to revive with 1 blue heart when dying
-  - Increases chance to 10%, revive with 1 red heart
-  - Increases chance to 15%, revive with 1 red heart and 1 blue heart
-  icon: {fileID: 0}
+  - '{reviveChance[0]} chance to revive with {blueHeartsOnRevive[0]} blue heart when
+    dying'
+  - Chance increased to {reviveChance[1]}, revive with {redHeartsOnRevive[1]} red
+    heart instead
+  - Chance increased to {reviveChance[2]}, revive with both {redHeartsOnRevive[2]}
+    red heart and {blueHeartsOnRevive[2]} blue heart
+  icon: {fileID: -516746840, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 0
   unlocksNodes: []
   requiredNodes:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 2bb34d7f249bf08488ee4ee9e58f0e98, type: 2}
   aetherCosts: 010000000200000003000000
   reviveChance:
   - 0.05

@@ -16,10 +16,11 @@ MonoBehaviour:
   nodeID: infinite_treasure
   displayName: Infinite Treasure
   descriptions:
-  - If completing level without losing health, receive 50% more gold
-  - Increases to 75%
-  - Increases to 100%
-  icon: {fileID: 0}
+  - Completing a level without taking damage grants {goldBoostPercent[0]} extra gold
+  - Bonus gold increased to {goldBoostPercent[1]}
+  - Bonus gold increased to {goldBoostPercent[2]} and {specialCardChance} chance
+    to get a special card
+  icon: {fileID: -1989570991, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 3
   unlocksNodes: []
   requiredNodes:

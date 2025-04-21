@@ -16,14 +16,14 @@ MonoBehaviour:
   nodeID: wild_strength
   displayName: Wild Strength
   descriptions:
-  - Increase damage by 10% when above 50% health
-  - Increases to 20%
-  - Increases to 30%
-  icon: {fileID: 0}
+  - Increase damage by {damageBoost[0]} when above {healthThreshold} health
+  - Increases to {damageBoost[1]}
+  - Increases to {damageBoost[2]}
+  icon: {fileID: -694067418, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 1
   unlocksNodes:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 5c67ef1c5c17ac94abc059c71f43e527, type: 2}
+  - {fileID: 11400000, guid: b574920bd15ec42479eed8349c7f81d4, type: 2}
   requiredNodes: []
   aetherCosts: 010000000200000003000000
   damageBoost:

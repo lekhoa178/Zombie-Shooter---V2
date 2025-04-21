@@ -9,6 +9,8 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: mat_Portal_Tech
   m_Shader: {fileID: 4800000, guid: a9ddf3d70cc860145928b5703dc151ec, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _DISABLEEROSION_ON
   m_InvalidKeywords:
@@ -24,8 +26,8 @@ Material:
     MotionVector: User
   disabledShaderPasses:
   - DistortionVectors
-  - MOTIONVECTORS
   - TransparentBackface
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -124,7 +126,10 @@ Material:
     - _Parallax_LOD_Threshold_1: 0.5
     - _Parallax_Steps: 15
     - _Parallax_Steps_1: 15
+    - _QueueControl: 0
+    - _QueueOffset: 0
     - _RayTracing: 0
+    - _ReceiveShadows: 1
     - _ReceivesSSR: 0
     - _ReceivesSSRTransparent: 0
     - _RefractionModel: 0
@@ -197,6 +202,7 @@ Material:
     - _UnlitColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
     - _WhiteColor: {r: 0.85959125, g: 1, b: 0.3726415, a: 0}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!114 &1929787732192303273
 MonoBehaviour:
   m_ObjectHideFlags: 11

@@ -16,13 +16,14 @@ MonoBehaviour:
   nodeID: ghost_steps
   displayName: Ghost Steps
   descriptions:
-  - Increase movement speed by 10%
-  - Increases to 20%
-  - When successfully dodging, gain 50% movement speed for 2 seconds
-  icon: {fileID: 0}
+  - Increase movement speed by {moveSpeedBoost[0]} and gain an additional {dodgeBoost[0]}
+    for {dodgeBoostDuration} seconds after dodging
+  - Movement speed increased to {moveSpeedBoost[1]} and dodge boost to {dodgeBoost[1]}
+  - Movement speed increased to {moveSpeedBoost[2]} and dodge boost to {dodgeBoost[2]}
+  icon: {fileID: 1648174820, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 2
   unlocksNodes:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 232a3c36a6af0074ebaafe5efe2c93e5, type: 2}
   requiredNodes: []
   aetherCosts: 010000000200000003000000
   moveSpeedBoost:

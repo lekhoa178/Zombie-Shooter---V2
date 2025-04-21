@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace PowerTree
 {
@@ -8,10 +9,8 @@ namespace PowerTree
     /// </summary>
     public class TooltipDisplay : MonoBehaviour
     {
-        [SerializeField] private Text titleText;
-        [SerializeField] private Text contentText;
-        [SerializeField] private LayoutElement layoutElement;
-        [SerializeField] private int characterWrapLimit = 50;
+        [SerializeField] private TextMeshProUGUI titleText;
+        [SerializeField] private TextMeshProUGUI contentText;
         [SerializeField] private RectTransform rectTransform;
         [SerializeField] private Vector2 offset = new Vector2(20, 20);
         
@@ -29,42 +28,48 @@ namespace PowerTree
             rectTransform = GetComponent<RectTransform>();
         }
 
-        public void ShowTooltip(string title, string content, Vector3 position)
+        public void ShowTooltip(string title, string content, Vector3 position = default)
         {
             // Set the tooltip content
             titleText.text = title;
             contentText.text = content;
-            
-            // Calculate tooltip size based on content
-            int titleLength = title.Length;
-            int contentLength = content.Length;
-            
-            layoutElement.enabled = (titleLength > characterWrapLimit || contentLength > characterWrapLimit);
-            
-            // Position the tooltip
-            PositionTooltip(position);
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(contentText.rectTransform);
+
+            float contentHeight = contentText.preferredHeight;
+            float titleHeight = (string.IsNullOrEmpty(title) ? 0 : titleText.preferredHeight);
+
+            float totalPadding = 30; 
+            float tooltipHeight = contentHeight + titleHeight + totalPadding;
+
+            rectTransform.sizeDelta = new Vector2(400, Mathf.Max(tooltipHeight - 170, 100));
+
+            if (position != default)
+            {
+                PositionTooltip(position);
+            }
         }
 
         private void PositionTooltip(Vector3 position)
         {
-            // Make sure the tooltip stays within screen bounds
             Vector2 screenSize = new Vector2(Screen.width, Screen.height);
-            Vector2 pivotPosition = position + new Vector3(offset.x, offset.y, 0);
-            
-            // Adjust pivot based on screen edge proximity
-            rectTransform.pivot = Vector2.zero; // Default pivot at bottom-left
-            
-            if (pivotPosition.x + rectTransform.rect.width > screenSize.x)
+            Vector2 tooltipSize = rectTransform.sizeDelta;
+    
+            rectTransform.pivot = Vector2.zero;
+    
+            Vector2 targetPosition = position + new Vector3(offset.x, offset.y, 0);
+    
+            if (targetPosition.x + tooltipSize.x > screenSize.x)
             {
-                pivotPosition.x = position.x - offset.x - rectTransform.rect.width;
+                targetPosition.x = position.x - offset.x;
             }
-            
-            if (pivotPosition.y + rectTransform.rect.height > screenSize.y)
+    
+            if (targetPosition.y + tooltipSize.y > screenSize.y)
             {
-                pivotPosition.y = position.y - offset.y - rectTransform.rect.height;
+                targetPosition.y = position.y - offset.y;
             }
-            
-            rectTransform.position = pivotPosition;
+    
+            rectTransform.position = targetPosition;
         }
 
         private void SetupTooltipUI()
@@ -109,25 +114,20 @@ namespace PowerTree
             GameObject titleObj = new GameObject("Title");
             titleObj.transform.SetParent(container.transform, false);
             
-            titleText = titleObj.AddComponent<Text>();
-            titleText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            titleText = titleObj.AddComponent<TextMeshProUGUI>();
+            titleText.font = TMP_Settings.defaultFontAsset;
             titleText.fontSize = 16;
-            titleText.fontStyle = FontStyle.Bold;
+            titleText.fontStyle = FontStyles.Bold;
             titleText.color = Color.white;
             
             // Create content text
             GameObject contentObj = new GameObject("Content");
             contentObj.transform.SetParent(container.transform, false);
             
-            contentText = contentObj.AddComponent<Text>();
-            contentText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            contentText = contentObj.AddComponent<TextMeshProUGUI>();
+            contentText.font = TMP_Settings.defaultFontAsset;
             contentText.fontSize = 14;
             contentText.color = Color.white;
-            
-            // Add layout element to container
-            layoutElement = container.AddComponent<LayoutElement>();
-            layoutElement.preferredWidth = 300;
-            layoutElement.flexibleWidth = 0;
         }
     }
 }

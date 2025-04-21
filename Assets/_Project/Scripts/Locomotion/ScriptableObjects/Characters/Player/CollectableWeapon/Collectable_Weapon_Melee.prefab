@@ -29881,6 +29881,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ID: Collectable_Weapon_Melee_39bd2f12-4ec1-4481-a84f-afd222646f1e
+  m_ItemName: 
   m_DisplayName: Press E to Collect
   m_Type: 0
   m_VisualObject: {fileID: 6775096533385401786}
@@ -29924,7 +29925,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2775842180330360202
 Transform:
   m_ObjectHideFlags: 0

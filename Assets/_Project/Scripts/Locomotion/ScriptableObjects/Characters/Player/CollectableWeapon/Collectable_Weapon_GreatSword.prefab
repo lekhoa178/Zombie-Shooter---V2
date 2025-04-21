@@ -4965,7 +4965,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &9085750412568514247
 Transform:
   m_ObjectHideFlags: 0
@@ -9920,6 +9920,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ID: Collectable_Weapon_GreatSword_39bd2f12-4ec1-4481-a84f-afd222646f1e
+  m_ItemName: 
   m_DisplayName: Press E to Collect
   m_Type: 0
   m_VisualObject: {fileID: 8901785674713770276}

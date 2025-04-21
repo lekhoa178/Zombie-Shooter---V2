@@ -16,10 +16,12 @@ MonoBehaviour:
   nodeID: berserk
   displayName: Berserk
   descriptions:
-  - 5% chance to increase attack speed by 20% for 3 seconds when hitting
-  - Increases to 10% chance, 30% attack speed
-  - Increases to 15% chance, 40% attack speed, can stack twice
-  icon: {fileID: 0}
+  - '{procChance[0]} chance to increase attack speed by {speedBoost[0]} for {boostDuration}
+    seconds when hitting'
+  - Increases to {procChance[1]} chance, {speedBoost[1]} attack speed
+  - Increases to {procChance[2]} chance, {speedBoost[2]} attack speed, can stack
+    twice
+  icon: {fileID: 256826898, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 1
   unlocksNodes: []
   requiredNodes:

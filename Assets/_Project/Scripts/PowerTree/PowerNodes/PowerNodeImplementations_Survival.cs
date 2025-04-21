@@ -40,6 +40,13 @@ namespace PowerTree
         {
             player.OnRedHeartLost.RemoveListener(OnRedHeartLost);
             currentChance = 0f;
+
+            ResetState();
+        }
+
+        public override void ResetState()
+        {
+            currentChance = 0f;
         }
         
         private void OnRedHeartLost(float amount)
@@ -98,6 +105,15 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             player.OnLevelCompleted.RemoveListener(() => OnLevelCompleted(player));
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            levelCounter = 0;
+            currentRedThreshold = 0;
+            currentBlueThreshold = 0;
         }
         
         private void OnLevelCompleted(PlayerStats player)
@@ -163,6 +179,13 @@ namespace PowerTree
         {
             player.OnBlueHeartLost.RemoveListener(OnBlueHeartLost);
             player.OnLevelCompleted.RemoveListener(delegate { OnLevelCompleted(player, 0); });
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            currentNonLossChance = 0f;
         }
         
         private void OnLevelCompleted(PlayerStats player, float heartsToAdd)
@@ -233,6 +256,15 @@ namespace PowerTree
         {
             player.OnBlueHeartLost.RemoveListener(OnBlueHeartLost);
             player.OnBlackHeartLost.RemoveListener(OnBlackHeartLost);
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            currentRecoveryChance = 0f;
+            currentDamageBoost = 0f;
+            currentKnockback = 0f;
         }
         
         private void OnBlueHeartLost(float amount)
@@ -309,6 +341,15 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             player.OnBlackHeartLost.RemoveListener(OnBlackHeartLost);
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            currentNegationCount = 0;
+            currentPushRange = 0f;
+            currentScreenDamage = 0f;
         }
         
         private void OnBlackHeartLost(float amount, Vector2 position)
@@ -370,6 +411,15 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             player.OnPlayerDeath.RemoveListener(() => OnPlayerDeath(player));
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            currentReviveChance = 0f;
+            currentRedHearts = 0f;
+            currentBlueHearts = 0f;
         }
         
         private void OnPlayerDeath(PlayerStats player)
@@ -433,6 +483,14 @@ namespace PowerTree
                 player.ModifyDodgeChance(-currentDodgeChance);
                 dodgeApplied = false;
             }
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            currentDodgeChance = 0f;
+            dodgeApplied = false;
         }
         
         private void CheckAndApplyDodgeIfNeeded(PlayerStats player)
@@ -498,6 +556,14 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             player.OnRedHeartGained.RemoveListener(OnRedHeartGained);
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            currentChance = 0f;
+            canCreateBlackHeart = false;
         }
         
         private void OnRedHeartGained(float amount)

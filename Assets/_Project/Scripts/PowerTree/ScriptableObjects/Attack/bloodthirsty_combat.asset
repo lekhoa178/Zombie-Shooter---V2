@@ -16,10 +16,12 @@ MonoBehaviour:
   nodeID: bloodthirsty_combat
   displayName: Bloodthirsty Combat
   descriptions:
-  - When defeating 3 enemies within 5 seconds, gain 20% attack speed for 5 seconds
-  - Buff increases to 25% attack speed and 5% damage
-  - Buff can stack twice, up to 30% attack speed and 10% damage
-  icon: {fileID: 0}
+  - When defeating {requiredKills} enemies within {killWindowDuration} seconds, gain
+    {attackSpeedBoost[0]} attack speed for {buffDuration} seconds
+  - Buff increases to {attackSpeedBoost[1]} attack speed and {damageBoost[1]} damage
+  - Buff can stack twice, up to {attackSpeedBoost[2]} attack speed and {damageBoost[2]}
+    damage
+  icon: {fileID: -1294897378, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 1
   unlocksNodes: []
   requiredNodes:

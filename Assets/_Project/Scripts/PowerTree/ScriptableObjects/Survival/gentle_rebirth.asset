@@ -16,14 +16,14 @@ MonoBehaviour:
   nodeID: gentle_rebirth
   displayName: Gentle Rebirth
   descriptions:
-  - 10% chance to not lose a red heart when it would be lost
-  - Increases to 20%
-  - Increases to 30%
-  icon: {fileID: 0}
+  - '{chanceValues[0]} chance to prevent red heart loss when taking damage'
+  - Chance increased to {chanceValues[1]}
+  - Chance increased to {chanceValues[2]}
+  icon: {fileID: -48405370, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 0
   unlocksNodes:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 2bb34d7f249bf08488ee4ee9e58f0e98, type: 2}
+  - {fileID: 11400000, guid: 0443c376c336152419a15c82142847ba, type: 2}
   requiredNodes: []
   aetherCosts: 010000000200000003000000
   chanceValues:

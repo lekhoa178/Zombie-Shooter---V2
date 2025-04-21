@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace PowerTree
 {
@@ -46,11 +47,20 @@ namespace PowerTree
             }
         }
         
+        // ReSharper disable Unity.PerformanceAnalysis
         public override void RemoveEffect(PlayerStats player)
         {
             // Reset gold drop chances
             LootSystem.SetGoldDropChance(0f);
             LootSystem.SetDoubleGoldChance(0f);
+            
+            ResetState();
+        }
+
+        public override void ResetState()
+        {
+            currentGoldDropChance = 0f;
+            canDropDoubleGold = false;
         }
     }
 
@@ -96,6 +106,13 @@ namespace PowerTree
         {
             // Remove shop discount
             player.ModifyShopDiscount(-currentDiscount);
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            currentDiscount = 0f;
         }
     }
 
@@ -105,7 +122,7 @@ namespace PowerTree
     [CreateAssetMenu(fileName = "InfiniteTreasure", menuName = "PowerTree/Nodes/Finance/InfiniteTreasure")]
     public class InfiniteTreasureNode : PowerNode
     {
-        [SerializeField] private float[] goldBoostPercent = new float[] { 0.5f, 0.75f, 1.0f }; // 50%, 75%, 100%
+        [SerializeField] private float[] goldBoostChance = new float[] { 0.5f, 0.75f, 1.0f }; // 50%, 75%, 100%
         [SerializeField] private float specialCardChance = 0.1f; // 10% chance at level 3
         
         private float currentGoldBoost = 0f;
@@ -116,17 +133,19 @@ namespace PowerTree
             // Auto-populate descriptions with field values
             descriptions = new string[]
             {
-                "Completing a level without taking damage grants {goldBoostPercent[0]} extra gold",
-                "Bonus gold increased to {goldBoostPercent[1]}",
-                "Bonus gold increased to {goldBoostPercent[2]} and {specialCardChance} chance to get a special card"
+                "Completing a level without taking damage grants {goldBoostChance[0]} extra gold",
+                "Bonus gold increased to {goldBoostChance[1]}",
+                "Bonus gold increased to {goldBoostChance[2]} and {specialCardChance} chance to get a special card"
             };
         }
         
         public override void ApplyEffect(PlayerStats player, int level)
         {
-            if (level <= 0 || level > goldBoostPercent.Length) return;
+            ResetState();
+
+            if (level <= 0 || level > goldBoostChance.Length) return;
             
-            currentGoldBoost = goldBoostPercent[level - 1];
+            currentGoldBoost = goldBoostChance[level - 1];
             canGetSpecialCard = (level == 3);
             
             // Subscribe to level completion event
@@ -136,6 +155,14 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             player.OnLevelCompletedWithoutDamage.RemoveListener(OnLevelCompletedWithoutDamage);
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            currentGoldBoost = 0f;
+            canGetSpecialCard = false;
         }
         
         private void OnLevelCompletedWithoutDamage(bool withoutDamage)
@@ -199,6 +226,14 @@ namespace PowerTree
         public override void RemoveEffect(PlayerStats player)
         {
             player.OnRedHeartLost.RemoveListener(OnRedHeartLost);
+            
+            ResetState();
+        }
+        
+        public override void ResetState()
+        {
+            currentGoldRefund = 0;
+            canSaveHeart = false;
         }
         
         private void OnRedHeartLost(float amount)

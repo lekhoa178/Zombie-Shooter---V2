@@ -1,14 +1,17 @@
-﻿using System.Text;
+﻿using System.Collections;
+using System.Text;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace PowerTree
 {
 /// <summary>
     /// UI Component for a single power node
     /// </summary>
-    public class PowerNodeUI : MonoBehaviour
+    public class PowerNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] private Image iconImage;
         [SerializeField] private Image backgroundImage;
@@ -22,30 +25,61 @@ namespace PowerTree
         
         private PowerNode node;
         private PowerTreeManager treeManager;
+        private PowerTreeUI powerTreeUI;
         
         public PowerNode Node => node;
         public Transform ConnectionPoint => m_ConnectionPointBottom != null ? m_ConnectionPointBottom : transform;
         public Transform ConnectionPointTop => m_ConnectionPointTop != null ? m_ConnectionPointTop : transform;
         
+        private Coroutine currentAnimation;
+        
         public void Initialize(PowerNode powerNode, PowerTreeManager manager)
         {
             node = powerNode;
             treeManager = manager;
+            powerTreeUI = FindAnyObjectByType<PowerTreeUI>();
             
             // Set initial values
             iconImage.sprite = node.icon;
             nameText.text = node.displayName;
             
+            powerNode.onNodeUnlockedOrUpgraded.AddListener((level) => {
+                if (currentAnimation != null)
+                {
+                    StopCoroutine(currentAnimation);
+                    transform.localScale = Vector3.one;
+                }
+    
+                currentAnimation = StartCoroutine(PlayBounceAnimation());
+                Refresh();
+                GetComponent<TooltipTrigger>()?.UpdateContent();
+            });
+            
             // Add click handler
             GetComponent<Button>().onClick.AddListener(() => {
-                var uiManager = FindAnyObjectByType<PowerTreeUI>();
-                if (uiManager != null)
+                if (powerTreeUI != null)
                 {
-                    uiManager.OnNodeClicked(node.nodeID);
+                    powerTreeUI.OnNodeClicked(node.nodeID);
                 }
             });
             
             Refresh();
+        }
+        
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (powerTreeUI != null)
+            {
+                powerTreeUI.SetHoveredNode(this);
+            }
+        }
+        
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            if (powerTreeUI != null)
+            {
+                powerTreeUI.ClearHoveredNode(this);
+            }
         }
         
         public void Refresh()
@@ -69,7 +103,7 @@ namespace PowerTree
             else if (canUnlock)
             {
                 backgroundImage.color = Color.yellow; // Can unlock
-                levelText.text = "";
+                levelText.text = "-";
                 
                 foreach (var indicator in levelIndicators)
                 {
@@ -79,7 +113,7 @@ namespace PowerTree
             else
             {
                 backgroundImage.color = Color.gray; // Locked
-                levelText.text = "";
+                levelText.text = "-";
                 
                 foreach (var indicator in levelIndicators)
                 {
@@ -143,5 +177,43 @@ namespace PowerTree
             
             return tooltip.ToString();
         }
+        
+        private IEnumerator PlayBounceAnimation()
+        {
+            Vector3 originalScale = Vector3.one; // Use consistent starting scale
+            transform.localScale = originalScale;
+    
+            // First bounce (bigger)
+            float duration = 0.3f;
+            yield return ScaleTo(originalScale * 1.3f, duration);
+            yield return ScaleTo(originalScale * 0.9f, duration * 0.7f);
+    
+            // Second bounce (smaller)
+            yield return ScaleTo(originalScale * 1.1f, duration * 0.5f);
+            yield return ScaleTo(originalScale, duration * 0.3f);
+            
+            currentAnimation = null;
+        }
+
+        private IEnumerator ScaleTo(Vector3 targetScale, float duration)
+        {
+            Vector3 startScale = transform.localScale;
+            float elapsed = 0;
+    
+            while (elapsed < duration)
+            {
+                float t = elapsed / duration;
+                // Using smooth step for more natural easing
+                t = t * t * (3f - 2f * t); // Smoothstep formula
+        
+                transform.localScale = Vector3.Lerp(startScale, targetScale, t);
+        
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+    
+            transform.localScale = targetScale;
+        }
     }
+
 }

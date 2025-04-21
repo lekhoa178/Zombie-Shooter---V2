@@ -18,6 +18,8 @@ ShaderVariantCollection:
       variants:
       - keywords: SOFTMASKABLE
         passType: 0
+      - keywords: SOFTMASKABLE UNITY_UI_ALPHACLIP
+        passType: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

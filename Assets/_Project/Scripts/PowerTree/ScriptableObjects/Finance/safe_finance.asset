@@ -16,10 +16,11 @@ MonoBehaviour:
   nodeID: safe_finance
   displayName: Safe Finance
   descriptions:
-  - When losing a red heart, receive 10 gold back
-  - Receive 15 gold back
-  - Receive 20 gold back and 10% chance to not lose heart
-  icon: {fileID: 0}
+  - When losing a red heart, gain {goldRefund[0]} gold as compensation
+  - Gold refund increased to {goldRefund[1]}
+  - Gold refund increased to {goldRefund[2]} and {heartSaveChance} chance to not
+    lose the heart
+  icon: {fileID: 1361310542, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 3
   unlocksNodes: []
   requiredNodes:

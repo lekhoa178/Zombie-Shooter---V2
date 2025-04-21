@@ -16,10 +16,10 @@ MonoBehaviour:
   nodeID: last_shield
   displayName: Last Shield
   descriptions:
-  - If only 0.5 red heart remains, 30% chance to completely dodge the next attack
-  - Increases dodge chance to 50%
-  - Successful dodge creates a wave that pushes back surrounding enemies
-  icon: {fileID: 0}
+  - Gain {dodgeChance[0]} chance to dodge attacks when at low health
+  - Dodge chance increased to {dodgeChance[1]}
+  - Successful dodges now push enemies away
+  icon: {fileID: 18842156, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 0
   unlocksNodes:
   - {fileID: 11400000, guid: c6eb59dfecf2250418e35c8237799e8c, type: 2}

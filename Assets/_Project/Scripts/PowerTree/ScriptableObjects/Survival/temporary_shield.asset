@@ -16,11 +16,11 @@ MonoBehaviour:
   nodeID: temporary_shield
   displayName: Temporary Shield
   descriptions:
-  - Receive 2 blue hearts at the start of each level
-  - Receive 3 blue hearts
-  - Receive 3 blue hearts and 10% chance to not lose anything when losing a blue
-    heart
-  icon: {fileID: 0}
+  - Gain {blueHeartsValues[0]} blue hearts at the start of each level
+  - Increased to {blueHeartsValues[1]} blue hearts
+  - Gain {blueHeartsValues[2]} blue hearts and {nonLossChanceValues[2]} chance to
+    not lose blue hearts
+  icon: {fileID: 1997226248, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
   branch: 0
   unlocksNodes: []
   requiredNodes:
