@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 namespace DungeonGeneration
 {
@@ -11,7 +12,7 @@ namespace DungeonGeneration
     {
         #region Public Properties
         public string ZoneName => m_ZoneName;
-        public int BranchingFactor => m_BranchingFactor;
+        public int MaxBranchingFactor => m_BranchingFactors.Count > 0 ? m_BranchingFactors.Max(bf => bf.branchCount) : 1;
         public int OverallLength => m_OverallLength;
         public string BossStageName => m_BossStageName;
         public int MaxNodesPerDepth => m_MaxNodesPerDepth;
@@ -23,8 +24,19 @@ namespace DungeonGeneration
         [SerializeField, Tooltip("The name of this dungeon zone")]
         private string m_ZoneName;
 
-        [SerializeField, Tooltip("Maximum number of exits per stage (1-N)"), Range(1, 4)]
-        private int m_BranchingFactor = 2;
+        [System.Serializable]
+        public class BranchingFactorWeight
+        {
+            public int branchCount = 2;
+            [Range(0f, 1f)]
+            public float weight = 1f;
+        }
+
+        [SerializeField, Tooltip("Probability weights for different branching factors")]
+        private List<BranchingFactorWeight> m_BranchingFactors = new List<BranchingFactorWeight>
+        {
+            new BranchingFactorWeight { branchCount = 2, weight = 1f }
+        };
 
         [SerializeField, Tooltip("Total number of stages before the boss"), Range(3, 20)]
         private int m_OverallLength = 5;
@@ -72,6 +84,39 @@ namespace DungeonGeneration
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Gets a random branching factor based on configured weights
+        /// </summary>
+        public int GetRandomBranchingFactor()
+        {
+            // Default to 1 if no branching factors are configured
+            if (m_BranchingFactors == null || m_BranchingFactors.Count == 0)
+                return 1;
+            
+            // If only one option, return it directly
+            if (m_BranchingFactors.Count == 1)
+                return m_BranchingFactors[0].branchCount;
+            
+            // Calculate total weight
+            float totalWeight = m_BranchingFactors.Sum(bf => bf.weight);
+            if (totalWeight <= 0)
+                return 1;  // Default if all weights are 0
+            
+            // Select random value based on weights
+            float randomValue = Random.Range(0f, totalWeight);
+            float currentWeight = 0f;
+            
+            foreach (var branchFactor in m_BranchingFactors)
+            {
+                currentWeight += branchFactor.weight;
+                if (randomValue <= currentWeight)
+                    return branchFactor.branchCount;
+            }
+            
+            // Fallback to last item if something went wrong
+            return m_BranchingFactors[m_BranchingFactors.Count - 1].branchCount;
+        }
+
         /// <summary>
         /// Gets a random stage scene name based on the specified stage type
         /// </summary>
