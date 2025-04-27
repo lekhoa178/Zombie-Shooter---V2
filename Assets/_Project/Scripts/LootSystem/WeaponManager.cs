@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Locomotion.LootSystem;
 using UnityEngine;
+using UnityEngine.Events;
+using Random = UnityEngine.Random;
 
 namespace LocomotionSystem
 {
@@ -37,13 +39,13 @@ namespace LocomotionSystem
         
         #region Events
         // Event triggered when a weapon is equipped
-        public event Action<Player, ICollectable> OnWeaponEquipped;
+        public event Action<Player, IInteractable> OnWeaponEquipped;
         
         // Event triggered when a weapon is added to inventory
-        public event Action<Player, ICollectable> OnWeaponAdded;
+        public event Action<Player, IInteractable> OnWeaponAdded;
         
         // Event triggered when a weapon is removed from inventory
-        public event Action<Player, ICollectable> OnWeaponRemoved;
+        public event Action<Player, IInteractable> OnWeaponRemoved;
         #endregion
         
         #region Private Fields
@@ -80,18 +82,18 @@ namespace LocomotionSystem
         /// Equips a weapon for the specified player
         /// </summary>
         /// <param name="player">The player to equip the weapon to</param>
-        /// <param name="collectable">The weapon to equip</param>
+        /// <param name="interactable">The weapon to equip</param>
         /// <returns>True if the weapon was equipped successfully</returns>
-        public bool EquipWeapon(Player player, ICollectable collectable)
+        public bool EquipWeapon(Player player, IInteractable interactable)
         {
-            if (!player || collectable == null) return false;
+            if (!player || interactable == null) return false;
             
-            if (collectable.Type != CollectableType.Weapon) return false;
+            if (interactable.Type != InteractableType.Weapon) return false;
             
-            var weaponCollectableData = collectable.GetTypeData<WeaponCollectableData>();
+            var weaponCollectableData = interactable.GetTypeData<WeaponCollectableData>();
             if (weaponCollectableData == null) return false;
             
-            if (!player.GetComponent<PlayerWeaponHandler>().OnWeaponCollecting(collectable))
+            if (!player.GetComponent<PlayerWeaponHandler>().OnWeaponCollecting(interactable))
                 return false;
             
             if (!m_PlayerWeapons.TryGetValue(player, out var inventory))
@@ -100,31 +102,31 @@ namespace LocomotionSystem
                 m_PlayerWeapons[player] = inventory;
             }
             
-            bool added = inventory.AddWeapon(collectable);
+            bool added = inventory.AddWeapon(interactable);
             
             if (added)
             {
                 if (inventory.EquippedWeapon == null)
                 {
-                    inventory.EquippedWeapon = collectable;
+                    inventory.EquippedWeapon = interactable;
                     
-                    ApplyWeaponConfig(player, collectable, weaponCollectableData);
+                    ApplyWeaponConfig(player, interactable, weaponCollectableData);
                     
-                    OnWeaponEquipped?.Invoke(player, collectable);
+                    OnWeaponEquipped?.Invoke(player, interactable);
                     
                     if (m_DebugMode)
                     {
-                        Debug.Log($"Equipped weapon: {collectable.Name} for player {player.name}");
+                        Debug.Log($"Equipped weapon: {interactable.Name} for player {player.name}");
                     }
                 }
                 else
                 {
                     // Just add to inventory if another weapon is already equipped
-                    OnWeaponAdded?.Invoke(player, collectable);
+                    OnWeaponAdded?.Invoke(player, interactable);
                     
                     if (m_DebugMode)
                     {
-                        Debug.Log($"Added weapon to inventory: {collectable.Name} for player {player.name}");
+                        Debug.Log($"Added weapon to inventory: {interactable.Name} for player {player.name}");
                     }
                 }
                 
@@ -180,7 +182,7 @@ namespace LocomotionSystem
         /// </summary>
         /// <param name="_player">The player</param>
         /// <returns>The equipped weapon or null if none is equipped</returns>
-        public ICollectable GetEquippedWeapon(Player _player)
+        public IInteractable GetEquippedWeapon(Player _player)
         {
             if (!_player) return null;
             
@@ -192,13 +194,13 @@ namespace LocomotionSystem
         /// </summary>
         /// <param name="_player">The player</param>
         /// <returns>List of weapons in the inventory</returns>
-        public List<ICollectable> GetWeaponInventory(Player _player)
+        public List<IInteractable> GetWeaponInventory(Player _player)
         {
-            if (_player == null) return new List<ICollectable>();
+            if (_player == null) return new List<IInteractable>();
             
             if (!m_PlayerWeapons.TryGetValue(_player, out PlayerWeaponInventory inventory))
             {
-                return new List<ICollectable>();
+                return new List<IInteractable>();
             }
             
             return inventory.Weapons;
@@ -219,7 +221,7 @@ namespace LocomotionSystem
                 return false;
             }
             
-            ICollectable weapon = inventory.GetWeaponAt(weaponIndex);
+            IInteractable weapon = inventory.GetWeaponAt(weaponIndex);
             
             if (weapon != null)
             {
@@ -235,7 +237,7 @@ namespace LocomotionSystem
         /// <param name="player">The player</param>
         /// <param name="weapon">The weapon instance to remove</param>
         /// <returns>True if the weapon was removed successfully</returns>
-        public bool RemoveWeaponByInstance(Player player, ICollectable weapon)
+        public bool RemoveWeaponByInstance(Player player, IInteractable weapon)
         {
             if (!player || weapon == null) return false;
             
@@ -336,6 +338,30 @@ namespace LocomotionSystem
                 Debug.Log($"Set active ComboConfiguration for player {player.name}");
             }
         }
+        
+        public static event CalculateDamageHandler OnCalculateDamage;
+
+        public delegate void CalculateDamageHandler(BaseEnemy target, ref float damage);
+        
+        public float CalculateDamage(AttackHitConfiguration attackConfig, Player player, IHittable target, out bool isCriticalHit)
+        {
+            if (attackConfig == null || player == null)
+            {
+                isCriticalHit = false;
+                return 0f;
+            }
+            
+            isCriticalHit = attackConfig.EnableCriticalHit && Random.Range(0f, 100f) <= attackConfig.CriticalHitChance;
+            var finalDamage = isCriticalHit ? attackConfig.Damage * attackConfig.CriticalHitDamageMultiplier : attackConfig.Damage;
+            finalDamage *= player.PlayerStats.GetDamageMultiplier();
+
+            if (target is BaseEnemy enemy)
+            {
+                OnCalculateDamage?.Invoke(enemy, ref finalDamage);
+            }
+
+            return finalDamage;
+        }
         #endregion
 
         #region Private Methods
@@ -343,9 +369,9 @@ namespace LocomotionSystem
         /// Applies a weapon configuration to a player
         /// </summary>
         /// <param name="player">The player to apply the configuration to</param>
-        /// <param name="weapon">The weapon collectable</param>
+        /// <param name="weapon">The weapon interactable</param>
         /// <param name="weaponCollectableData">The weapon data</param>
-        private void ApplyWeaponConfig(Player player, ICollectable weapon, WeaponCollectableData weaponCollectableData)
+        private void ApplyWeaponConfig(Player player, IInteractable weapon, WeaponCollectableData weaponCollectableData)
         {
             if (!player || weapon == null || weaponCollectableData == null || !weaponCollectableData.Config) return;
             
@@ -365,18 +391,18 @@ namespace LocomotionSystem
         /// </summary>
         private class PlayerWeaponInventory
         {
-            public List<ICollectable> Weapons { get; private set; }
-            public ICollectable EquippedWeapon { get; set; }
+            public List<IInteractable> Weapons { get; private set; }
+            public IInteractable EquippedWeapon { get; set; }
             public int MaxSlots { get; private set; }
             
             public PlayerWeaponInventory(int maxSlots)
             {
                 MaxSlots = maxSlots;
-                Weapons = new List<ICollectable>(maxSlots);
+                Weapons = new List<IInteractable>(maxSlots);
                 EquippedWeapon = null;
             }
             
-            public bool AddWeapon(ICollectable weapon)
+            public bool AddWeapon(IInteractable weapon)
             {
                 if (weapon == null) return false;
                 
@@ -399,7 +425,7 @@ namespace LocomotionSystem
                 return true;
             }
             
-            public bool RemoveWeapon(ICollectable weapon)
+            public bool RemoveWeapon(IInteractable weapon)
             {
                 if (weapon == null) return false;
                 
@@ -407,7 +433,7 @@ namespace LocomotionSystem
                 return Weapons.Remove(weapon);
             }
             
-            public ICollectable GetWeaponAt(int index)
+            public IInteractable GetWeaponAt(int index)
             {
                 if (index < 0 || index >= Weapons.Count)
                 {

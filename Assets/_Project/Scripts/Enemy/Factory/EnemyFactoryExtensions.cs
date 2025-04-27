@@ -10,9 +10,9 @@ public static class EnemyFactoryExtensions
     /// <summary>
     /// Spawns an enemy at the position after a telegraph effect, with an optional callback when spawned
     /// </summary>
-    public static void SpawnEnemyAt(this GameObject _enemyPrefab, Vector3 _position, System.Action<BaseEnemy> _onSpawned = null)
+    public static BaseEnemy SpawnEnemyAt(this GameObject _enemyPrefab, Vector3 _position, System.Action<BaseEnemy> _onSpawned = null)
     {
-        if (_enemyPrefab == null) return;
+        if (!_enemyPrefab) return null;
         
         // Register callback if needed
         if (_onSpawned != null)
@@ -31,7 +31,7 @@ public static class EnemyFactoryExtensions
         }
         
         // Spawn the enemy using the factory
-        EnemyFactory.Instance.SpawnEnemy(_enemyPrefab, _position, Quaternion.identity);
+        return EnemyFactory.Instance.SpawnEnemy(_enemyPrefab, _position, Quaternion.identity);
     }
     
     /// <summary>

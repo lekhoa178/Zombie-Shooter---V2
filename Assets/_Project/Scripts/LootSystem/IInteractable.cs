@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace LocomotionSystem
 {
-    public enum CollectableType
+    public enum InteractableType
     {
         Weapon,
         Consumable,
@@ -12,27 +12,27 @@ namespace LocomotionSystem
     }
 
     /// <summary>
-    /// Base interface for all collectable items in the game
+    /// Base interface for all interactable items in the game
     /// </summary>
-    public interface ICollectable
+    public interface IInteractable
     {
         /// <summary>
-        /// The type of collectable item
+        /// The type of interactable item
         /// </summary>
-        CollectableType Type { get; }
+        InteractableType Type { get; }
         
         /// <summary>
-        /// Unique identifier for the collectable
+        /// Unique identifier for the interactable
         /// </summary>
         string ID { get; }
         
         /// <summary>
-        /// Display name of the collectable
+        /// Display name of the interactable
         /// </summary>
         string Name { get; }
         
         /// <summary>
-        /// Visual GameObject representing the collectable in the world
+        /// Visual GameObject representing the interactable in the world
         /// </summary>
         GameObject VisualObject { get; }
         
@@ -41,32 +41,32 @@ namespace LocomotionSystem
         /// </summary>
         /// <param name="collector">The GameObject that collected this item</param>
         /// <returns>True if collection was successful</returns>
-        bool OnCollected(GameObject collector);
+        bool OnInteract(GameObject collector);
         
         /// <summary>
-        /// Register this collectable with the loot manager
+        /// Register this interactable with the loot manager
         /// </summary>
         void Register();
         
         /// <summary>
-        /// Unregister this collectable from the loot manager
+        /// Unregister this interactable from the loot manager
         /// </summary>
         void Unregister();
         
         /// <summary>
-        /// Get type-specific data for this collectable
+        /// Get type-specific data for this interactable
         /// </summary>
         /// <typeparam name="T">The type of data to retrieve</typeparam>
         /// <returns>Data of the specified type, or null if not applicable</returns>
         T GetTypeData<T>() where T : class;
         
         /// <summary>
-        /// Called when this collectable is selected by the player
+        /// Called when this interactable is selected by the player
         /// </summary>
         void OnSelected();
         
         /// <summary>
-        /// Called when this collectable is no longer selected by the player
+        /// Called when this interactable is no longer selected by the player
         /// </summary>
         void OnUnselected();
     }

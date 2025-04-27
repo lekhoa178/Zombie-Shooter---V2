@@ -32,6 +32,9 @@ public class EnemyData : ScriptableObject
     [Range(1, 2)]
     public float eliteScaleMultiplier = 1.2f;
 
+    [Header("Boss Enemy Configuration")] 
+    [Tooltip("If true, this enemy is a boss")] public bool isBoss = false;
+
     [Header("Elite Attribute Scaling")]
     [Tooltip("Enable to override max health for elite enemies")]
     public bool overrideEliteHealth = true;

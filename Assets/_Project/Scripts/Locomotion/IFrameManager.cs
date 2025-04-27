@@ -157,9 +157,9 @@ namespace LocomotionSystem
             // Restore original exclude layers
             playerCollider.excludeLayers = originalExcludeLayers;
             
-            #if UNITY_EDITOR
-            Debug.Log("IFrame restored original layer exclusions");
-            #endif
+            // #if UNITY_EDITOR
+            // Debug.Log("IFrame restored original layer exclusions");
+            // #endif
         }
         
         // Ensure layers are reset on disable/destroy

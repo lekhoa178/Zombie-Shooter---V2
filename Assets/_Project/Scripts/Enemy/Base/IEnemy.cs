@@ -22,10 +22,6 @@ public interface IEnemy
     // Events for broadcasting state changes
     event Action<IEnemy> OnDeath;
     event Action<IHittable, float, Vector3> OnDamaged;
-    event Action<IEnemy> OnStunBegin;
-    event Action<IEnemy> OnStunEnd;
-    event Action<IEnemy> OnPushbackStart;
-    event Action<IEnemy> OnPushbackEnd;
     event Action<IEnemy, float> OnHealthChanged; 
     
     // Elite functionality

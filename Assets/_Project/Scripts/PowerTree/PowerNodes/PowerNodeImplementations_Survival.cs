@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace PowerTree
@@ -12,13 +10,12 @@ namespace PowerTree
     [CreateAssetMenu(fileName = "GentleRebirth", menuName = "PowerTree/Nodes/Survival/GentleRebirth")]
     public class GentleRebirthNode : PowerNode
     {
-        [SerializeField] private float[] chanceValues = new float[] { 0.1f, 0.2f, 0.3f }; // 10%, 20%, 30%
-        private float currentChance = 0f;
+        [SerializeField] private float[] chanceValues = new[] { 0.1f, 0.2f, 0.3f }; // 10%, 20%, 30%
+        private float _currentChance;
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "{chanceValues[0]} chance to prevent red heart loss when taking damage",
                 "Chance increased to {chanceValues[1]}",
@@ -30,39 +27,32 @@ namespace PowerTree
         {
             if (level <= 0 || level > chanceValues.Length) return;
             
-            currentChance = chanceValues[level - 1];
+            _currentChance = chanceValues[level - 1];
             
-            // Subscribe to red heart lost event
             player.OnRedHeartLost.AddListener(OnRedHeartLost);
         }
         
         public override void RemoveEffect(PlayerStats player)
         {
             player.OnRedHeartLost.RemoveListener(OnRedHeartLost);
-            currentChance = 0f;
+            _currentChance = 0f;
 
             ResetState();
         }
 
         public override void ResetState()
         {
-            currentChance = 0f;
+            _currentChance = 0f;
         }
         
         private void OnRedHeartLost(float amount)
         {
-            // Check if we save the heart
-            if (UnityEngine.Random.value < currentChance)
+            if (!(Random.value < _currentChance)) return;
+            
+            var player = FindAnyObjectByType<PlayerStats>();
+            if (player)
             {
-                // Here we would implement giving back the heart
-                // This depends on how the damage system is implemented
-                // In a real implementation, you might want to have the event include
-                // a bool reference that can be set to prevent the loss
-                var player = FindObjectOfType<PlayerStats>();
-                if (player != null)
-                {
-                    player.AddHearts(HeartType.Red, amount);
-                }
+                player.AddHearts(HeartType.Red, amount);
             }
         }
     }
@@ -78,8 +68,7 @@ namespace PowerTree
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "Heal 1 red heart every {levelsToHealRed[0]} completed levels",
                 "Heal 1 red heart after every level",
@@ -87,16 +76,16 @@ namespace PowerTree
             };
         }
         
-        private int levelCounter = 0;
-        private int currentRedThreshold = 0;
-        private int currentBlueThreshold = 0;
+        private int _levelCounter;
+        private int _currentRedThreshold;
+        private int _currentBlueThreshold;
         
         public override void ApplyEffect(PlayerStats player, int level)
         {
             if (level <= 0 || level > levelsToHealRed.Length) return;
             
-            currentRedThreshold = levelsToHealRed[level - 1];
-            currentBlueThreshold = levelsToHealBlue[level - 1];
+            _currentRedThreshold = levelsToHealRed[level - 1];
+            _currentBlueThreshold = levelsToHealBlue[level - 1];
             
             // Subscribe to level completion event
             player.OnLevelCompleted.AddListener(() => OnLevelCompleted(player));
@@ -111,23 +100,23 @@ namespace PowerTree
         
         public override void ResetState()
         {
-            levelCounter = 0;
-            currentRedThreshold = 0;
-            currentBlueThreshold = 0;
+            _levelCounter = 0;
+            _currentRedThreshold = 0;
+            _currentBlueThreshold = 0;
         }
         
         private void OnLevelCompleted(PlayerStats player)
         {
-            levelCounter++;
+            _levelCounter++;
             
             // Red heart healing
-            if (currentRedThreshold > 0 && levelCounter % currentRedThreshold == 0)
+            if (_currentRedThreshold > 0 && _levelCounter % _currentRedThreshold == 0)
             {
                 player.AddHearts(HeartType.Red, 1f);
             }
             
             // Blue heart healing
-            if (currentBlueThreshold > 0 && levelCounter % currentBlueThreshold == 0)
+            if (_currentBlueThreshold > 0 && _levelCounter % _currentBlueThreshold == 0)
             {
                 player.AddHearts(HeartType.Blue, 1f);
             }
@@ -145,8 +134,7 @@ namespace PowerTree
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "Gain {blueHeartsValues[0]} blue hearts at the start of each level",
                 "Increased to {blueHeartsValues[1]} blue hearts",
@@ -154,7 +142,7 @@ namespace PowerTree
             };
         }
         
-        private float currentNonLossChance = 0f;
+        private float _currentNonLossChance;
         
         public override void ApplyEffect(PlayerStats player, int level)
         {
@@ -167,7 +155,7 @@ namespace PowerTree
             // Set up non-loss chance for level 3
             if (level == 3)
             {
-                currentNonLossChance = nonLossChanceValues[level - 1];
+                _currentNonLossChance = nonLossChanceValues[level - 1];
                 player.OnBlueHeartLost.AddListener(OnBlueHeartLost);
             }
             
@@ -185,7 +173,7 @@ namespace PowerTree
         
         public override void ResetState()
         {
-            currentNonLossChance = 0f;
+            _currentNonLossChance = 0f;
         }
         
         private void OnLevelCompleted(PlayerStats player, float heartsToAdd)
@@ -196,15 +184,12 @@ namespace PowerTree
         
         private void OnBlueHeartLost(float amount)
         {
-            // Check for non-loss chance
-            if (UnityEngine.Random.value < currentNonLossChance)
+            if (!(Random.value < _currentNonLossChance)) return;
+            
+            var player = FindAnyObjectByType<PlayerStats>();
+            if (player)
             {
-                // Implementation to prevent heart loss
-                var player = FindObjectOfType<PlayerStats>();
-                if (player != null)
-                {
-                    player.AddHearts(HeartType.Blue, amount);
-                }
+                player.AddHearts(HeartType.Blue, amount);
             }
         }
     }
@@ -219,12 +204,11 @@ namespace PowerTree
         [SerializeField] private float[] blackHeartDamageBoost = new float[] { 0.1f, 0.15f, 0.2f };
         [SerializeField] private float blackHeartDamageBoostDuration = 5f; // 5 seconds boost
         [SerializeField] private float[] knockbackStrength = new float[] { 1f, 1f, 2f }; // Level 3 has stronger knockback
-        [SerializeField] private bool hasAreaDamage = false; // Level 3 has area damage
+        [SerializeField] private bool hasAreaDamage; // Level 3 has area damage
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "{blueHeartRecoveryChance[0]} chance to recover blue hearts when taking damage, black hearts give {blackHeartDamageBoost[0]} damage boost for {blackHeartDamageBoostDuration} seconds when lost",
                 "Chances increased to {blueHeartRecoveryChance[1]}, damage boost to {blackHeartDamageBoost[1]}",
@@ -232,17 +216,17 @@ namespace PowerTree
             };
         }
         
-        private float currentRecoveryChance = 0f;
-        private float currentDamageBoost = 0f;
-        private float currentKnockback = 0f;
+        private float _currentRecoveryChance;
+        private float _currentDamageBoost;
+        private float _currentKnockback;
         
         public override void ApplyEffect(PlayerStats player, int level)
         {
             if (level <= 0 || level > blueHeartRecoveryChance.Length) return;
             
-            currentRecoveryChance = blueHeartRecoveryChance[level - 1];
-            currentDamageBoost = blackHeartDamageBoost[level - 1];
-            currentKnockback = knockbackStrength[level - 1];
+            _currentRecoveryChance = blueHeartRecoveryChance[level - 1];
+            _currentDamageBoost = blackHeartDamageBoost[level - 1];
+            _currentKnockback = knockbackStrength[level - 1];
             hasAreaDamage = (level == 3);
             
             // Subscribe to blue heart lost event
@@ -262,40 +246,36 @@ namespace PowerTree
         
         public override void ResetState()
         {
-            currentRecoveryChance = 0f;
-            currentDamageBoost = 0f;
-            currentKnockback = 0f;
+            _currentRecoveryChance = 0f;
+            _currentDamageBoost = 0f;
+            _currentKnockback = 0f;
         }
         
         private void OnBlueHeartLost(float amount)
         {
-            // Check if we recover blue heart
-            if (UnityEngine.Random.value < currentRecoveryChance)
+            if (!(Random.value < _currentRecoveryChance)) return;
+            
+            var player = FindAnyObjectByType<PlayerStats>();
+            if (player == null)
             {
-                var player = FindObjectOfType<PlayerStats>();
-                if (player != null)
-                {
-                    player.AddHearts(HeartType.Blue, 0.5f);
-                }
+                player.AddHearts(HeartType.Blue, 0.5f);
             }
         }
         
-        private void OnBlackHeartLost(float amount, Vector2 position)
+        private void OnBlackHeartLost(float amount, Vector3 position)
         {
-            var player = FindObjectOfType<PlayerStats>();
+            var player = FindAnyObjectByType<PlayerStats>();
             if (player != null)
             {
                 // Apply damage boost
-                player.ModifyDamageMultiplier(currentDamageBoost, blackHeartDamageBoostDuration);
+                player.ModifyDamageMultiplier(_currentDamageBoost, blackHeartDamageBoostDuration);
                 
-                // Apply knockback to nearby enemies
-                // This would be implemented in enemy controller
-                EnemyManager.ApplyKnockback(position, currentKnockback);
+                CombatUtilities.PushEnemiesAway(position, _currentKnockback);
                 
                 // Apply area damage for level 3
                 if (hasAreaDamage)
                 {
-                    EnemyManager.ApplyAreaDamage(position, 3f, 0.5f); // Small radius and damage
+                    CombatUtilities.ApplyAreaDamage(position, 3f, 0.5f); // Small radius and damage
                 }
             }
         }
@@ -313,8 +293,7 @@ namespace PowerTree
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "Negate {bulletNegationCount[0]} nearby bullets when losing a black heart",
                 "Negates {bulletNegationCount[1]} bullets and pushes enemies back {pushRange[1]} units",
@@ -322,17 +301,17 @@ namespace PowerTree
             };
         }
         
-        private int currentNegationCount = 0;
-        private float currentPushRange = 0f;
-        private float currentScreenDamage = 0f;
+        private int _currentNegationCount;
+        private float _currentPushRange;
+        private float _currentScreenDamage;
         
         public override void ApplyEffect(PlayerStats player, int level)
         {
             if (level <= 0 || level > bulletNegationCount.Length) return;
             
-            currentNegationCount = bulletNegationCount[level - 1];
-            currentPushRange = pushRange[level - 1];
-            currentScreenDamage = screenDamagePercent[level - 1];
+            _currentNegationCount = bulletNegationCount[level - 1];
+            _currentPushRange = pushRange[level - 1];
+            _currentScreenDamage = screenDamagePercent[level - 1];
             
             // Subscribe to black heart lost event
             player.OnBlackHeartLost.AddListener(OnBlackHeartLost);
@@ -347,26 +326,26 @@ namespace PowerTree
         
         public override void ResetState()
         {
-            currentNegationCount = 0;
-            currentPushRange = 0f;
-            currentScreenDamage = 0f;
+            _currentNegationCount = 0;
+            _currentPushRange = 0f;
+            _currentScreenDamage = 0f;
         }
         
-        private void OnBlackHeartLost(float amount, Vector2 position)
+        private void OnBlackHeartLost(float amount, Vector3 position)
         {
             // Negate bullets
-            BulletManager.NegateNearbyBullets(position, currentNegationCount);
+            CombatUtilities.NegateNearbyBullets(position, _currentNegationCount);
             
             // Apply push effect for level 2+
-            if (currentPushRange > 0)
+            if (_currentPushRange > 0)
             {
-                EnemyManager.PushEnemiesAway(position, currentPushRange);
+                CombatUtilities.PushEnemiesAway(position, _currentPushRange);
             }
             
             // Apply screen damage for level 3
-            if (currentScreenDamage > 0)
+            if (_currentScreenDamage > 0)
             {
-                EnemyManager.DamageAllEnemies(currentScreenDamage, excludeBosses: true);
+                CombatUtilities.DamageAllEnemies(_currentScreenDamage, excludeBosses: true);
             }
         }
     }
@@ -383,8 +362,7 @@ namespace PowerTree
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "{reviveChance[0]} chance to revive with {blueHeartsOnRevive[0]} blue heart when dying",
                 "Chance increased to {reviveChance[1]}, revive with {redHeartsOnRevive[1]} red heart instead",
@@ -392,17 +370,17 @@ namespace PowerTree
             };
         }
         
-        private float currentReviveChance = 0f;
-        private float currentRedHearts = 0f;
-        private float currentBlueHearts = 0f;
+        private float _currentReviveChance;
+        private float _currentRedHearts;
+        private float _currentBlueHearts;
         
         public override void ApplyEffect(PlayerStats player, int level)
         {
             if (level <= 0 || level > reviveChance.Length) return;
             
-            currentReviveChance = reviveChance[level - 1];
-            currentRedHearts = redHeartsOnRevive[level - 1];
-            currentBlueHearts = blueHeartsOnRevive[level - 1];
+            _currentReviveChance = reviveChance[level - 1];
+            _currentRedHearts = redHeartsOnRevive[level - 1];
+            _currentBlueHearts = blueHeartsOnRevive[level - 1];
             
             // Subscribe to player death event
             player.OnPlayerDeath.AddListener(() => OnPlayerDeath(player));
@@ -417,18 +395,16 @@ namespace PowerTree
         
         public override void ResetState()
         {
-            currentReviveChance = 0f;
-            currentRedHearts = 0f;
-            currentBlueHearts = 0f;
+            _currentReviveChance = 0f;
+            _currentRedHearts = 0f;
+            _currentBlueHearts = 0f;
         }
         
         private void OnPlayerDeath(PlayerStats player)
         {
-            // Check if we revive
-            if (UnityEngine.Random.value < currentReviveChance)
+            if (Random.value < _currentReviveChance)
             {
-                // Implement revival logic
-                player.ReviveWithHearts(currentRedHearts, currentBlueHearts);
+                player.ReviveWithHearts(_currentRedHearts, _currentBlueHearts);
             }
         }
     }
@@ -439,13 +415,12 @@ namespace PowerTree
     [CreateAssetMenu(fileName = "LastShield", menuName = "PowerTree/Nodes/Survival/LastShield")]
     public class LastShieldNode : PowerNode
     {
-        [SerializeField] private float[] dodgeChance = new float[] { 0.3f, 0.5f, 0.5f };
-        [SerializeField] private bool createPushWave = false; // Level 3 feature
+        [SerializeField] private float[] dodgeChance = { 0.3f, 0.5f, 0.5f };
+        [SerializeField] private bool createPushWave; // Level 3 feature
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "Gain {dodgeChance[0]} chance to dodge attacks when at low health",
                 "Dodge chance increased to {dodgeChance[1]}",
@@ -453,18 +428,16 @@ namespace PowerTree
             };
         }
         
-        private float currentDodgeChance = 0f;
-        private bool dodgeApplied = false;
+        private float _currentDodgeChance;
+        private bool _dodgeApplied;
         
         public override void ApplyEffect(PlayerStats player, int level)
         {
             if (level <= 0 || level > dodgeChance.Length) return;
             
-            currentDodgeChance = dodgeChance[level - 1];
+            _currentDodgeChance = dodgeChance[level - 1];
             createPushWave = (level == 3);
             
-            // We need to monitor the player's health and apply dodge when it's low
-            // This effect is special because it needs to be checked before every hit
             CheckAndApplyDodgeIfNeeded(player);
             
             // Subscribe to heart changes to update the dodge effect
@@ -478,10 +451,10 @@ namespace PowerTree
             player.OnRedHeartGained.RemoveListener((_) => CheckAndApplyDodgeIfNeeded(player));
             
             // Remove any applied dodge effects
-            if (dodgeApplied)
+            if (_dodgeApplied)
             {
-                player.ModifyDodgeChance(-currentDodgeChance);
-                dodgeApplied = false;
+                player.ModifyDodgeChance(-_currentDodgeChance);
+                _dodgeApplied = false;
             }
             
             ResetState();
@@ -489,32 +462,29 @@ namespace PowerTree
         
         public override void ResetState()
         {
-            currentDodgeChance = 0f;
-            dodgeApplied = false;
+            _currentDodgeChance = 0f;
+            _dodgeApplied = false;
         }
         
         private void CheckAndApplyDodgeIfNeeded(PlayerStats player)
         {
-            bool isLowHealth = player.IsLowHealth(); // Health <= 0.5 hearts
+            bool isLowHealth = player.IsLowHealth();
             
-            if (isLowHealth && !dodgeApplied)
+            if (isLowHealth && !_dodgeApplied)
             {
-                // Add dodge chance
-                player.ModifyDodgeChance(currentDodgeChance);
-                dodgeApplied = true;
+                player.ModifyDodgeChance(_currentDodgeChance);
+                _dodgeApplied = true;
                 
                 // If level 3, set up event for successful dodges
                 if (createPushWave)
                 {
-                    // This would be implemented in the dodge system
-                    // When a dodge is successful, it would trigger a push wave
+                    CombatUtilities.PushEnemiesAway(player.transform.position, 5f);
                 }
             }
-            else if (!isLowHealth && dodgeApplied)
+            else if (!isLowHealth && _dodgeApplied)
             {
-                // Remove dodge chance
-                player.ModifyDodgeChance(-currentDodgeChance);
-                dodgeApplied = false;
+                player.ModifyDodgeChance(-_currentDodgeChance);
+                _dodgeApplied = false;
             }
         }
     }
@@ -530,8 +500,7 @@ namespace PowerTree
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "{chanceValues[0]} chance to transform red heart pickups into blue hearts",
                 "Chance increased to {chanceValues[1]}",
@@ -539,15 +508,15 @@ namespace PowerTree
             };
         }
         
-        private float currentChance = 0f;
-        private bool canCreateBlackHeart = false;
+        private float _currentChance;
+        private bool _canCreateBlackHeart;
         
         public override void ApplyEffect(PlayerStats player, int level)
         {
             if (level <= 0 || level > chanceValues.Length) return;
             
-            currentChance = chanceValues[level - 1];
-            canCreateBlackHeart = (level == 3);
+            _currentChance = chanceValues[level - 1];
+            _canCreateBlackHeart = (level == 3);
             
             // Subscribe to red heart gained event
             player.OnRedHeartGained.AddListener(OnRedHeartGained);
@@ -562,29 +531,26 @@ namespace PowerTree
         
         public override void ResetState()
         {
-            currentChance = 0f;
-            canCreateBlackHeart = false;
+            _currentChance = 0f;
+            _canCreateBlackHeart = false;
         }
         
         private void OnRedHeartGained(float amount)
         {
-            // Check if we create a blue/black heart
-            if (UnityEngine.Random.value < currentChance)
+            if (!(Random.value < _currentChance)) return;
+            
+            var player = FindAnyObjectByType<PlayerStats>();
+            if (!player) return;
+            
+            var heartType = HeartType.Blue;
+                    
+            // For level 3, chance to create black heart instead
+            if (_canCreateBlackHeart && Random.value < blackHeartChance)
             {
-                var player = FindObjectOfType<PlayerStats>();
-                if (player != null)
-                {
-                    HeartType heartType = HeartType.Blue;
-                    
-                    // For level 3, chance to create black heart instead
-                    if (canCreateBlackHeart && UnityEngine.Random.value < blackHeartChance)
-                    {
-                        heartType = HeartType.Black;
-                    }
-                    
-                    player.AddHearts(heartType, 0.5f);
-                }
+                heartType = HeartType.Black;
             }
+                    
+            player.AddHearts(heartType, 0.5f);
         }
     }
 

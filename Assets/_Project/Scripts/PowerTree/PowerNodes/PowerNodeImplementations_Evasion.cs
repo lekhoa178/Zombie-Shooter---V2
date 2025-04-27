@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -16,16 +13,15 @@ namespace PowerTree
     {
         [SerializeField] private float[] moveSpeedBoost = new float[] { 0.1f, 0.15f, 0.2f }; // 10%, 15%, 20% permanent
         [SerializeField] private float[] dodgeBoost = new float[] { 0.1f, 0.15f, 0.2f }; // +10%, +15%, +20% temporary
-        [SerializeField] private float dodgeBoostDuration = 2f; // 2 seconds
+        [SerializeField] private float dodgeEffectDuration = 2f; // 2 seconds
 
-        private float currentMoveBoost = 0f;
+        private float _currentMoveBoost;
 
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
-                "Increase movement speed by {moveSpeedBoost[0]} and gain an additional {dodgeBoost[0]} for {dodgeBoostDuration} seconds after dodging",
+                "Increase movement speed by {moveSpeedBoost[0]} and gain an additional {dodgeBoost[0]} for {dodgeEffectDuration} seconds after dodging",
                 "Movement speed increased to {moveSpeedBoost[1]} and dodge boost to {dodgeBoost[1]}",
                 "Movement speed increased to {moveSpeedBoost[2]} and dodge boost to {dodgeBoost[2]}"
             };
@@ -38,31 +34,31 @@ namespace PowerTree
             if (level <= 0 || level > moveSpeedBoost.Length) return;
 
             // Remove previous effect if any
-            if (currentMoveBoost > 0)
+            if (_currentMoveBoost > 0)
             {
-                player.ModifyMoveSpeedMultiplier(-currentMoveBoost);
+                player.ModifyMoveSpeedMultiplier(-_currentMoveBoost);
             }
 
             // Apply permanent movement speed boost
-            currentMoveBoost = moveSpeedBoost[level - 1];
-            player.ModifyMoveSpeedMultiplier(currentMoveBoost);
+            _currentMoveBoost = moveSpeedBoost[level - 1];
+            player.ModifyMoveSpeedMultiplier(_currentMoveBoost);
 
             // Define the action
             _onSuccessfulDodgeAction = () => OnSuccessfulDodge(player, level);
 
             // Subscribe to dodge event
-            DodgeSystem.OnSuccessfulDodge.AddListener(_onSuccessfulDodgeAction);
+            player.OnDodgeSuccessful.AddListener(_onSuccessfulDodgeAction);
         }
 
         public override void RemoveEffect(PlayerStats player)
         {
             // Remove permanent boost
-            player.ModifyMoveSpeedMultiplier(-currentMoveBoost);
+            player.ModifyMoveSpeedMultiplier(-_currentMoveBoost);
 
             // Unsubscribe from dodge event
             if (_onSuccessfulDodgeAction != null)
             {
-                DodgeSystem.OnSuccessfulDodge.RemoveListener(_onSuccessfulDodgeAction);
+                player.OnDodgeSuccessful.RemoveListener(_onSuccessfulDodgeAction);
             }
             
             ResetState();
@@ -70,14 +66,14 @@ namespace PowerTree
 
         public override void ResetState()
         {
-            currentMoveBoost = 0f;
+            _currentMoveBoost = 0f;
         }
 
         private void OnSuccessfulDodge(PlayerStats player, int level)
         {
             // Apply temporary movement speed boost after dodge
             float tempBoost = dodgeBoost[level - 1];
-            player.ModifyMoveSpeedMultiplier(tempBoost, dodgeBoostDuration);
+            player.ModifyMoveSpeedMultiplier(tempBoost, dodgeEffectDuration);
         }
     }
 
@@ -87,14 +83,13 @@ namespace PowerTree
     [CreateAssetMenu(fileName = "WindEvasion", menuName = "PowerTree/Nodes/Evasion/WindEvasion")]
     public class WindEvasionNode : PowerNode
     {
-        [SerializeField] private float[] dodgeChance = new float[] { 0.05f, 0.1f, 0.15f }; // 5%, 10%, 15%
+        [SerializeField] private float[] dodgeChance = new[] { 0.05f, 0.1f, 0.15f }; // 5%, 10%, 15%
 
-        private float currentDodgeBoost = 0f;
+        private float _currentDodgeBoost;
 
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "Gain {dodgeChance[0]} chance to dodge incoming attacks",
                 "Dodge chance increased to {dodgeChance[1]}",
@@ -107,27 +102,27 @@ namespace PowerTree
             if (level <= 0 || level > dodgeChance.Length) return;
 
             // Remove previous effect if any
-            if (currentDodgeBoost > 0)
+            if (_currentDodgeBoost > 0)
             {
-                player.ModifyDodgeChance(-currentDodgeBoost);
+                player.ModifyDodgeChance(-_currentDodgeBoost);
             }
 
             // Apply new dodge chance
-            currentDodgeBoost = dodgeChance[level - 1];
-            player.ModifyDodgeChance(currentDodgeBoost);
+            _currentDodgeBoost = dodgeChance[level - 1];
+            player.ModifyDodgeChance(_currentDodgeBoost);
         }
 
         public override void RemoveEffect(PlayerStats player)
         {
             // Remove dodge chance boost
-            player.ModifyDodgeChance(-currentDodgeBoost);
+            player.ModifyDodgeChance(-_currentDodgeBoost);
             
             ResetState();
         }
 
         public override void ResetState()
         {
-            currentDodgeBoost = 0f;
+            _currentDodgeBoost = 0f;
         }
     }
 
@@ -141,14 +136,13 @@ namespace PowerTree
         [SerializeField] private float[] dodgeChanceBoost = new float[] { 0f, 0f, 0.05f }; // 0%, 0%, 5%
         [SerializeField] private float lowHealthThreshold = 1f; // 1 heart or less
 
-        private float currentMoveBoost = 0f;
-        private float currentDodgeBoost = 0f;
-        private bool effectsApplied = false;
+        private float _currentMoveBoost;
+        private float _currentDodgeBoost;
+        private bool _effectsApplied;
 
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "While at {lowHealthThreshold} hearts or below, gain {moveSpeedBoost[0]} movement speed",
                 "Movement speed boost increased to {moveSpeedBoost[1]}",
@@ -160,8 +154,8 @@ namespace PowerTree
         {
             if (level <= 0 || level > moveSpeedBoost.Length) return;
 
-            currentMoveBoost = moveSpeedBoost[level - 1];
-            currentDodgeBoost = dodgeChanceBoost[level - 1];
+            _currentMoveBoost = moveSpeedBoost[level - 1];
+            _currentDodgeBoost = dodgeChanceBoost[level - 1];
 
             // Save node-specific configuration
             player.SetNodeProperty(nodeID, "lowHealthThreshold", lowHealthThreshold);
@@ -181,15 +175,15 @@ namespace PowerTree
             player.OnRedHeartGained.RemoveListener((_) => CheckAndApplyEffectsIfNeeded(player));
 
             // Remove effects if applied
-            if (effectsApplied)
+            if (_effectsApplied)
             {
-                player.ModifyMoveSpeedMultiplier(-currentMoveBoost);
-                if (currentDodgeBoost > 0)
+                player.ModifyMoveSpeedMultiplier(-_currentMoveBoost);
+                if (_currentDodgeBoost > 0)
                 {
-                    player.ModifyDodgeChance(-currentDodgeBoost);
+                    player.ModifyDodgeChance(-_currentDodgeBoost);
                 }
 
-                effectsApplied = false;
+                _effectsApplied = false;
             }
             
             ResetState();
@@ -197,9 +191,9 @@ namespace PowerTree
 
         public override void ResetState()
         {
-            currentMoveBoost = 0f;
-            currentDodgeBoost = 0f;
-            effectsApplied = false;
+            _currentMoveBoost = 0f;
+            _currentDodgeBoost = 0f;
+            _effectsApplied = false;
         }
 
 
@@ -209,36 +203,30 @@ namespace PowerTree
             float threshold = player.GetNodeProperty(nodeID, "lowHealthThreshold", lowHealthThreshold);
             bool isLowHealth = player.IsLowHealth(threshold);
 
-            if (isLowHealth && !effectsApplied)
+            if (isLowHealth && !_effectsApplied)
             {
                 // Apply bonuses
-                player.ModifyMoveSpeedMultiplier(currentMoveBoost);
-                if (currentDodgeBoost > 0)
+                player.ModifyMoveSpeedMultiplier(_currentMoveBoost);
+                if (_currentDodgeBoost > 0)
                 {
-                    player.ModifyDodgeChance(currentDodgeBoost);
+                    player.ModifyDodgeChance(_currentDodgeBoost);
                 }
 
-                effectsApplied = true;
+                _effectsApplied = true;
             }
-            else if (!isLowHealth && effectsApplied)
+            else if (!isLowHealth && _effectsApplied)
             {
                 // Remove bonuses
-                player.ModifyMoveSpeedMultiplier(-currentMoveBoost);
-                if (currentDodgeBoost > 0)
+                player.ModifyMoveSpeedMultiplier(-_currentMoveBoost);
+                if (_currentDodgeBoost > 0)
                 {
-                    player.ModifyDodgeChance(-currentDodgeBoost);
+                    player.ModifyDodgeChance(-_currentDodgeBoost);
                 }
 
-                effectsApplied = false;
+                _effectsApplied = false;
             }
         }
     }
 
     #endregion
 }
-
-// Helper stubs to make the code compile - these would be implemented in your game
-public static class DodgeSystem
-{
-    public static UnityEngine.Events.UnityEvent OnSuccessfulDodge = new UnityEngine.Events.UnityEvent();
-} 

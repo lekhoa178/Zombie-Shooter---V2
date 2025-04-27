@@ -188,7 +188,6 @@ namespace LocomotionSystem
 
         private void DetectAndHandleAttackHits()
         {
-            // Get the active ComboConfig
             var comboConfig = GetActiveComboConfig();
             
             // Fall back to default if ComboConfig is null
@@ -198,7 +197,6 @@ namespace LocomotionSystem
                 return;
             }
 
-            // Get current combo index and verify AttackConfigs exists
             var comboIndex = StateMachine.ReusableData.CurrentComboIndex;
             if (comboConfig.AttackConfigs == null)
             {
@@ -223,10 +221,8 @@ namespace LocomotionSystem
                 return;
             }
 
-            // Create detection context with only the necessary data
             var detectionContext = HitDetectionContext.CreateFromPlayer(StateMachine.Player, attackConfig);
 
-            // Handle additional VFX that should spawn regardless of hits
             if (attackConfig.EnableAdditionalVfx && attackConfig.AdditionalVfxSettings && attackConfig.SpawnEvenWithoutHit)
             {
                 SpawnAdditionalVFX(attackConfig, StateMachine.Player.transform.position, StateMachine.Player.transform.forward);
@@ -237,11 +233,10 @@ namespace LocomotionSystem
             // If we have hits and additional VFX is enabled
             if (hitColliders.Length > 0 && attackConfig.EnableAdditionalVfx && attackConfig.AdditionalVfxSettings)
             {
-                if (!attackConfig.SpawnEvenWithoutHit) // Only spawn if we haven't already spawned due to SpawnEvenWithoutHit
+                if (!attackConfig.SpawnEvenWithoutHit)
                 {
                     if (attackConfig.SpawnPerCollision)
                     {
-                        // Spawn for each collision
                         foreach (var collider in hitColliders)
                         {
                             Vector3 hitPosition = collider.bounds.center - StateMachine.Player.transform.forward * collider.bounds.extents.z 
@@ -269,13 +264,10 @@ namespace LocomotionSystem
                     1f
                 );
 
-                // Get hit position
                 Vector3 hitPosition = collider.bounds.center - StateMachine.Player.transform.forward * collider.bounds.extents.z 
                                     + Vector3.up * Random.Range(-0.1f, 0.1f) - Vector3.up * 0.2f;
-                // Calculate hit direction
                 var hitDirection = StateMachine.Player.transform.forward;
                 
-                // Use config VFX if available, otherwise use default
                 VFXFlyweightHelper.SpawnVfxAtPosition(
                     attackConfig.HitVfxSettings ? attackConfig.HitVfxSettings : StateMachine.Player.Data.DefaultHitVfxSettings, 
                     hitPosition, 
@@ -285,12 +277,8 @@ namespace LocomotionSystem
 
                 if (collider.gameObject.GetInterface<IHittable>() is not { } enemy || !HitEnemies.Add(enemy)) continue;
                 
-                // Process critical hit chance
-                bool isCriticalHit = attackConfig.EnableCriticalHit && Random.Range(0f, 100f) <= attackConfig.CriticalHitChance;
-                float finalDamage = isCriticalHit ? attackConfig.Damage * attackConfig.CriticalHitDamageMultiplier : attackConfig.Damage;
-                finalDamage *= StateMachine.Player.PlayerStats.GetDamageMultiplier();
+                var finalDamage = WeaponManager.Instance.CalculateDamage(attackConfig, StateMachine.Player, enemy, out var isCriticalHit);
                 
-                // Create a hit context if available
                 if (typeof(HitContext).IsClass)
                 {
                     try
@@ -314,21 +302,17 @@ namespace LocomotionSystem
                         // Apply the hit using the context
                         if (enemy != null)
                         {
-                            // Use the new TriggerOnHit method if available
                             try
                             {
-                                // This method handles all combat event dispatching in one place
                                 hitContext.TriggerOnHit(collider.gameObject);
                             }
                             catch (System.Exception ex)
                             {
                                 Debug.LogWarning($"Error using TriggerOnHit: {ex.Message}. Falling back to direct method.");
                                 
-                                // Fallback to legacy methods
                                 var methodInfo = enemy.GetType().GetMethod("OnHitWithContext");
                                 if (methodInfo != null)
                                 {
-                                    // Call the context method if available
                                     methodInfo.Invoke(enemy, new object[] { hitContext });
                                 }
                                 else

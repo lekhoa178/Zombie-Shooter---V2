@@ -306,44 +306,44 @@ public class EnemyFactory : MonoBehaviour
         }
     }
     
-    private BaseEnemy CreateEnemy(string _enemyName, Vector3 _position, Quaternion _rotation)
+    private BaseEnemy CreateEnemy(string enemyName, Vector3 position, Quaternion rotation)
     {
         BaseEnemy enemy = null;
         
         if (m_UseObjectPool)
         {
             // Try to get an inactive enemy from the pool
-            enemy = GetEnemyFromPool(_enemyName);
+            enemy = GetEnemyFromPool(enemyName);
             
             if (enemy == null && m_ExpandPoolIfNeeded)
             {
                 // If the pool is empty and we can expand, create a new enemy
-                enemy = InstantiateNewEnemy(_enemyName, _position, _rotation);
+                enemy = InstantiateNewEnemy(enemyName, position, rotation);
                 
                 if (enemy != null)
                 {
                     // Add to the pool
-                    if (!m_EnemyPools.ContainsKey(_enemyName))
+                    if (!m_EnemyPools.ContainsKey(enemyName))
                     {
-                        m_EnemyPools[_enemyName] = new List<BaseEnemy>();
+                        m_EnemyPools[enemyName] = new List<BaseEnemy>();
                     }
                     
-                    m_EnemyPools[_enemyName].Add(enemy);
+                    m_EnemyPools[enemyName].Add(enemy);
                 }
             }
             
             if (enemy != null)
             {
                 // Reset the enemy's position, rotation, and activate it
-                enemy.transform.position = _position;
-                enemy.transform.rotation = _rotation;
+                enemy.transform.position = position;
+                enemy.transform.rotation = rotation;
                 enemy.gameObject.SetActive(true);
             }
         }
         else
         {
             // If not using object pooling, just instantiate a new enemy
-            enemy = InstantiateNewEnemy(_enemyName, _position, _rotation);
+            enemy = InstantiateNewEnemy(enemyName, position, rotation);
         }
         
         return enemy;

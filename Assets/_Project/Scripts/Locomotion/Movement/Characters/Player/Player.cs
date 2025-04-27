@@ -261,7 +261,7 @@ namespace LocomotionSystem
             hitDirection.y = 0f;
             
             // Process damage
-            if (PlayerStats && !PlayerStats.TakeDamage(0.5f, hitDirection))
+            if (PlayerStats && !PlayerStats.TakeDamage(0.5f, hitContext.HitPosition))
             {
                 FloatingTextManager.Instance.ShowDamageText("Dodge", transform);
                 IFrameManager.Instance.StartDamageInvincibility();

@@ -59,6 +59,15 @@ namespace UnityEngine.UI.Extensions
         [SerializeField, Tooltip("Resolution of the Bezier curve, different to line Resolution")]
         internal int bezierSegmentsPerCurve = 10;
 
+        [SerializeField, Tooltip("Use fixed dash size instead of resolution-based dashes")]
+        private bool m_UseFixedDashSize = false;
+
+        [SerializeField, Tooltip("Size of dashes when using fixed dash size")]
+        private float m_DashSize = 10f;
+
+        [SerializeField, Tooltip("Size of gaps between dashes when using fixed dash size")]
+        private float m_DashGap = 5f;
+
         public float LineThickness
         {
             get { return lineThickness; }
@@ -98,6 +107,32 @@ namespace UnityEngine.UI.Extensions
         [HideInInspector]
         public bool drivenExternally = false;
 
+        /// <summary>
+        /// Whether to use fixed-size dashes regardless of line length
+        /// </summary>
+        public bool UseFixedDashSize
+        {
+            get { return m_UseFixedDashSize; }
+            set { m_UseFixedDashSize = value; SetAllDirty(); }
+        }
+
+        /// <summary>
+        /// Size of dashes when using fixed dash size
+        /// </summary>
+        public float DashSize
+        {
+            get { return m_DashSize; }
+            set { m_DashSize = Mathf.Max(0.1f, value); SetAllDirty(); }
+        }
+
+        /// <summary>
+        /// Size of gaps between dashes when using fixed dash size
+        /// </summary>
+        public float DashGap
+        {
+            get { return m_DashGap; }
+            set { m_DashGap = Mathf.Max(0.1f, value); SetAllDirty(); }
+        }
 
 		/// <summary>
 		/// Points to be drawn in the line.
@@ -275,30 +310,49 @@ namespace UnityEngine.UI.Extensions
 				vh.Clear ();
 				return;
 			}
-
 		}
 
         protected override void OnPopulateMesh(VertexHelper vh)
 		{
-			if (m_points != null && m_points.Length > 0) {
-				GeneratedUVs ();
-				vh.Clear ();
-
-				PopulateMesh (vh, m_points);
-
+			// If using fixed dash size and we have points to draw, handle it here
+			if (m_UseFixedDashSize && m_points != null && m_points.Length > 0)
+			{
+				GeneratedUVs();
+				vh.Clear();
+				
+				PopulateMeshFixedDashSize(vh, m_points);
 			}
-			else if (m_segments != null && m_segments.Count > 0) {
-				GeneratedUVs ();
-				vh.Clear ();
-
-				for (int s = 0; s < m_segments.Count; s++) {
-					Vector2[] pointsToDraw = m_segments [s];
-					PopulateMesh (vh, pointsToDraw);
+			else if (m_UseFixedDashSize && m_segments != null && m_segments.Count > 0)
+			{
+				GeneratedUVs();
+				vh.Clear();
+				
+				for (int s = 0; s < m_segments.Count; s++)
+				{
+					Vector2[] pointsToDraw = m_segments[s];
+					PopulateMeshFixedDashSize(vh, pointsToDraw);
 				}
-			} 
+			}
+			else
+			{
+				// Default behavior when not using fixed dash size
+				if (m_points != null && m_points.Length > 0) {
+					GeneratedUVs ();
+					vh.Clear ();
 
+					PopulateMesh (vh, m_points);
+				}
+				else if (m_segments != null && m_segments.Count > 0) {
+					GeneratedUVs ();
+					vh.Clear ();
 
-        }
+					for (int s = 0; s < m_segments.Count; s++) {
+						Vector2[] pointsToDraw = m_segments [s];
+						PopulateMesh (vh, pointsToDraw);
+					}
+				}
+			}
+		}
 
 		private UIVertex[] CreateLineCap(Vector2 start, Vector2 end, SegmentType type)
 		{
@@ -477,6 +531,78 @@ namespace UnityEngine.UI.Extensions
             if (m_points == null || m_points?.Length == 0)
             {
 				m_points = new Vector2[1];
+            }
+        }
+
+        private void PopulateMeshFixedDashSize(VertexHelper vh, Vector2[] points)
+        {
+            if (points == null || points.Length < 2)
+                return;
+
+            // Scale based on the size of the rect or use absolute
+            var sizeX = !relativeSize ? 1 : rectTransform.rect.width;
+            var sizeY = !relativeSize ? 1 : rectTransform.rect.height;
+            var offsetX = -rectTransform.pivot.x * sizeX;
+            var offsetY = -rectTransform.pivot.y * sizeY;
+
+            var segments = new List<UIVertex[]>();
+
+            for (int i = 1; i < points.Length; i++)
+            {
+                var start = points[i - 1];
+                var end = points[i];
+                start = new Vector2(start.x * sizeX + offsetX, start.y * sizeY + offsetY);
+                end = new Vector2(end.x * sizeX + offsetX, end.y * sizeY + offsetY);
+
+                // Calculate line length and direction
+                var lineDirection = (end - start);
+                var lineLength = lineDirection.magnitude;
+                lineDirection.Normalize();
+
+                // If line is shorter than a single dash, just draw it as a continuous line
+                if (lineLength < m_DashSize)
+                {
+                    segments.Add(CreateLineSegment(start, end, SegmentType.Middle));
+                    continue;
+                }
+
+                // Calculate how many dashes we need
+                float dashPlusGap = m_DashSize + m_DashGap;
+                int dashCount = Mathf.FloorToInt(lineLength / dashPlusGap);
+                
+                // Ensure we have at least one dash
+                dashCount = Mathf.Max(1, dashCount);
+
+                // Draw each dash
+                for (int dashIndex = 0; dashIndex < dashCount; dashIndex++)
+                {
+                    float dashStart = dashIndex * dashPlusGap;
+                    float dashEnd = dashStart + m_DashSize;
+                    
+                    // Ensure we don't exceed line length
+                    if (dashEnd > lineLength)
+                        dashEnd = lineLength;
+
+                    Vector2 dashStartPos = start + lineDirection * dashStart;
+                    Vector2 dashEndPos = start + lineDirection * dashEnd;
+
+                    segments.Add(CreateLineSegment(dashStartPos, dashEndPos, SegmentType.Middle));
+                }
+
+                // Add the final dash if there's space
+                float finalDashStart = dashCount * dashPlusGap;
+                if (finalDashStart + 0.1f < lineLength)
+                {
+                    Vector2 dashStartPos = start + lineDirection * finalDashStart;
+                    Vector2 dashEndPos = end;
+                    segments.Add(CreateLineSegment(dashStartPos, dashEndPos, SegmentType.Middle));
+                }
+            }
+
+            // Add all segments to the vertex helper
+            for (int i = 0; i < segments.Count; i++)
+            {
+                vh.AddUIVertexQuad(segments[i]);
             }
         }
     }

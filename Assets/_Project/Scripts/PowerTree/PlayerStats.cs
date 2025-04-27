@@ -30,15 +30,15 @@ namespace PowerTree
         // Events
         public UnityEvent<float> OnRedHeartLost = new UnityEvent<float>();
         public UnityEvent<float> OnBlueHeartLost = new UnityEvent<float>();
-        public UnityEvent<float, Vector2> OnBlackHeartLost = new UnityEvent<float, Vector2>();
+        public UnityEvent<float, Vector3> OnBlackHeartLost = new UnityEvent<float, Vector3>();
         public UnityEvent<float> OnRedHeartGained = new UnityEvent<float>();
         public UnityEvent<float> OnBlueHeartGained = new UnityEvent<float>();
         public UnityEvent<float> OnBlackHeartGained = new UnityEvent<float>();
         public UnityEvent<HeartType, float, float> OnHeartChanged = new UnityEvent<HeartType, float, float>();
         public UnityEvent OnPlayerDeath = new UnityEvent();
-        public UnityEvent OnEnemyKilled = new UnityEvent(); // Modified to not pass consecutive kills
         public UnityEvent OnLevelCompleted = new UnityEvent();
         public UnityEvent<bool> OnLevelCompletedWithoutDamage = new UnityEvent<bool>();
+        public UnityEvent OnDodgeSuccessful = new UnityEvent();
         
         public UnityEvent OnAttributesChanged = new UnityEvent();
         
@@ -134,12 +134,11 @@ namespace PowerTree
 
         #region Health Management
 
-        public bool TakeDamage(float amount, Vector2 hitPosition)
+        public bool TakeDamage(float amount, Vector3 hitPosition)
         {
-            // Check for dodge
             if (UnityEngine.Random.value < dodgeChance)
             {
-                // Dodge successful
+                OnDodgeSuccessful.Invoke();
                 return false;
             }
 
@@ -371,12 +370,6 @@ namespace PowerTree
         #endregion
 
         #region Game Events
-
-        public void OnEnemyKill()
-        {
-            // Simple event dispatch, nodes handle their own counters and timers now
-            OnEnemyKilled.Invoke();
-        }
 
         public void OnLevelComplete()
         {

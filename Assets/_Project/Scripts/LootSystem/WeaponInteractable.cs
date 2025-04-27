@@ -1,16 +1,15 @@
 using Locomotion.LootSystem;
 using UnityEngine;
 using UnityEngine.VFX;
-using System;
 
 namespace LocomotionSystem
 {
     /// <summary>
-    /// Concrete implementation of a weapon collectable.
-    /// This class automatically sets its CollectableType to Weapon.
+    /// Concrete implementation of a weapon interactable.
+    /// This class automatically sets its InteractableType to Weapon.
     /// </summary>
     [AddComponentMenu("Loot System/Weapon Collectable")]
-    public class WeaponCollectable : CollectableBase
+    public class WeaponInteractable : CollectableBase
     {
         // Note: The m_Type field from the base class will be set to Weapon
         // by the custom editor. This is handled automatically.
@@ -53,17 +52,17 @@ namespace LocomotionSystem
             };
             
             // Ensure type is set correctly
-            m_Type = CollectableType.Weapon;
+            m_Type = InteractableType.Weapon;
         }
 
         #if UNITY_EDITOR
         /// <summary>
-        /// Ensure the CollectableType is always set to Weapon in the inspector
+        /// Ensure the InteractableType is always set to Weapon in the inspector
         /// </summary>
         private void OnValidate()
         {
             // Set type directly since it's now protected in the base class
-            m_Type = CollectableType.Weapon;
+            m_Type = InteractableType.Weapon;
         }
         #endif
 
@@ -77,7 +76,7 @@ namespace LocomotionSystem
         #endregion
 
         #region Public Methods
-        public override bool OnCollected(GameObject collector)
+        public override bool OnInteract(GameObject collector)
         {
             var player = collector.GetComponent<Player>();
 
@@ -100,7 +99,7 @@ namespace LocomotionSystem
                 
             // CameraShakeManager.Instance.Shake(1.5f, 0.5f, 0.5f);
 
-            return base.OnCollected(collector);
+            return base.OnInteract(collector);
         }
         
         /// <summary>

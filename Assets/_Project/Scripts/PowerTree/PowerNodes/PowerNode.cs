@@ -259,27 +259,27 @@ namespace PowerTree
             string colorTag = "yellow"; // Default color
 
             // Handle specific field naming conventions
-            if (fieldName.Contains("Boost") && value is float floatValue)
+            if (fieldName.Contains("Boost", StringComparison.CurrentCultureIgnoreCase) && value is float floatValue)
             {
                 // Convert boost values to percentages
                 formattedValue = $"{floatValue * 100:0}%";
             }
-            else if (fieldName.EndsWith("Duration") && value is float durationValue)
+            else if (fieldName.EndsWith("Duration", StringComparison.CurrentCultureIgnoreCase) && value is float durationValue)
             {
                 // Format durations with one decimal place
                 formattedValue = $"{durationValue:0.0}";
             }
-            else if (fieldName.Contains("Chance") && value is float chanceValue)
+            else if (fieldName.Contains("Chance", StringComparison.CurrentCultureIgnoreCase) && value is float chanceValue)
             {
                 // Convert chance values to percentages
                 formattedValue = $"{chanceValue * 100:0}%";
             }
-            else if (fieldName.Contains("Percent") && value is float percentValue)
+            else if (fieldName.Contains("Percent", StringComparison.CurrentCultureIgnoreCase) && value is float percentValue)
             {
                 // Convert percentage values to percentages
                 formattedValue = $"{percentValue * 100:0}%";
             }
-            else if (fieldName.Contains("Threshold") && value is float thresholdValue)
+            else if (fieldName.Contains("Threshold", StringComparison.CurrentCultureIgnoreCase) && value is float thresholdValue)
             {
                 // Convert percentage values to percentages
                 formattedValue = $"{thresholdValue * 100:0}%";

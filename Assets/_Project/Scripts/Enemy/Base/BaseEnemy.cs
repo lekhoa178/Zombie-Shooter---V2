@@ -16,7 +16,7 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
     [SerializeField] protected EnemyData enemyData;
     
     [Header("Feedbacks")]
-    [Tooltip("Configuration for squash and stretch effects when hit")]
+    [Tooltip("Configuration for squash and stretch efFfects when hit")]
     public MMF_Player hitFeedback;
     
     // Components
@@ -39,10 +39,6 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
     // Events
     public event Action<IEnemy> OnDeath;
     public event Action<IHittable, float, Vector3> OnDamaged;
-    public event Action<IEnemy> OnStunBegin;
-    public event Action<IEnemy> OnStunEnd;
-    public event Action<IEnemy> OnPushbackStart;
-    public event Action<IEnemy> OnPushbackEnd;
     public event Action<IEnemy, float> OnHealthChanged;
     
     // Interface properties
@@ -51,6 +47,7 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
     public GameObject GameObject => gameObject;
     public float CurrentHealth => currentHealth;
     public float MaxHealth => isElite ? enemyData.GetEffectiveMaxHealth(true) : enemyData.maxHealth;
+    public float HealthPercentage => currentHealth / MaxHealth;
     public bool IsDead => isDead;
     public bool IsStunned => stunHandler != null && stunHandler.IsStunned && !stunHandler.IsInStunRecovery;
     public bool IsInvulnerable => isInvulnerable;
@@ -97,12 +94,6 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
         
         knockbackHandler.Initialize(this, enemyData, Rb, Animator, AIMovement);
         stunHandler.Initialize(this, enemyData, Animator, AIMovement);
-        
-        knockbackHandler.OnEnemyPushbackStart += (enemy) => OnPushbackStart?.Invoke(this);
-        knockbackHandler.OnEnemyPushbackEnd += (enemy) => OnPushbackEnd?.Invoke(this);
-        
-        stunHandler.OnStunBegin += (enemy) => OnStunBegin?.Invoke(this);
-        stunHandler.OnStunEnd += (enemy) => OnStunEnd?.Invoke(this);
         
         Debug.Log($"<color=blue>{gameObject.name}: BaseEnemy Awake completed, events registered</color>");
     }
@@ -272,8 +263,7 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
                 SafeSetVariable("currentHealth", currentHealth);
             }
             
-            // Notify health changed (for UI updates)
-            if (oldHealth != currentHealth)
+            if (!Mathf.Approximately(oldHealth, currentHealth))
             {
                 OnHealthChanged?.Invoke(this, currentHealth);
                 OnDamaged?.Invoke(this, hitContext.Damage, hitContext.HitDirection);
@@ -308,14 +298,12 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
                     Animator.SetTrigger("Damage");
                 }
                 
-                // Play elite hit sound if applicable
                 if (isElite && enemyData.eliteHitSounds != null && enemyData.eliteHitSounds.Length > 0)
                 {
                     int randomIndex = UnityEngine.Random.Range(0, enemyData.eliteHitSounds.Length);
                     AudioSource.PlayClipAtPoint(enemyData.eliteHitSounds[randomIndex], transform.position);
                 }
                 
-                // Spawn hit reaction VFX at hit position using enemyData configuration
                 if (enemyData.hitReactionVfxSettings)
                 {
                     Vector3 hitPosition = transform.position;
@@ -328,7 +316,6 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
                     );
                 }
 
-                // Handle additional hit reaction VFX if enabled
                 if (enemyData.enableAdditionalHitReactionVfx && 
                     enemyData.additionalHitReactionVfxSettings && 
                     enemyData.spawnHitReactionPerHit)
@@ -559,14 +546,9 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
 
     protected void HandleHit(CombatEventManager.HitEventContext context)
     {
-        // We only care about hits that target this enemy
         if (context.Target != gameObject) return;
         
-        // Log info about hit from the event system
         Debug.Log($"<color=orange>{gameObject.name} received hit from event system ({context.Damage} damage)</color>");
-        
-        // We don't need to apply damage again since the context already comes from an OnHit call
-        // This is just for handling VFX and other effects
     }
 
     protected void HandleDeath(CombatEventManager.CombatEventContext context)

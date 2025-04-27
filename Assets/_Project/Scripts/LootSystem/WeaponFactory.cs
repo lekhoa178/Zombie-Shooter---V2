@@ -57,12 +57,12 @@ namespace LocomotionSystem
         #region Public Methods
 
         /// <summary>
-        /// Creates a weapon collectable at the specified position using a combo configuration
+        /// Creates a weapon interactable at the specified position using a combo configuration
         /// </summary>
         /// <param name="position">World position to spawn the weapon</param>
         /// <param name="comboConfig">The weapon's combo configuration</param>
         /// <param name="rarity">Weapon rarity</param>
-        /// <returns>The created weapon collectable GameObject</returns>
+        /// <returns>The created weapon interactable GameObject</returns>
         public GameObject CreateWeaponCollectable(
             Vector3 position,
             ComboConfiguration comboConfig,
@@ -91,8 +91,8 @@ namespace LocomotionSystem
             // Instantiate the weapon prefab
             var collectableObj = Instantiate(prefab, position, Quaternion.identity);
             
-            // Get the weapon collectable component
-            var collectable = collectableObj.GetComponent<WeaponCollectable>();
+            // Get the weapon interactable component
+            var collectable = collectableObj.GetComponent<WeaponInteractable>();
             
             if (collectable)
             {
@@ -104,19 +104,19 @@ namespace LocomotionSystem
             }
             else
             {
-                Debug.LogError($"Prefab for the specified combo configuration does not have a WeaponCollectable component!");
+                Debug.LogError($"Prefab for the specified combo configuration does not have a WeaponInteractable component!");
             }
             
             return collectableObj;
         }
         
         /// <summary>
-        /// Creates a weapon collectable at the specified position using a weapon type
+        /// Creates a weapon interactable at the specified position using a weapon type
         /// </summary>
         /// <param name="position">World position to spawn the weapon</param>
         /// <param name="type">Weapon type</param>
         /// <param name="rarity">Weapon rarity</param>
-        /// <returns>The created weapon collectable GameObject</returns>
+        /// <returns>The created weapon interactable GameObject</returns>
         public GameObject CreateWeaponCollectableByType(
             Vector3 position,
             WeaponType type = WeaponType.Sword,
@@ -130,12 +130,12 @@ namespace LocomotionSystem
         }
         
         /// <summary>
-        /// Creates a random weapon collectable at the specified position
+        /// Creates a random weapon interactable at the specified position
         /// </summary>
         /// <param name="position">World position to spawn the weapon</param>
         /// <param name="minRarity">Minimum rarity tier</param>
         /// <param name="maxRarity">Maximum rarity tier</param>
-        /// <returns>The created weapon collectable GameObject</returns>
+        /// <returns>The created weapon interactable GameObject</returns>
         public GameObject CreateRandomWeaponCollectable(
             Vector3 position,
             WeaponRarity minRarity = WeaponRarity.Common,
@@ -222,44 +222,44 @@ namespace LocomotionSystem
 
         #region Private Methods
         /// <summary>
-        /// Sets the properties of a weapon collectable
+        /// Sets the properties of a weapon interactable
         /// </summary>
         private void SetWeaponProperties(
-            WeaponCollectable collectable,
+            WeaponInteractable interactable,
             ComboConfiguration weaponConfig,
             WeaponType type,
             WeaponRarity rarity)
         {
             // Use reflection to set private fields
-            var weaponConfigField = typeof(WeaponCollectable).GetField("m_WeaponConfig", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var rarityField = typeof(WeaponCollectable).GetField("m_Rarity", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var typeField = typeof(WeaponCollectable).GetField("m_WeaponType", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var rarityVfxField = typeof(WeaponCollectable).GetField("m_RarityVfxPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var collectionVfxField = typeof(WeaponCollectable).GetField("m_CollectionVfxPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var weaponConfigField = typeof(WeaponInteractable).GetField("m_WeaponConfig", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var rarityField = typeof(WeaponInteractable).GetField("m_Rarity", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var typeField = typeof(WeaponInteractable).GetField("m_WeaponType", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var rarityVfxField = typeof(WeaponInteractable).GetField("m_RarityVfxPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var collectionVfxField = typeof(WeaponInteractable).GetField("m_CollectionVfxPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             if (weaponConfigField != null)
             {
-                weaponConfigField.SetValue(collectable, weaponConfig);
+                weaponConfigField.SetValue(interactable, weaponConfig);
             }
             
             if (rarityField != null)
             {
-                rarityField.SetValue(collectable, rarity);
+                rarityField.SetValue(interactable, rarity);
             }
             
             if (typeField != null)
             {
-                typeField.SetValue(collectable, type);
+                typeField.SetValue(interactable, type);
             }
             
             if (rarityVfxField != null)
             {
-                rarityVfxField.SetValue(collectable, m_DefaultRarityVfxPrefab);
+                rarityVfxField.SetValue(interactable, m_DefaultRarityVfxPrefab);
             }
             
             if (collectionVfxField != null)
             {
-                collectionVfxField.SetValue(collectable, m_DefaultCollectionVfxPrefab);
+                collectionVfxField.SetValue(interactable, m_DefaultCollectionVfxPrefab);
             }
             
             // Set name field as "{Rarity} {Type}"
@@ -267,11 +267,11 @@ namespace LocomotionSystem
             if (nameField != null)
             {
                 var weaponName = $"{rarity} {type}";
-                nameField.SetValue(collectable, weaponName);
+                nameField.SetValue(interactable, weaponName);
             }
             
             // Directly update the weapon data object
-            var weaponDataField = typeof(WeaponCollectable).GetField("m_WeaponData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var weaponDataField = typeof(WeaponInteractable).GetField("m_WeaponData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (weaponDataField == null) return;
             
             var weaponData = new WeaponCollectableData
@@ -281,7 +281,7 @@ namespace LocomotionSystem
                 Rarity = rarity
             };
                 
-            weaponDataField.SetValue(collectable, weaponData);
+            weaponDataField.SetValue(interactable, weaponData);
         }
         #endregion
     }

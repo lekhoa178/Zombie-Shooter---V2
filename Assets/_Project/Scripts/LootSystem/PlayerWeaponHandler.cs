@@ -42,7 +42,7 @@ namespace LocomotionSystem
         /// </summary>
         /// <param name="_newWeapon">The new weapon being collected</param>
         /// <returns>True if collection should proceed, false to abort</returns>
-        public bool OnWeaponCollecting(ICollectable _newWeapon)
+        public bool OnWeaponCollecting(IInteractable _newWeapon)
         {
             var currentWeapon = GetEquippedWeapon();
             
@@ -58,11 +58,11 @@ namespace LocomotionSystem
         }
         
         /// <summary>
-        /// Drops the currently equipped weapon as a collectable in the world
+        /// Drops the currently equipped weapon as a interactable in the world
         /// </summary>
         public void DropCurrentWeapon()
         {
-            ICollectable currentWeapon = GetEquippedWeapon();
+            IInteractable currentWeapon = GetEquippedWeapon();
             if (currentWeapon == null) return;
             
             WeaponCollectableData weaponCollectableData = GetWeaponData(currentWeapon);
@@ -103,7 +103,7 @@ namespace LocomotionSystem
         /// <summary>
         /// Get the currently equipped weapon
         /// </summary>
-        public ICollectable GetEquippedWeapon()
+        public IInteractable GetEquippedWeapon()
         {
             if (WeaponManager.Instance)
             {
@@ -116,24 +116,24 @@ namespace LocomotionSystem
         /// <summary>
         /// Get the weapon inventory
         /// </summary>
-        public List<ICollectable> GetWeaponInventory()
+        public List<IInteractable> GetWeaponInventory()
         {
             if (WeaponManager.Instance != null)
             {
                 return WeaponManager.Instance.GetWeaponInventory(m_Player);
             }
             
-            return new List<ICollectable>();
+            return new List<IInteractable>();
         }
         
         /// <summary>
-        /// Get weapon data for a collectable if it's a weapon
+        /// Get weapon data for a interactable if it's a weapon
         /// </summary>
-        public WeaponCollectableData GetWeaponData(ICollectable collectable)
+        public WeaponCollectableData GetWeaponData(IInteractable interactable)
         {
-            if (collectable != null && collectable.Type == CollectableType.Weapon)
+            if (interactable != null && interactable.Type == InteractableType.Weapon)
             {
-                return collectable.GetTypeData<WeaponCollectableData>();
+                return interactable.GetTypeData<WeaponCollectableData>();
             }
             
             return null;

@@ -1,5 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using LocomotionSystem;
 using UnityEngine;
 
 namespace PowerTree
@@ -15,13 +16,12 @@ namespace PowerTree
         [SerializeField] private float[] damageBoost = new float[] { 0.1f, 0.2f, 0.3f }; // 10%, 20%, 30%
         [SerializeField] private float healthThreshold = 0.5f; // 50% of max health
         
-        private float currentBoost = 0f;
-        private bool boostApplied = false;
+        private float _currentBoost;
+        private bool _boostApplied;
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "Increase damage by {damageBoost[0]} when above {healthThreshold} health",
                 "Increases to {damageBoost[1]}",
@@ -33,7 +33,7 @@ namespace PowerTree
         {
             if (level <= 0 || level > damageBoost.Length) return;
             
-            currentBoost = damageBoost[level - 1];
+            _currentBoost = damageBoost[level - 1];
             
             // Save node-specific configuration
             player.SetNodeProperty(nodeID, "healthThreshold", healthThreshold);
@@ -52,10 +52,10 @@ namespace PowerTree
             player.OnRedHeartGained.RemoveListener((_) => CheckAndApplyDamageIfNeeded(player));
             
             // Remove boost if applied
-            if (boostApplied)
+            if (_boostApplied)
             {
-                player.ModifyDamageMultiplier(-currentBoost);
-                boostApplied = false;
+                player.ModifyDamageMultiplier(-_currentBoost);
+                _boostApplied = false;
             }
             
             ResetState();
@@ -67,24 +67,24 @@ namespace PowerTree
             float threshold = player.GetNodeProperty(nodeID, "healthThreshold", healthThreshold);
             bool isHighHealth = player.IsHighHealth(threshold);
             
-            if (isHighHealth && !boostApplied)
+            if (isHighHealth && !_boostApplied)
             {
                 // Apply damage boost
-                player.ModifyDamageMultiplier(currentBoost);
-                boostApplied = true;
+                player.ModifyDamageMultiplier(_currentBoost);
+                _boostApplied = true;
             }
-            else if (!isHighHealth && boostApplied)
+            else if (!isHighHealth && _boostApplied)
             {
                 // Remove damage boost
-                player.ModifyDamageMultiplier(-currentBoost);
-                boostApplied = false;
+                player.ModifyDamageMultiplier(-_currentBoost);
+                _boostApplied = false;
             }
         }
 
         public override void ResetState()
         {
-            currentBoost = 0f;
-            boostApplied = false;
+            _currentBoost = 0f;
+            _boostApplied = false;
         }
     }
 
@@ -95,19 +95,18 @@ namespace PowerTree
     public class RageDestructionNode : PowerNode
     {
         [SerializeField] private float[] damageBoost = new float[] { 0.15f, 0.25f, 0.35f }; // 15%, 25%, 35%
-        [SerializeField] private float[] boostDuration = new float[] { 5f, 5f, 7f }; // 5s, 5s, 7s
+        [SerializeField] private float[] effectDuration = new float[] { 5f, 5f, 7f }; // 5s, 5s, 7s
         
-        private float currentBoost = 0f;
-        private float currentDuration = 0f;
+        private float _currentBoost;
+        private float _currentDuration;
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
-                "When losing a red heart, increase damage by {damageBoost[0]} for {boostDuration[0]} seconds",
+                "When losing a red heart, increase damage by {damageBoost[0]} for {effectDuration[0]} seconds",
                 "Increases to {damageBoost[1]}",
-                "Increases to {damageBoost[2]} and lasts for {boostDuration[2]} seconds"
+                "Increases to {damageBoost[2]} and lasts for {effectDuration[2]} seconds"
             };
         }
         
@@ -115,8 +114,8 @@ namespace PowerTree
         {
             if (level <= 0 || level > damageBoost.Length) return;
             
-            currentBoost = damageBoost[level - 1];
-            currentDuration = boostDuration[level - 1];
+            _currentBoost = damageBoost[level - 1];
+            _currentDuration = effectDuration[level - 1];
             
             // Subscribe to red heart lost event
             player.OnRedHeartLost.AddListener(OnRedHeartLost);
@@ -131,17 +130,17 @@ namespace PowerTree
 
         public override void ResetState()
         {
-            currentBoost = 0f;
-            currentDuration = 0f;
+            _currentBoost = 0f;
+            _currentDuration = 0f;
         }
         
         private void OnRedHeartLost(float amount)
         {
-            var player = FindObjectOfType<PlayerStats>();
+            var player = FindAnyObjectByType<PlayerStats>();
             if (player != null)
             {
                 // Apply temporary damage boost
-                player.ModifyDamageMultiplier(currentBoost, currentDuration);
+                player.ModifyDamageMultiplier(_currentBoost, _currentDuration);
             }
         }
     }
@@ -155,17 +154,17 @@ namespace PowerTree
         [SerializeField] private float[] attackSpeedBoost = new float[] { 0.1f, 0.2f, 0.3f }; // 10%, 20%, 30%
         [SerializeField] private float doubleDamageChance = 0.05f; // 5% for level 3
         
-        private float currentSpeedBoost = 0f;
-        private bool hasDoubleDamageChance = false;
+        private float _currentSpeedBoost;
+        private bool _hasDoubleDamageChance;
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "Attack speed increases by {attackSpeedBoost[0]}",
                 "Increases to {attackSpeedBoost[1]}",
-                "Increases to {attackSpeedBoost[2]} and {doubleDamageChance} chance for attacks to deal double damage"
+                "Increases to {attackSpeedBoost[2]}"
+                // "Increases to {attackSpeedBoost[2]} and {doubleDamageChance} chance for attacks to deal double damage"
             };
         }
         
@@ -174,45 +173,39 @@ namespace PowerTree
             if (level <= 0 || level > attackSpeedBoost.Length) return;
             
             // Remove previous effect if any
-            if (currentSpeedBoost > 0)
+            if (_currentSpeedBoost > 0)
             {
-                player.ModifyAttackSpeedMultiplier(-currentSpeedBoost);
+                player.ModifyAttackSpeedMultiplier(-_currentSpeedBoost);
             }
             
             // Apply new effect
-            currentSpeedBoost = attackSpeedBoost[level - 1];
-            hasDoubleDamageChance = (level == 3); // Only level 3 has double damage chance
+            _currentSpeedBoost = attackSpeedBoost[level - 1];
+            _hasDoubleDamageChance = (level == 3);
             
-            // Apply attack speed boost (permanent)
-            player.ModifyAttackSpeedMultiplier(currentSpeedBoost);
+            player.ModifyAttackSpeedMultiplier(_currentSpeedBoost);
             
-            // For level 3, set up double damage chance
-            if (hasDoubleDamageChance)
-            {
-                // This would need to be implemented in the attack/weapon system
-                // Typically through a hook in the damage calculation
-                WeaponSystem.AddDoubleDamageChance(doubleDamageChance);
-            }
+            // if (hasDoubleDamageChance)
+            // {
+            //     WeaponSystem.AddDoubleDamageChance(doubleDamageChance);
+            // }
         }
         
         public override void RemoveEffect(PlayerStats player)
         {
-            // Remove attack speed boost
-            player.ModifyAttackSpeedMultiplier(-currentSpeedBoost);
+            player.ModifyAttackSpeedMultiplier(-_currentSpeedBoost);
             
-            // Remove double damage chance if active
-            if (hasDoubleDamageChance)
-            {
-                WeaponSystem.RemoveDoubleDamageChance(doubleDamageChance);
-            }
+            // if (hasDoubleDamageChance)
+            // {
+            //     WeaponSystem.RemoveDoubleDamageChance(doubleDamageChance);
+            // }
             
             ResetState();
         }
 
         public override void ResetState()
         {
-            currentSpeedBoost = 0f;
-            hasDoubleDamageChance = false;
+            _currentSpeedBoost = 0f;
+            _hasDoubleDamageChance = false;
         }
     }
 
@@ -220,64 +213,99 @@ namespace PowerTree
     /// 4. Berserk: Chance to increase attack speed when hitting enemies
     /// </summary>
     [CreateAssetMenu(fileName = "Berserk", menuName = "PowerTree/Nodes/Attack/Berserk")]
-    public class BerserkNode : PowerNode
+public class BerserkNode : PowerNode
+{
+    [SerializeField] private float[] procChance = new float[] { 0.05f, 0.1f, 0.15f }; // 5%, 10%, 15%
+    [SerializeField] private float[] speedBoost = new float[] { 0.2f, 0.3f, 0.4f }; // 20%, 30%, 40%
+    [SerializeField] private float effectDuration = 3f; // 3 seconds
+    
+    private float _currentProcChance;
+    private float _currentSpeedBoost;
+    private int _currentMaxStacks = 1;
+    
+    private readonly List<Timer> _activeStackTimers = new();
+    private int _stackCounter;
+    
+    private void OnValidate()
     {
-        [SerializeField] private float[] procChance = new float[] { 0.05f, 0.1f, 0.15f }; // 5%, 10%, 15%
-        [SerializeField] private float[] speedBoost = new float[] { 0.2f, 0.3f, 0.4f }; // 20%, 30%, 40%
-        [SerializeField] private float boostDuration = 3f; // 3 seconds
-        [SerializeField] private int maxStacks = 1; // Level 3 can stack twice (2)
-        
-        private float currentProcChance = 0f;
-        private float currentSpeedBoost = 0f;
-        private int currentMaxStacks = 1;
-        
-        private void OnValidate()
+        descriptions = new[]
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
-            {
-                "{procChance[0]} chance to increase attack speed by {speedBoost[0]} for {boostDuration} seconds when hitting",
-                "Increases to {procChance[1]} chance, {speedBoost[1]} attack speed",
-                "Increases to {procChance[2]} chance, {speedBoost[2]} attack speed, can stack twice"
-            };
-        }
+            "{procChance[0]} chance to increase attack speed by {speedBoost[0]} for {effectDuration} seconds when hitting",
+            "Increases to {procChance[1]} chance, {speedBoost[1]} attack speed",
+            "Increases to {procChance[2]} chance, {speedBoost[2]} attack speed, can stack twice"
+        };
+    }
+    
+    public override void ApplyEffect(PlayerStats player, int level)
+    {
+        if (level <= 0 || level > procChance.Length) return;
         
-        public override void ApplyEffect(PlayerStats player, int level)
-        {
-            if (level <= 0 || level > procChance.Length) return;
-            
-            currentProcChance = procChance[level - 1];
-            currentSpeedBoost = speedBoost[level - 1];
-            currentMaxStacks = (level == 3) ? 2 : 1; // Level 3 can stack twice
-            
-            // Subscribe to enemy hit event
-            WeaponSystem.OnEnemyHit.AddListener(() => OnEnemyHit(player));
-        }
+        _currentProcChance = procChance[level - 1];
+        _currentSpeedBoost = speedBoost[level - 1];
+        _currentMaxStacks = (level == 3) ? 2 : 1; // Level 3 can stack twice
         
-        public override void RemoveEffect(PlayerStats player)
-        {
-            WeaponSystem.OnEnemyHit.RemoveListener(() => OnEnemyHit(player));
-            
-            ResetState();
-        }
+        CombatEventManager.OnHit += OnDamaged;
+    }
 
-        public override void ResetState()
+    public override void RemoveEffect(PlayerStats player)
+    {
+        CombatEventManager.OnHit -= OnDamaged;
+        
+        // Clean up all active timers
+        foreach (var timer in _activeStackTimers.ToList())
         {
-            currentMaxStacks = 1;
-            currentProcChance = 0f;
-            currentSpeedBoost = 0f;
+            timer.Reset();
         }
         
-        private void OnEnemyHit(PlayerStats player)
+        _activeStackTimers.Clear();
+        
+        ResetState();
+    }
+
+    public override void ResetState()
+    {
+        _currentMaxStacks = 1;
+        _currentProcChance = 0f;
+        _currentSpeedBoost = 0f;
+        _activeStackTimers.Clear();
+        _stackCounter = 0;
+    }
+    
+    private void OnDamaged(CombatEventManager.HitEventContext obj)
+    {
+        var target = obj.Target;
+        var source = obj.Source;
+
+        var enemy = target.GetComponent<BaseEnemy>();
+        
+        if (!enemy) return;
+
+        var player = source.GetComponent<PlayerStats>();
+        if (!player) return;
+
+        if (_activeStackTimers.Count >= _currentMaxStacks) return;
+
+        if (Random.value < _currentProcChance)
         {
-            // Check if we proc the effect
-            if (UnityEngine.Random.value < currentProcChance)
+            // Apply the speed boost
+            player.ModifyAttackSpeedMultiplier(_currentSpeedBoost, effectDuration, canStack: (_currentMaxStacks > 1));
+            
+            _stackCounter++;
+            var stackTimer = player.GetTimer(nodeID, $"stackTimer{_stackCounter}", effectDuration);
+            
+            var timerRef = stackTimer;
+            
+            stackTimer.OnTimerCompleted += () => 
             {
-                // Apply temporary attack speed boost with stacking
-                player.ModifyAttackSpeedMultiplier(currentSpeedBoost, boostDuration, canStack: (currentMaxStacks > 1));
-            }
+                _activeStackTimers.Remove(timerRef);
+                _stackCounter = Mathf.Max(0, _stackCounter - 1);
+            };
+            
+            _activeStackTimers.Add(stackTimer);
+            stackTimer.Start();
         }
     }
+}
 
     /// <summary>
     /// 5. Bloodthirsty Combat: Combat buffs for killing enemies quickly
@@ -292,16 +320,15 @@ namespace PowerTree
         [SerializeField] private int requiredKills = 3; // 3 kills within time window
         [SerializeField] private int maxStacks = 1; // Level 3 can stack twice (2)
         
-        private float currentAttackSpeedBoost = 0f;
-        private float currentDamageBoost = 0f;
-        private int currentMaxStacks = 1;
-        private Counter killCounter;
-        private Timer killTimer;
+        private float _currentAttackSpeedBoost;
+        private float _currentDamageBoost;
+        private int _currentMaxStacks = 1;
+        private Counter _killCounter;
+        private Timer _killTimer;
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "When defeating {requiredKills} enemies within {killWindowDuration} seconds, gain {attackSpeedBoost[0]} attack speed for {buffDuration} seconds",
                 "Buff increases to {attackSpeedBoost[1]} attack speed and {damageBoost[1]} damage",
@@ -313,62 +340,75 @@ namespace PowerTree
         {
             if (level <= 0 || level > attackSpeedBoost.Length) return;
             
-            currentAttackSpeedBoost = attackSpeedBoost[level - 1];
-            currentDamageBoost = damageBoost[level - 1];
-            currentMaxStacks = (level == 3) ? 2 : 1; // Level 3 can stack twice
+            _currentAttackSpeedBoost = attackSpeedBoost[level - 1];
+            _currentDamageBoost = damageBoost[level - 1];
+            _currentMaxStacks = (level == 3) ? 2 : 1;
             
-            // Initialize counter and timer
-            killCounter = player.GetCounter(nodeID, "killCounter");
-            killCounter.MaxValue = requiredKills;
-            killCounter.OnMaxValueReached += () => ApplyBuffs(player);
+            _killCounter = player.GetCounter(nodeID, "killCounter");
+            _killCounter.MaxValue = requiredKills;
+            _killCounter.OnMaxValueReached += () => ApplyBuffs(player);
             
-            killTimer = player.GetTimer(nodeID, "killTimer", killWindowDuration);
-            killTimer.OnTimerCompleted += () => killCounter.Reset();
+            _killTimer = player.GetTimer(nodeID, "killTimer", killWindowDuration);
+            _killTimer.OnTimerCompleted += () => _killCounter.Reset();
             
-            // Subscribe to enemy killed event
-            player.OnEnemyKilled.AddListener(OnEnemyKilled);
+            CombatEventManager.OnDeath += OnEnemyKilled;
         }
-        
+
         public override void RemoveEffect(PlayerStats player)
         {
-            player.OnEnemyKilled.RemoveListener(OnEnemyKilled);
+            CombatEventManager.OnDeath -= OnEnemyKilled;
             
             ResetState();
         }
 
         public override void ResetState()
         {
-            currentMaxStacks = 1;
-            currentAttackSpeedBoost = 0f;
-            currentDamageBoost = 0f;
-            killCounter?.Reset();
-            killTimer?.Reset();
+            _currentMaxStacks = 1;
+            _currentAttackSpeedBoost = 0f;
+            _currentDamageBoost = 0f;
+            _killCounter?.Reset();
+            _killTimer?.Reset();
+        }
+        
+        private void OnEnemyKilled(CombatEventManager.CombatEventContext obj)
+        {
+            var target = obj.Target;
+            var source = obj.Source;
+
+            var enemy = target.GetComponent<BaseEnemy>();
+            
+            if (!enemy) return;
+
+            var player = source.GetComponent<PlayerStats>();
+            if (!player) return;
+
+            if (enemy.IsDead)
+            {
+                OnEnemyKilled();
+            }
         }
         
         private void OnEnemyKilled()
         {
-            // Increment kill counter and start/reset timer
-            killCounter.Increment();
+            _killCounter.Increment();
             
-            if (!killTimer.IsRunning)
+            if (!_killTimer.IsRunning)
             {
-                killTimer.Start();
+                _killTimer.Start();
             }
             else
             {
-                killTimer.Reset();
+                _killTimer.Reset();
             }
         }
         
         private void ApplyBuffs(PlayerStats player)
         {
-            // Apply temporary attack speed boost
-            player.ModifyAttackSpeedMultiplier(currentAttackSpeedBoost, buffDuration, canStack: (currentMaxStacks > 1));
+            player.ModifyAttackSpeedMultiplier(_currentAttackSpeedBoost, buffDuration, canStack: (_currentMaxStacks > 1));
             
-            // Apply temporary damage boost if available
-            if (currentDamageBoost > 0)
+            if (_currentDamageBoost > 0)
             {
-                player.ModifyDamageMultiplier(currentDamageBoost, buffDuration);
+                player.ModifyDamageMultiplier(_currentDamageBoost, buffDuration);
             }
         }
     }
@@ -382,12 +422,11 @@ namespace PowerTree
         [SerializeField] private float[] damageBoost = new float[] { 0.25f, 0.35f, 0.5f }; // 25%, 35%, 50%
         [SerializeField] private float healthThreshold = 0.75f; // 75% enemy health
         
-        private float currentDamageBoost = 0f;
+        private float _currentDamageBoost;
         
         private void OnValidate()
         {
-            // Auto-populate descriptions with field values
-            descriptions = new string[]
+            descriptions = new[]
             {
                 "Damage increases by {damageBoost[0]} if enemy has above {healthThreshold} health",
                 "Increases to {damageBoost[1]}",
@@ -399,32 +438,32 @@ namespace PowerTree
         {
             if (level <= 0 || level > damageBoost.Length) return;
             
-            currentDamageBoost = damageBoost[level - 1];
+            _currentDamageBoost = damageBoost[level - 1];
             
             // Subscribe to damage calculation event
             // This implementation is hypothetical and depends on your damage system
-            WeaponSystem.OnCalculateDamage += OnCalculateDamage;
+            WeaponManager.OnCalculateDamage += OnCalculateDamage;
         }
         
         public override void RemoveEffect(PlayerStats player)
         {
-            WeaponSystem.OnCalculateDamage -= OnCalculateDamage;
+            WeaponManager.OnCalculateDamage -= OnCalculateDamage;
             
             ResetState();
         }
 
         public override void ResetState()
         {
-            currentDamageBoost = 0f;
+            _currentDamageBoost = 0f;
         }
         
-        private void OnCalculateDamage(Enemy target, ref float damage)
+        private void OnCalculateDamage(BaseEnemy target, ref float damage)
         {
             // Check if enemy health is above threshold
-            if (target.GetHealthPercent() > healthThreshold)
+            if (target.HealthPercentage > healthThreshold)
             {
                 // Increase damage
-                damage *= (1f + currentDamageBoost);
+                damage *= (1f + _currentDamageBoost);
             }
         }
     }
@@ -435,29 +474,6 @@ namespace PowerTree
 // Helper stubs to make the code compile - these would be implemented in your game
 public static class WeaponSystem
 {
-    public static UnityEngine.Events.UnityEvent OnEnemyHit = new UnityEngine.Events.UnityEvent();
-    public static event CalculateDamageHandler OnCalculateDamage;
-
-    public delegate void CalculateDamageHandler(Enemy target, ref float damage);
-    
     public static void AddDoubleDamageChance(float chance) { }
     public static void RemoveDoubleDamageChance(float chance) { }
 }
-
-public static class EnemyManager
-{
-    public static void ApplyKnockback(Vector2 position, float strength) { }
-    public static void ApplyAreaDamage(Vector2 position, float radius, float damage) { }
-    public static void PushEnemiesAway(Vector2 position, float range) { }
-    public static void DamageAllEnemies(float damagePercent, bool excludeBosses) { }
-}
-
-public static class BulletManager
-{
-    public static void NegateNearbyBullets(Vector2 position, int count) { }
-}
-
-public class Enemy
-{
-    public float GetHealthPercent() { return 1.0f; }
-} 
