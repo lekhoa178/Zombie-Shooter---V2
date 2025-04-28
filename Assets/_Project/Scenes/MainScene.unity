@@ -46696,12 +46696,12 @@ MonoBehaviour:
   m_LegendDetailsPanel: {fileID: 0}
   m_LegendDetailsText: {fileID: 0}
   m_ConnectionMaterial: {fileID: 0}
-  m_LineThickness: 10
+  m_LineThickness: 5
   m_LineColor: {r: 0.2905661, g: 0.2905661, b: 0.2905661, a: 1}
   m_CurrentPathLineColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   m_UnvisitedLineColor: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
   m_LineCaps: 0
-  m_HorizontalSpacing: 180
+  m_HorizontalSpacing: 135
   m_VerticalSpacing: 120
   m_InitialOffset: {x: 0, y: 0}
   m_LayerAlignment: 1
@@ -56883,7 +56883,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 3.25
+  m_PixelsPerUnitMultiplier: 5.74
 --- !u!222 &1391467931
 CanvasRenderer:
   m_ObjectHideFlags: 0

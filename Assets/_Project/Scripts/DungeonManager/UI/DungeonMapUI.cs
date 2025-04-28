@@ -406,6 +406,7 @@ namespace DungeonGeneration
                 {
                     rectTransform.anchoredPosition += offset;
                 }
+
             }
 
             // Update drag controller bounds
@@ -1016,123 +1017,6 @@ namespace DungeonGeneration
                 {
                     nodePositions[nodes[i]] = actualPos;
                     occupiedPositions[depth][actualPos] = true;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Ensures siblings are placed in contiguous positions where possible
-        /// </summary>
-        private void EnsureSiblingsAreContiguous(
-            Dictionary<StageNode, int> nodePositions,
-            Dictionary<StageNode, List<StageNode>> nodeParents,
-            Dictionary<int, bool[]> occupiedPositions,
-            int maxDepth,
-            int maxNodesInAnyLayer)
-        {
-            // Group nodes by their parent
-            var siblingGroups = new Dictionary<StageNode, List<StageNode>>();
-
-            foreach (var pair in nodeParents)
-            {
-                StageNode child = pair.Key;
-                List<StageNode> parents = pair.Value;
-
-                if (parents.Count == 0)
-                    continue;
-
-                // Use first parent as primary for grouping
-                StageNode primaryParent = parents[0];
-
-                if (!siblingGroups.ContainsKey(primaryParent))
-                    siblingGroups[primaryParent] = new List<StageNode>();
-
-                siblingGroups[primaryParent].Add(child);
-            }
-
-            // Process each depth to ensure siblings are contiguous
-            for (int depth = 0; depth <= maxDepth; depth++)
-            {
-                if (!m_NodesByDepth.TryGetValue(depth, out var depthNodes))
-                    continue;
-
-                // For each parent with multiple children at this depth
-                foreach (var parent in siblingGroups.Keys)
-                {
-                    var siblings = siblingGroups[parent].Where(s => depthNodes.Contains(s)).ToList();
-
-                    if (siblings.Count <= 1)
-                        continue;
-
-                    // Get siblings' current positions and depth
-                    var siblingPositions = siblings.Where(s => nodePositions.ContainsKey(s))
-                        .ToDictionary(s => s, s => nodePositions[s]);
-
-                    if (siblingPositions.Count <= 1)
-                        continue;
-
-                    // Check if siblings are already contiguous
-                    var positions = siblingPositions.Values.OrderBy(p => p).ToList();
-                    bool areContiguous = true;
-
-                    for (int i = 1; i < positions.Count; i++)
-                    {
-                        if (positions[i] != positions[i - 1] + 1)
-                        {
-                            areContiguous = false;
-                            break;
-                        }
-                    }
-
-                    if (areContiguous)
-                        continue;
-
-                    // Calculate ideal starting position (centered around average)
-                    int avgPos = Mathf.RoundToInt((float)positions.Average());
-                    int idealStart = avgPos - (siblings.Count / 2);
-
-                    // Check if we can place siblings contiguously
-                    bool canPlaceContiguously = true;
-                    var existingOccupied = new HashSet<int>(siblingPositions.Values);
-
-                    for (int i = 0; i < siblings.Count; i++)
-                    {
-                        int pos = idealStart + i;
-
-                        if (pos < 0 || pos >= maxNodesInAnyLayer ||
-                            (occupiedPositions[depth][pos] && !existingOccupied.Contains(pos)))
-                        {
-                            canPlaceContiguously = false;
-                            break;
-                        }
-                    }
-
-                    if (!canPlaceContiguously)
-                        continue;
-
-                    // Clear current positions
-                    foreach (var sibling in siblings)
-                    {
-                        if (siblingPositions.TryGetValue(sibling, out int oldPos))
-                        {
-                            occupiedPositions[depth][oldPos] = false;
-                        }
-                    }
-
-                    // Place siblings contiguously
-                    var orderedSiblings = siblings
-                        .OrderBy(s => siblingPositions.ContainsKey(s) ? siblingPositions[s] : int.MaxValue).ToList();
-
-                    for (int i = 0; i < orderedSiblings.Count; i++)
-                    {
-                        int pos = idealStart + i;
-
-                        if (pos >= 0 && pos < maxNodesInAnyLayer)
-                        {
-                            nodePositions[orderedSiblings[i]] = pos;
-                            occupiedPositions[depth][pos] = true;
-                        }
-                    }
                 }
             }
         }
