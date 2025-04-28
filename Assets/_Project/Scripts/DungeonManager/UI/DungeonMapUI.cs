@@ -178,18 +178,18 @@ namespace DungeonGeneration
                     containerRect.sizeDelta = new Vector2(3000, 3000); // Large size to accommodate content
                 }
             }
-            
+
             // Setup the drag controller
             if (m_EnableDragging)
             {
                 // Check if the drag controller already exists
                 m_DragController = m_ClipArea.GetComponent<MapDragController>();
-                
+
                 if (m_DragController == null)
                 {
                     m_DragController = m_ClipArea.gameObject.AddComponent<MapDragController>();
                 }
-                
+
                 // Configure the drag controller
                 m_DragController.Initialize(m_StagesContainer as RectTransform, m_DragSpeed, m_EdgeBuffer);
             }
@@ -224,7 +224,7 @@ namespace DungeonGeneration
         {
             m_MapBoundsMin = min;
             m_MapBoundsMax = max;
-            
+
             if (m_DragController != null)
             {
                 m_DragController.SetBounds(min, max);
@@ -407,7 +407,7 @@ namespace DungeonGeneration
                     rectTransform.anchoredPosition += offset;
                 }
             }
-            
+
             // Update drag controller bounds
             UpdateMapBounds(m_MapBoundsMin, m_MapBoundsMax);
 
@@ -436,7 +436,7 @@ namespace DungeonGeneration
             m_NodesByDepth.Clear();
 
             // Create a temporary copy of the values to iterate over
-            List<StageNode> stageNodes = new List<StageNode>(stageMap.Values);
+            var stageNodes = new List<StageNode>(stageMap.Values);
 
             // First, build depth mapping
             foreach (var stage in stageNodes)
@@ -452,8 +452,8 @@ namespace DungeonGeneration
             }
 
             // Create dictionaries to track parent-child relationships for improved layout
-            Dictionary<StageNode, List<StageNode>> nodeChildren = new Dictionary<StageNode, List<StageNode>>();
-            Dictionary<StageNode, List<StageNode>> nodeParents = new Dictionary<StageNode, List<StageNode>>();
+            var nodeChildren = new Dictionary<StageNode, List<StageNode>>();
+            var nodeParents = new Dictionary<StageNode, List<StageNode>>();
 
             // Build parent-child relationships
             foreach (var node in stageNodes)
@@ -481,13 +481,13 @@ namespace DungeonGeneration
                 }
             }
 
-            // Process depths in order, starting from the top (0)
-            List<int> depths = m_NodesByDepth.Keys.OrderBy(d => d).ToList();
+            // Process depths in order, starting from the bottom (0)
+            var depths = m_NodesByDepth.Keys.OrderBy(d => d).ToList();
 
             // For the root node/level, we don't need special ordering
             if (depths.Count > 0)
             {
-                int rootDepth = depths[0];
+                var rootDepth = depths[0];
                 if (m_NodesByDepth.ContainsKey(rootDepth))
                 {
                     // Sort by original X position
@@ -498,20 +498,13 @@ namespace DungeonGeneration
             }
 
             // For each subsequent depth, order nodes based on their parents' positions
-            for (int i = 1; i < depths.Count; i++)
+            for (var i = 1; i < depths.Count; i++)
             {
-                int depth = depths[i];
-                List<StageNode> nodesAtDepth = m_NodesByDepth[depth];
+                var depth = depths[i];
+                var nodesAtDepth = m_NodesByDepth[depth];
 
                 if (nodesAtDepth.Count <= 1)
-                    continue; // No need to sort a single node
-
-                // Dictionary to track node indices at this depth for optimization
-                Dictionary<StageNode, int> nodeIndices = new Dictionary<StageNode, int>();
-                for (int j = 0; j < nodesAtDepth.Count; j++)
-                {
-                    nodeIndices[nodesAtDepth[j]] = j;
-                }
+                    continue;
 
                 // Group nodes by their parent nodes
                 var nodeGroups = new Dictionary<StageNode, List<StageNode>>();
@@ -519,10 +512,8 @@ namespace DungeonGeneration
                 foreach (var node in nodesAtDepth)
                 {
                     // Get all parent nodes
-                    if (!nodeParents.ContainsKey(node))
+                    if (!nodeParents.TryGetValue(node, out var parents))
                         continue;
-
-                    var parents = nodeParents[node];
 
                     foreach (var parent in parents)
                     {
@@ -534,7 +525,7 @@ namespace DungeonGeneration
                 }
 
                 // Now order the nodes based on their parents' positions
-                List<StageNode> orderedNodes = new List<StageNode>();
+                var orderedNodes = new List<StageNode>();
 
                 // Get previous depth nodes in their visual order
                 var prevDepth = depths[i - 1];
@@ -543,26 +534,22 @@ namespace DungeonGeneration
                 // Process children in order of parent nodes
                 foreach (var parentNode in prevDepthNodes)
                 {
-                    if (nodeGroups.ContainsKey(parentNode))
-                    {
-                        // Add all children of this parent, preserving their original relative order
-                        var childNodes = nodeGroups[parentNode]
-                            .OrderBy(n => n.GridPosition.x)
-                            .ToList();
+                    if (!nodeGroups.TryGetValue(parentNode, value: out var group)) continue;
 
-                        foreach (var childNode in childNodes)
-                        {
-                            if (!orderedNodes.Contains(childNode))
-                                orderedNodes.Add(childNode);
-                        }
+                    var childNodes = group
+                        .OrderBy(n => n.GridPosition.x)
+                        .ToList();
+
+                    foreach (var childNode in childNodes.Where(childNode => !orderedNodes.Contains(childNode)))
+                    {
+                        orderedNodes.Add(childNode);
                     }
                 }
 
                 // Add any remaining nodes that weren't processed
-                foreach (var node in nodesAtDepth)
+                foreach (var node in nodesAtDepth.Where(node => !orderedNodes.Contains(node)))
                 {
-                    if (!orderedNodes.Contains(node))
-                        orderedNodes.Add(node);
+                    orderedNodes.Add(node);
                 }
 
                 // Update the ordered list
@@ -573,16 +560,16 @@ namespace DungeonGeneration
             // We'll do multiple passes to improve the result
             const int optimizationPasses = 4;
 
-            for (int pass = 0; pass < optimizationPasses; pass++)
+            for (var pass = 0; pass < optimizationPasses; pass++)
             {
                 // Skip the first level since it's already positioned
-                for (int i = 1; i < depths.Count; i++)
+                for (var i = 1; i < depths.Count; i++)
                 {
-                    int depth = depths[i];
-                    List<StageNode> nodesAtDepth = m_NodesByDepth[depth];
+                    var depth = depths[i];
+                    var nodesAtDepth = m_NodesByDepth[depth];
 
                     if (nodesAtDepth.Count <= 1)
-                        continue; // No need to optimize a single node
+                        continue;
 
                     // Calculate the ideal position for each node based on its parents
                     var idealPositions = new Dictionary<StageNode, float>();
@@ -596,69 +583,56 @@ namespace DungeonGeneration
 
                         // Calculate the average index of parents
                         float avgParentPosition = 0;
-                        int validParentCount = 0;
+                        var validParentCount = 0;
 
                         foreach (var parent in parents)
                         {
                             // Find the parent's index in its depth level
-                            for (int d = i - 1; d >= 0; d--)
+                            for (var d = i - 1; d >= 0; d--)
                             {
-                                int parentDepth = depths[d];
-                                int parentIndex = m_NodesByDepth[parentDepth].IndexOf(parent);
+                                var parentDepth = depths[d];
+                                var parentIndex = m_NodesByDepth[parentDepth].IndexOf(parent);
 
-                                if (parentIndex >= 0)
-                                {
-                                    avgParentPosition += parentIndex;
-                                    validParentCount++;
-                                    break;
-                                }
-                            }
-                        }
+                                if (parentIndex < 0) continue;
 
-                        if (validParentCount > 0)
-                        {
-                            avgParentPosition /= validParentCount;
-                            idealPositions[node] = avgParentPosition;
-                        }
-                    }
-
-                    // Sort nodes based on their ideal positions
-                    if (idealPositions.Count > 0)
-                    {
-                        var newOrder = nodesAtDepth
-                            .OrderBy(n => idealPositions.ContainsKey(n) ? idealPositions[n] : float.MaxValue)
-                            .ToList();
-
-                        // Check if the ordering has changed
-                        bool hasChanged = false;
-                        for (int j = 0; j < nodesAtDepth.Count; j++)
-                        {
-                            if (nodesAtDepth[j] != newOrder[j])
-                            {
-                                hasChanged = true;
+                                avgParentPosition += parentIndex;
+                                validParentCount++;
                                 break;
                             }
                         }
 
-                        if (hasChanged)
-                        {
-                            m_NodesByDepth[depth] = newOrder;
-                        }
+                        if (validParentCount <= 0) continue;
+
+                        avgParentPosition /= validParentCount;
+                        idealPositions[node] = avgParentPosition;
+                    }
+
+                    // Sort nodes based on their ideal positions
+                    if (idealPositions.Count <= 0) continue;
+
+                    var newOrder = nodesAtDepth
+                        .OrderBy(n => idealPositions.GetValueOrDefault(n, float.MaxValue))
+                        .ToList();
+
+                    var hasChanged = nodesAtDepth.Where((t, j) => t != newOrder[j]).Any();
+
+                    if (hasChanged)
+                    {
+                        m_NodesByDepth[depth] = newOrder;
                     }
                 }
 
                 // Now do a second pass to consider children as well (bottom-up adjustment)
-                if (pass >= 2) // Only do this in later passes
+                if (pass >= 2)
                 {
-                    for (int i = depths.Count - 2; i >= 0; i--)
+                    for (var i = depths.Count - 2; i >= 0; i--)
                     {
-                        int depth = depths[i];
-                        List<StageNode> nodesAtDepth = m_NodesByDepth[depth];
+                        var depth = depths[i];
+                        var nodesAtDepth = m_NodesByDepth[depth];
 
                         if (nodesAtDepth.Count <= 1)
                             continue;
 
-                        // Calculate the ideal position for each node based on its children
                         var idealPositions = new Dictionary<StageNode, float>();
 
                         foreach (var node in nodesAtDepth)
@@ -669,55 +643,44 @@ namespace DungeonGeneration
                             var children = nodeChildren[node];
 
                             // Calculate the average index of children
-                            float avgChildPosition = 0;
-                            int validChildCount = 0;
+                            var avgChildPosition = 0f;
+                            var validChildCount = 0;
 
                             foreach (var child in children)
                             {
                                 // Find the child's index in its depth level
-                                for (int d = i + 1; d < depths.Count; d++)
+                                for (var d = i + 1; d < depths.Count; d++)
                                 {
-                                    int childDepth = depths[d];
-                                    int childIndex = m_NodesByDepth[childDepth].IndexOf(child);
+                                    var childDepth = depths[d];
+                                    var childIndex = m_NodesByDepth[childDepth].IndexOf(child);
 
-                                    if (childIndex >= 0)
-                                    {
-                                        avgChildPosition += childIndex;
-                                        validChildCount++;
-                                        break;
-                                    }
-                                }
-                            }
+                                    if (childIndex < 0) continue;
 
-                            if (validChildCount > 0)
-                            {
-                                avgChildPosition /= validChildCount;
-                                idealPositions[node] = avgChildPosition;
-                            }
-                        }
-
-                        // Sort nodes based on their ideal positions from children
-                        if (idealPositions.Count > 0)
-                        {
-                            var newOrder = nodesAtDepth
-                                .OrderBy(n => idealPositions.ContainsKey(n) ? idealPositions[n] : float.MaxValue)
-                                .ToList();
-
-                            // Check if the ordering has changed
-                            bool hasChanged = false;
-                            for (int j = 0; j < nodesAtDepth.Count; j++)
-                            {
-                                if (nodesAtDepth[j] != newOrder[j])
-                                {
-                                    hasChanged = true;
+                                    avgChildPosition += childIndex;
+                                    validChildCount++;
                                     break;
                                 }
                             }
 
-                            if (hasChanged)
-                            {
-                                m_NodesByDepth[depth] = newOrder;
-                            }
+                            if (validChildCount <= 0) continue;
+
+                            avgChildPosition /= validChildCount;
+                            idealPositions[node] = avgChildPosition;
+                        }
+
+                        // Sort nodes based on their ideal positions from children
+                        if (idealPositions.Count <= 0) continue;
+
+                        var newOrder = nodesAtDepth
+                            .OrderBy(n => idealPositions.GetValueOrDefault(n, float.MaxValue))
+                            .ToList();
+
+                        // Check if the ordering has changed
+                        var hasChanged = nodesAtDepth.Where((t, j) => t != newOrder[j]).Any();
+
+                        if (hasChanged)
+                        {
+                            m_NodesByDepth[depth] = newOrder;
                         }
                     }
                 }
@@ -725,23 +688,23 @@ namespace DungeonGeneration
                 // Final crossings reduction pass - detect and fix obvious crossings
                 if (pass == optimizationPasses - 1)
                 {
-                    for (int i = 1; i < depths.Count; i++)
+                    for (var i = 1; i < depths.Count; i++)
                     {
-                        int depth = depths[i];
-                        List<StageNode> nodesAtDepth = m_NodesByDepth[depth];
+                        var depth = depths[i];
+                        var nodesAtDepth = m_NodesByDepth[depth];
 
                         if (nodesAtDepth.Count <= 1)
                             continue;
 
                         // Find obvious edge crossings and swap nodes to fix them
                         bool madeSwap;
-                        int maxIterations = 100; // Prevent infinite loop
-                        int iterations = 0;
+                        const int maxIterations = 100; // Prevent infinite loop
+                        var iterations = 0;
                         do
                         {
                             madeSwap = false;
 
-                            for (int j = 0; j < nodesAtDepth.Count - 1; j++)
+                            for (var j = 0; j < nodesAtDepth.Count - 1; j++)
                             {
                                 var nodeA = nodesAtDepth[j];
                                 var nodeB = nodesAtDepth[j + 1];
@@ -756,33 +719,27 @@ namespace DungeonGeneration
                                 float avgParentIndexA = 0;
                                 float avgParentIndexB = 0;
 
-                                int countA = 0;
-                                int countB = 0;
+                                var countA = 0;
+                                var countB = 0;
 
                                 // Calculate average parent indices
-                                for (int d = i - 1; d >= 0; d--)
+                                for (var d = i - 1; d >= 0; d--)
                                 {
-                                    int parentDepth = depths[d];
+                                    var parentDepth = depths[d];
                                     var parentDepthNodes = m_NodesByDepth[parentDepth];
 
-                                    foreach (var parent in parentsA)
+                                    foreach (var idx in parentsA.Select(parent => parentDepthNodes.IndexOf(parent))
+                                                 .Where(idx => idx >= 0))
                                     {
-                                        int idx = parentDepthNodes.IndexOf(parent);
-                                        if (idx >= 0)
-                                        {
-                                            avgParentIndexA += idx;
-                                            countA++;
-                                        }
+                                        avgParentIndexA += idx;
+                                        countA++;
                                     }
 
-                                    foreach (var parent in parentsB)
+                                    foreach (var idx in parentsB.Select(parent => parentDepthNodes.IndexOf(parent))
+                                                 .Where(idx => idx >= 0))
                                     {
-                                        int idx = parentDepthNodes.IndexOf(parent);
-                                        if (idx >= 0)
-                                        {
-                                            avgParentIndexB += idx;
-                                            countB++;
-                                        }
+                                        avgParentIndexB += idx;
+                                        countB++;
                                     }
 
                                     if (countA > 0 && countB > 0)
@@ -796,13 +753,12 @@ namespace DungeonGeneration
                                     avgParentIndexB /= countB;
 
                                 // If B's average parent index is less than A's, swap them
-                                if (countA > 0 && countB > 0 && avgParentIndexB < avgParentIndexA)
-                                {
-                                    // Swap positions
-                                    nodesAtDepth[j] = nodeB;
-                                    nodesAtDepth[j + 1] = nodeA;
-                                    madeSwap = true;
-                                }
+                                if (countA <= 0 || countB <= 0 || !(avgParentIndexB < avgParentIndexA)) continue;
+
+                                // Swap positions
+                                nodesAtDepth[j] = nodeB;
+                                nodesAtDepth[j + 1] = nodeA;
+                                madeSwap = true;
                             }
 
                             iterations++;
@@ -822,52 +778,588 @@ namespace DungeonGeneration
             return (int)Mathf.Round(node.GridPosition.y);
         }
 
-        /// <summary>
-        /// Layouts all stage nodes in the container
-        /// </summary>
         private void LayoutStageNodes()
         {
             if (m_NodesByDepth.Count == 0)
                 return;
-                
-            int maxDepth = m_NodesByDepth.Keys.Count > 0 ? m_NodesByDepth.Keys.Max() : 0;
             
-            // Find the maximum number of nodes in any layer to determine grid positions
-            int maxNodesInAnyLayer = 0;
-            foreach (var depthNodes in m_NodesByDepth.Values)
+            string debugStr = "==== Debug Str ====\n";
+            for (int i = 0; i < m_NodesByDepth.Count; ++i)
             {
-                maxNodesInAnyLayer = Mathf.Max(maxNodesInAnyLayer, depthNodes.Count);
+                string rowStr = "";
+                for (int j = 0; j < m_NodesByDepth[i].Count; ++j)
+                {
+                    rowStr += $"StageType: {m_NodesByDepth[i][j].StageType} || ";
+                }
+
+                debugStr += "\t" + rowStr + "\n";
             }
             
-            // Create a grid to track which positions are occupied at each depth
-            Dictionary<int, bool[]> occupiedPositions = new Dictionary<int, bool[]>();
-            
-            // Create position assignments for each node
-            Dictionary<StageNode, int> nodePositions = new Dictionary<StageNode, int>();
-            
+            Debug.Log(debugStr);
+
+            var maxDepth = m_NodesByDepth.Keys.Count > 0 ? m_NodesByDepth.Keys.Max() : 0;
+
+            // Find the maximum number of nodes in any layer
+            var maxNodesInAnyLayer = m_NodesByDepth.Values.Aggregate(0, (current, depthNodes) => Mathf.Max(current, depthNodes.Count));
+
+            // Create a grid with enough slots for all nodes
+            var nodePositions = new Dictionary<StageNode, int>();
+            var occupiedPositions = new Dictionary<int, bool[]>();
+            var nodeParents = new Dictionary<StageNode, List<StageNode>>();
+            var nodeChildren = new Dictionary<StageNode, List<StageNode>>();
+
             // Initialize occupied positions grid
-            for (int depth = 0; depth <= maxDepth; depth++)
+            for (var depth = 0; depth <= maxDepth; depth++)
             {
                 occupiedPositions[depth] = new bool[maxNodesInAnyLayer];
             }
-            
-            // First, place the special layers (start, boss, interzone) in centered positions
+
+            // Build parent-child relationships
+            BuildNodeRelationships(nodeParents, nodeChildren);
+
+            // Start with special layers - we still want to handle start/end nodes specially
             PlaceSpecialLayers(maxNodesInAnyLayer, nodePositions, occupiedPositions);
-            
-            // Next, place remaining nodes to avoid crossed lines
-            PlaceRemainingNodes(maxNodesInAnyLayer, nodePositions, occupiedPositions);
-            
-            // Now create the actual node objects using calculated positions
+
+            // Process layers from bottom to top (opposite of previous approach)
+            for (var depth = maxDepth; depth >= 0; depth--)
+            {
+                if (!m_NodesByDepth.TryGetValue(depth, out var nodes) || nodes.Count == 0)
+                    continue;
+
+                // Skip special nodes that are already positioned
+                var remainingNodes = nodes.Where(n => !nodePositions.ContainsKey(n)).ToList();
+                if (remainingNodes.Count == 0)
+                    continue;
+
+                // Group nodes by their child relationships
+                var nodesByChildren = new Dictionary<string, List<StageNode>>();
+                
+                foreach (var node in remainingNodes)
+                {
+                    if (!nodeChildren.TryGetValue(node, out var children) || children.Count == 0)
+                    {
+                        // Node has no children
+                        if (!nodesByChildren.ContainsKey("orphans"))
+                            nodesByChildren["orphans"] = new List<StageNode>();
+                        
+                        nodesByChildren["orphans"].Add(node);
+                        continue;
+                    }
+
+                    // Get positioned children
+                    var positionedChildren = children.Where(c => nodePositions.ContainsKey(c)).ToList();
+                    if (positionedChildren.Count == 0)
+                    {
+                        // No positioned children
+                        if (!nodesByChildren.ContainsKey("unpositioned"))
+                            nodesByChildren["unpositioned"] = new List<StageNode>();
+                        
+                        nodesByChildren["unpositioned"].Add(node);
+                        continue;
+                    }
+
+                    // Calculate a key based on children positions to group nodes with similar child positions
+                    var childrenKey = string.Join("_", positionedChildren.Select(c => nodePositions[c]).OrderBy(p => p));
+                    
+                    if (!nodesByChildren.ContainsKey(childrenKey))
+                        nodesByChildren[childrenKey] = new List<StageNode>();
+                    
+                    nodesByChildren[childrenKey].Add(node);
+                }
+
+                // Process each group of nodes
+                foreach (var group in nodesByChildren.Values)
+                {
+                    if (group.Count == 0)
+                        continue;
+
+                    // For nodes with positioned children, place them based on average child position
+                    foreach (var node in group)
+                    {
+                        if (nodePositions.ContainsKey(node))
+                            continue;
+
+                        int pos;
+                        if (nodeChildren.TryGetValue(node, out var children) && children.Count > 0)
+                        {
+                            // Get positioned children
+                            var positionedChildren = children.Where(c => nodePositions.ContainsKey(c)).ToList();
+                            
+                            if (positionedChildren.Count > 0)
+                            {
+                                // Calculate ideal position based on average of children positions
+                                int avgChildrenPos = Mathf.RoundToInt((float)positionedChildren.Average(c => nodePositions[c]));
+                                
+                                // Find available position near the ideal
+                                pos = FindNearestAvailablePosition(depth, avgChildrenPos, maxNodesInAnyLayer, occupiedPositions);
+                                
+                                if (pos >= 0)
+                                {
+                                    nodePositions[node] = pos;
+                                    occupiedPositions[depth][pos] = true;
+                                    continue;
+                                }
+                            }
+                        }
+                        
+                        // Fallback if we couldn't position based on children
+                        int centerPos = maxNodesInAnyLayer / 2;
+                        pos = FindNearestAvailablePosition(depth, centerPos, maxNodesInAnyLayer, occupiedPositions);
+                        
+                        if (pos >= 0)
+                        {
+                            nodePositions[node] = pos;
+                            occupiedPositions[depth][pos] = true;
+                        }
+                    }
+                }
+                
+                // Process orphan nodes (no children or unpositioned children)
+                if (nodesByChildren.TryGetValue("orphans", out var orphans) || nodesByChildren.TryGetValue("unpositioned", out orphans))
+                {
+                    // For orphans, try to place them with their siblings if possible
+                    foreach (var node in orphans)
+                    {
+                        if (nodePositions.ContainsKey(node))
+                            continue;
+                        
+                        // Try to find siblings that are already positioned
+                        var siblings = FindSiblings(node, nodeParents.TryGetValue(node, out var parents) ? parents : new List<StageNode>(), 
+                            nodeParents, nodes);
+                        
+                        var positionedSiblings = siblings.Where(s => nodePositions.ContainsKey(s)).ToList();
+
+                        int pos;
+                        if (positionedSiblings.Count > 0)
+                        {
+                            // Place near siblings
+                            int avgSiblingPos = Mathf.RoundToInt((float)positionedSiblings.Average(s => nodePositions[s]));
+                            pos = FindNearestAvailablePosition(depth, avgSiblingPos, maxNodesInAnyLayer, occupiedPositions);
+                            
+                            if (pos >= 0)
+                            {
+                                nodePositions[node] = pos;
+                                occupiedPositions[depth][pos] = true;
+                                continue;
+                            }
+                        }
+                        
+                        // Fallback to center position
+                        int centerPos = maxNodesInAnyLayer / 2;
+                        pos = FindNearestAvailablePosition(depth, centerPos, maxNodesInAnyLayer, occupiedPositions);
+                        
+                        if (pos >= 0)
+                        {
+                            nodePositions[node] = pos;
+                            occupiedPositions[depth][pos] = true;
+                        }
+                    }
+                }
+
+                // If any nodes still haven't been positioned, place them at available positions
+                foreach (var node in nodes)
+                {
+                    if (nodePositions.ContainsKey(node))
+                        continue;
+                    
+                    int centerPos = maxNodesInAnyLayer / 2;
+                    int pos = FindNearestAvailablePosition(depth, centerPos, maxNodesInAnyLayer, occupiedPositions);
+                    
+                    if (pos >= 0)
+                    {
+                        nodePositions[node] = pos;
+                        occupiedPositions[depth][pos] = true;
+                    }
+                }
+            }
+
+            // Final optimization - ensure siblings are placed contiguously
+            // EnsureSiblingsAreContiguous(nodePositions, nodeParents, occupiedPositions, maxDepth, maxNodesInAnyLayer);
+
+            // Create the actual node objects
             CreateNodeObjects(maxNodesInAnyLayer, nodePositions);
+            
+            debugStr = "==== Debug Str ====\n";
+            for (int i = 0; i < m_NodesByDepth.Count; ++i)
+            {
+                string rowStr = "";
+                for (int j = 0; j < m_NodesByDepth[i].Count; ++j)
+                {
+                    rowStr += $"StageType: {m_NodesByDepth[i][j].StageType} || ";
+                }
+
+                debugStr += "\t" + rowStr + "\n";
+            }
+            
+            Debug.Log(debugStr);
+        }
+
+        /// <summary>
+        /// Ensures siblings are placed in contiguous positions where possible
+        /// </summary>
+        private void EnsureSiblingsAreContiguous(
+            Dictionary<StageNode, int> nodePositions,
+            Dictionary<StageNode, List<StageNode>> nodeParents, 
+            Dictionary<int, bool[]> occupiedPositions,
+            int maxDepth,
+            int maxNodesInAnyLayer)
+        {
+            // Group nodes by their parent
+            var siblingGroups = new Dictionary<StageNode, List<StageNode>>();
+            
+            foreach (var pair in nodeParents)
+            {
+                StageNode child = pair.Key;
+                List<StageNode> parents = pair.Value;
+                
+                if (parents.Count == 0)
+                    continue;
+                    
+                // Use first parent as primary for grouping
+                StageNode primaryParent = parents[0];
+                
+                if (!siblingGroups.ContainsKey(primaryParent))
+                    siblingGroups[primaryParent] = new List<StageNode>();
+                    
+                siblingGroups[primaryParent].Add(child);
+            }
+            
+            // Process each depth to ensure siblings are contiguous
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                if (!m_NodesByDepth.TryGetValue(depth, out var depthNodes))
+                    continue;
+                    
+                // For each parent with multiple children at this depth
+                foreach (var parent in siblingGroups.Keys)
+                {
+                    var siblings = siblingGroups[parent].Where(s => depthNodes.Contains(s)).ToList();
+                    
+                    if (siblings.Count <= 1)
+                        continue;
+                        
+                    // Get siblings' current positions and depth
+                    var siblingPositions = siblings.Where(s => nodePositions.ContainsKey(s))
+                        .ToDictionary(s => s, s => nodePositions[s]);
+                        
+                    if (siblingPositions.Count <= 1)
+                        continue;
+                        
+                    // Check if siblings are already contiguous
+                    var positions = siblingPositions.Values.OrderBy(p => p).ToList();
+                    bool areContiguous = true;
+                    
+                    for (int i = 1; i < positions.Count; i++)
+                    {
+                        if (positions[i] != positions[i-1] + 1)
+                        {
+                            areContiguous = false;
+                            break;
+                        }
+                    }
+                    
+                    if (areContiguous)
+                        continue;
+                        
+                    // Calculate ideal starting position (centered around average)
+                    int avgPos = Mathf.RoundToInt((float)positions.Average());
+                    int idealStart = avgPos - (siblings.Count / 2);
+                    
+                    // Check if we can place siblings contiguously
+                    bool canPlaceContiguously = true;
+                    var existingOccupied = new HashSet<int>(siblingPositions.Values);
+                    
+                    for (int i = 0; i < siblings.Count; i++)
+                    {
+                        int pos = idealStart + i;
+                        
+                        if (pos < 0 || pos >= maxNodesInAnyLayer || 
+                            (occupiedPositions[depth][pos] && !existingOccupied.Contains(pos)))
+                        {
+                            canPlaceContiguously = false;
+                            break;
+                        }
+                    }
+                    
+                    if (!canPlaceContiguously)
+                        continue;
+                        
+                    // Clear current positions
+                    foreach (var sibling in siblings)
+                    {
+                        if (siblingPositions.TryGetValue(sibling, out int oldPos))
+                        {
+                            occupiedPositions[depth][oldPos] = false;
+                        }
+                    }
+                    
+                    // Place siblings contiguously
+                    var orderedSiblings = siblings.OrderBy(s => siblingPositions.ContainsKey(s) ? siblingPositions[s] : int.MaxValue).ToList();
+                    
+                    for (int i = 0; i < orderedSiblings.Count; i++)
+                    {
+                        int pos = idealStart + i;
+                        
+                        if (pos >= 0 && pos < maxNodesInAnyLayer)
+                        {
+                            nodePositions[orderedSiblings[i]] = pos;
+                            occupiedPositions[depth][pos] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Finds the nearest available position to the target position
+        /// </summary>
+        private int FindNearestAvailablePosition(int depth, int targetPos, int maxPositions,
+            Dictionary<int, bool[]> occupiedPositions)
+        {
+            // Check the target position first
+            if (targetPos >= 0 && targetPos < maxPositions && !occupiedPositions[depth][targetPos])
+            {
+                return targetPos;
+            }
+
+            // Expand search outward from target position
+            for (int offset = 1; offset < maxPositions; offset++)
+            {
+                // Check position to the right
+                int rightPos = targetPos + offset;
+                if (rightPos < maxPositions && !occupiedPositions[depth][rightPos])
+                {
+                    return rightPos;
+                }
+
+                // Check position to the left
+                int leftPos = targetPos - offset;
+                if (leftPos >= 0 && !occupiedPositions[depth][leftPos])
+                {
+                    return leftPos;
+                }
+            }
+
+            // If all positions are occupied, return -1
+            return -1;
+        }
+
+        /// <summary>
+        /// Builds parent-child relationships for nodes
+        /// </summary>
+        private void BuildNodeRelationships(Dictionary<StageNode, List<StageNode>> nodeParents,
+            Dictionary<StageNode, List<StageNode>> nodeChildren)
+        {
+            // Map parent-child relationships for all nodes
+            foreach (var depthPair in m_NodesByDepth)
+            {
+                foreach (var node in depthPair.Value)
+                {
+                    if (!nodeChildren.ContainsKey(node))
+                        nodeChildren[node] = new List<StageNode>();
+
+                    foreach (var nextStage in node.NextStages)
+                    {
+                        if (nextStage == null) continue;
+
+                        if (!nodeParents.ContainsKey(nextStage))
+                            nodeParents[nextStage] = new List<StageNode>();
+
+                        nodeParents[nextStage].Add(node);
+                        nodeChildren[node].Add(nextStage);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Finds siblings of a node at the same depth level
+        /// </summary>
+        private List<StageNode> FindSiblings(StageNode node, List<StageNode> parents,
+            Dictionary<StageNode, List<StageNode>> nodeParents, List<StageNode> nodesAtSameDepth)
+        {
+            // Find all nodes at the same depth that share at least one parent with this node
+            var siblings = new HashSet<StageNode>();
+
+            foreach (var parent in parents)
+            {
+                // Find all nodes that have this parent
+                foreach (var possibleSibling in nodesAtSameDepth)
+                {
+                    if (possibleSibling == node)
+                        continue;
+
+                    if (nodeParents.TryGetValue(possibleSibling, out var possibleSiblingParents) &&
+                        possibleSiblingParents.Contains(parent))
+                    {
+                        siblings.Add(possibleSibling);
+                    }
+                }
+            }
+
+            return siblings.ToList();
+        }
+
+        /// <summary>
+        /// Creates the actual node objects using the calculated positions
+        /// </summary>
+        private void CreateNodeObjects(int maxNodesInAnyLayer, Dictionary<StageNode, int> nodePositions)
+        {
+            int maxDepth = m_NodesByDepth.Keys.Count > 0 ? m_NodesByDepth.Keys.Max() : 0;
+
+            // Calculate total width for the grid
+            float totalWidth = (maxNodesInAnyLayer - 1) * m_HorizontalSpacing;
+
+            // Layout nodes by depth, starting from the bottom (0) to top (maxDepth)
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                if (!m_NodesByDepth.TryGetValue(depth, out var depthNodes))
+                    continue;
+
+                // Determine which alignment to use for this layer
+                LayerAlignment layerAlignment = m_LayerAlignment;
+
+                // Override alignment for special layers if specified
+                if (depth == 0 && m_UseSpecialAlignmentForFirstLayer)
+                {
+                    layerAlignment = m_FirstLayerAlignment;
+                }
+                else if (depth == maxDepth && m_UseSpecialAlignmentForLastLayer)
+                {
+                    layerAlignment = m_LastLayerAlignment;
+                }
+
+                // Apply alignment adjustments
+                AdjustNodePositionsForLayer(depthNodes, nodePositions, maxNodesInAnyLayer, layerAlignment);
+
+                foreach (var node in depthNodes)
+                {
+                    if (!nodePositions.TryGetValue(node, out int position))
+                        continue;
+
+                    // Create stage UI component
+                    GameObject stageObj = Instantiate(m_StageNodePrefab, m_StagesContainer);
+                    DungeonStageUI stageUI = stageObj.GetComponent<DungeonStageUI>();
+
+                    if (stageUI != null)
+                    {
+                        // Calculate position based on grid
+                        float startX = -totalWidth / 2; // Center the grid
+                        float xPos = startX + (position * m_HorizontalSpacing);
+                        float yPos = m_InitialOffset.y + (depth * m_VerticalSpacing);
+
+                        // Set position
+                        RectTransform rectTransform = stageObj.GetComponent<RectTransform>();
+                        if (rectTransform != null)
+                        {
+                            rectTransform.anchoredPosition = new Vector2(xPos, yPos);
+                        }
+
+                        // Initialize with stage data
+                        stageUI.Initialize(node, GetStageIcon(node.StageType));
+
+                        // Store reference
+                        m_StageUIComponents[node.ID] = stageUI;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adjusts node positions based on the selected layer alignment
+        /// </summary>
+        private void AdjustNodePositionsForLayer(List<StageNode> nodesInLayer, Dictionary<StageNode, int> nodePositions,
+            int maxNodesInAnyLayer, LayerAlignment alignment)
+        {
+            if (nodesInLayer.Count <= 0)
+                return;
+
+            // Get the current min/max positions in this layer
+            int minPos = int.MaxValue;
+            int maxPos = int.MinValue;
+
+            foreach (var node in nodesInLayer)
+            {
+                if (nodePositions.TryGetValue(node, out int position))
+                {
+                    minPos = Mathf.Min(minPos, position);
+                    maxPos = Mathf.Max(maxPos, position);
+                }
+            }
+
+            // If all nodes have the same position, no adjustment needed
+            if (minPos == maxPos || minPos == int.MaxValue)
+                return;
+
+            // Calculate the current width of this layer in grid positions
+            int layerWidth = maxPos - minPos;
+
+            // Apply alignment
+            switch (alignment)
+            {
+                case LayerAlignment.Left:
+                    // Shift all nodes to start at position 0
+                    ShiftNodesInLayer(nodesInLayer, nodePositions, -minPos);
+                    break;
+
+                case LayerAlignment.Center:
+                    // Center nodes in the available space
+                    int centerOffset = (maxNodesInAnyLayer - 1 - layerWidth) / 2;
+                    ShiftNodesInLayer(nodesInLayer, nodePositions, centerOffset - minPos);
+                    break;
+
+                case LayerAlignment.Right:
+                    // Align to the right side of the layout
+                    ShiftNodesInLayer(nodesInLayer, nodePositions, (maxNodesInAnyLayer - 1 - maxPos));
+                    break;
+
+                case LayerAlignment.EvenlySpaced:
+                    if (nodesInLayer.Count > 1)
+                    {
+                        // Create a new mapping with nodes evenly distributed
+                        var orderedNodes = nodesInLayer
+                            .OrderBy(n => nodePositions.TryGetValue(n, out int pos) ? pos : 0).ToList();
+
+                        // Calculate spacing based on available width
+                        float spacing = (float)(maxNodesInAnyLayer - 1) / (orderedNodes.Count - 1);
+
+                        // Reassign positions
+                        for (int i = 0; i < orderedNodes.Count; i++)
+                        {
+                            nodePositions[orderedNodes[i]] = Mathf.RoundToInt(i * spacing);
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Shifts all nodes in a layer by a given offset
+        /// </summary>
+        private void ShiftNodesInLayer(List<StageNode> nodesInLayer, Dictionary<StageNode, int> nodePositions,
+            int offset)
+        {
+            if (offset == 0)
+                return;
+
+            foreach (var node in nodesInLayer)
+            {
+                if (nodePositions.TryGetValue(node, out int position))
+                {
+                    nodePositions[node] = position + offset;
+                }
+            }
         }
 
         /// <summary>
         /// Places special layers (start, boss, interzone) in centered positions
         /// </summary>
-        private void PlaceSpecialLayers(int maxNodesInAnyLayer, Dictionary<StageNode, int> nodePositions, Dictionary<int, bool[]> occupiedPositions)
+        private void PlaceSpecialLayers(int maxNodesInAnyLayer, Dictionary<StageNode, int> nodePositions,
+            Dictionary<int, bool[]> occupiedPositions)
         {
             int maxDepth = m_NodesByDepth.Keys.Count > 0 ? m_NodesByDepth.Keys.Max() : 0;
-            
+
             // Find first layer (depth 0) - this will be the start node
             if (m_NodesByDepth.TryGetValue(0, out var startNodes) && startNodes.Count > 0)
             {
@@ -876,7 +1368,7 @@ namespace DungeonGeneration
                 nodePositions[startNodes[0]] = centerPos;
                 occupiedPositions[0][centerPos] = true;
             }
-            
+
             // Find boss layer - typically one before the last layer
             // This is a simplification - in reality we'd need to identify boss nodes by type
             int bossDepth = maxDepth - 1;
@@ -894,7 +1386,7 @@ namespace DungeonGeneration
                     }
                 }
             }
-            
+
             // Find interzone layer (last layer)
             if (m_NodesByDepth.TryGetValue(maxDepth, out var interzoneNodes))
             {
@@ -913,869 +1405,6 @@ namespace DungeonGeneration
         }
 
         /// <summary>
-        /// Places remaining nodes to avoid crossed lines
-        /// </summary>
-        private void PlaceRemainingNodes(int maxNodesInAnyLayer, Dictionary<StageNode, int> nodePositions, Dictionary<int, bool[]> occupiedPositions)
-        {
-            int maxDepth = m_NodesByDepth.Keys.Count > 0 ? m_NodesByDepth.Keys.Max() : 0;
-            
-            // Create dictionaries to track parent-child relationships
-            Dictionary<StageNode, List<StageNode>> nodeParents = new Dictionary<StageNode, List<StageNode>>();
-            Dictionary<StageNode, List<StageNode>> nodeChildren = new Dictionary<StageNode, List<StageNode>>();
-            
-            // Build parent-child relationships
-            foreach (var depthPair in m_NodesByDepth)
-            {
-                foreach (var node in depthPair.Value)
-                {
-                    // Initialize collections if needed
-                    if (!nodeChildren.ContainsKey(node))
-                        nodeChildren[node] = new List<StageNode>();
-                        
-                    // For each next stage, establish parent-child relationship
-                    foreach (var nextStage in node.NextStages)
-                    {
-                        if (nextStage == null) continue;
-                        
-                        if (!nodeParents.ContainsKey(nextStage))
-                            nodeParents[nextStage] = new List<StageNode>();
-                        
-                        nodeParents[nextStage].Add(node);
-                        nodeChildren[node].Add(nextStage);
-                    }
-                }
-            }
-            
-            // Process depths in order (top to bottom)
-            for (int depth = 0; depth <= maxDepth; depth++)
-            {
-                if (!m_NodesByDepth.TryGetValue(depth, out var depthNodes))
-                    continue;
-                    
-                // Skip if there are no nodes at this depth
-                if (depthNodes.Count == 0)
-                    continue;
-                
-                // First, handle special nodes (already positioned)
-                var alreadyPositionedNodes = depthNodes.Where(n => nodePositions.ContainsKey(n)).ToList();
-                
-                // Then, create parent-to-children mapping for this depth
-                Dictionary<StageNode, List<StageNode>> childrenByParent = new Dictionary<StageNode, List<StageNode>>();
-                
-                // For each node at this depth that's not positioned yet
-                foreach (var node in depthNodes.Where(n => !nodePositions.ContainsKey(n)))
-                {
-                    // Find all parents
-                    if (nodeParents.TryGetValue(node, out var parents) && parents.Count > 0)
-                    {
-                        // Only consider parents that are already positioned
-                        var positionedParents = parents
-                            .Where(p => nodePositions.ContainsKey(p))
-                            .OrderBy(p => nodePositions[p]) // Sort by horizontal position
-                            .ToList();
-                        
-                        // Select primary parent (prefer single parent or first positioned parent)
-                        if (positionedParents.Count > 0)
-                        {
-                            var primaryParent = positionedParents[0];
-                            
-                            if (!childrenByParent.ContainsKey(primaryParent))
-                                childrenByParent[primaryParent] = new List<StageNode>();
-                            
-                            childrenByParent[primaryParent].Add(node);
-                        }
-                    }
-                }
-                
-                // Now process each parent's children as sibling groups
-                // Sort parents by their position to process from left to right
-                foreach (var parent in childrenByParent.Keys.OrderBy(p => nodePositions[p]))
-                {
-                    List<StageNode> siblings = childrenByParent[parent];
-                    
-                    // Skip if no siblings to position
-                    if (siblings.Count == 0)
-                        continue;
-                        
-                    int parentPos = nodePositions[parent];
-                    
-                    // ENHANCE: Sort siblings by their connections to already positioned nodes
-                    // This helps maintain a more natural order
-                    siblings = OrderSiblingsByConnections(siblings, nodeParents, nodeChildren, nodePositions);
-                    
-                    // Try to place siblings as a contiguous block centered under their parent
-                    int siblingCount = siblings.Count;
-                    
-                    // Calculate ideal starting position to center under parent
-                    int idealStartPos;
-                    if (siblingCount % 2 == 0)
-                    {
-                        // Even number of siblings: center them around parent position
-                        idealStartPos = parentPos - (siblingCount / 2);
-                    }
-                    else
-                    {
-                        // Odd number of siblings: place middle sibling directly below parent
-                        idealStartPos = parentPos - (siblingCount / 2);
-                    }
-                    
-                    // Keep siblings together as a group by finding a contiguous block
-                    // First try the ideal position
-                    int actualStartPos = TryFindContiguousBlock(depth, idealStartPos, siblingCount, maxNodesInAnyLayer, occupiedPositions, parentPos);
-                    
-                    // Place all siblings in the contiguous block
-                    for (int i = 0; i < siblingCount; i++)
-                    {
-                        int pos = actualStartPos + i;
-                        nodePositions[siblings[i]] = pos;
-                        occupiedPositions[depth][pos] = true;
-                    }
-                }
-                
-                // Handle remaining unpositioned nodes (orphans or with unpositioned parents)
-                foreach (var node in depthNodes)
-                {
-                    if (nodePositions.ContainsKey(node))
-                        continue;
-                    
-                    // Try to place near the center
-                    int centerPos = maxNodesInAnyLayer / 2;
-                    int bestPos = FindNearestAvailablePosition(depth, centerPos, maxNodesInAnyLayer, occupiedPositions);
-                    
-                    if (bestPos >= 0)
-                    {
-                        nodePositions[node] = bestPos;
-                        occupiedPositions[depth][bestPos] = true;
-                    }
-                }
-            }
-            
-            // Final optimization pass to minimize edge crossings while preserving sibling relationships
-            OptimizeNodePositionsToReduceCrossingsPreservingSiblings(nodePositions, nodeParents, nodeChildren, maxDepth);
-        }
-
-        /// <summary>
-        /// Orders siblings by their connections to already positioned nodes
-        /// </summary>
-        private List<StageNode> OrderSiblingsByConnections(
-            List<StageNode> siblings,
-            Dictionary<StageNode, List<StageNode>> nodeParents,
-            Dictionary<StageNode, List<StageNode>> nodeChildren,
-            Dictionary<StageNode, int> nodePositions)
-        {
-            // If we only have one sibling, no need to order
-            if (siblings.Count <= 1)
-                return siblings;
-            
-            // Create a score for each sibling based on their connections
-            Dictionary<StageNode, float> siblingScores = new Dictionary<StageNode, float>();
-            
-            foreach (var sibling in siblings)
-            {
-                float score = 0;
-                
-                // Consider children connections (if any)
-                if (nodeChildren.TryGetValue(sibling, out var children))
-                {
-                    foreach (var child in children)
-                    {
-                        if (nodePositions.TryGetValue(child, out int childPos))
-                        {
-                            // The score is the position of the child
-                            score += childPos;
-                        }
-                    }
-                    
-                    // Average the score if we have children
-                    if (children.Count > 0)
-                        score /= children.Count;
-                }
-                
-                // Consider other parent connections (if multiple parents)
-                if (nodeParents.TryGetValue(sibling, out var parents) && parents.Count > 1)
-                {
-                    float parentScore = 0;
-                    int positionedParentCount = 0;
-                    
-                    foreach (var parent in parents)
-                    {
-                        if (nodePositions.TryGetValue(parent, out int parentPos))
-                        {
-                            parentScore += parentPos;
-                            positionedParentCount++;
-                        }
-                    }
-                    
-                    // Average parent positions and add to score
-                    if (positionedParentCount > 1) // More than one positioned parent
-                    {
-                        score = (score + (parentScore / positionedParentCount)) / 2; // Average with child score
-                    }
-                }
-                
-                siblingScores[sibling] = score;
-            }
-            
-            // Return siblings ordered by their scores
-            return siblings.OrderBy(s => siblingScores.ContainsKey(s) ? siblingScores[s] : 0).ToList();
-        }
-
-        /// <summary>
-        /// Tries to find a contiguous block of positions for a sibling group
-        /// </summary>
-        private int TryFindContiguousBlock(
-            int depth, 
-            int idealStartPos, 
-            int blockSize, 
-            int maxPositions, 
-            Dictionary<int, bool[]> occupiedPositions,
-            int parentPos)
-        {
-            // Ensure idealStartPos is within bounds
-            idealStartPos = Mathf.Clamp(idealStartPos, 0, maxPositions - blockSize);
-            
-            // First check if the ideal block is available
-            bool idealBlockAvailable = true;
-            for (int i = 0; i < blockSize; i++)
-            {
-                int pos = idealStartPos + i;
-                if (pos >= maxPositions || occupiedPositions[depth][pos])
-                {
-                    idealBlockAvailable = false;
-                    break;
-                }
-            }
-            
-            if (idealBlockAvailable)
-                return idealStartPos;
-            
-            // Otherwise, search outward from the parent position
-            // to find the nearest available contiguous block
-            
-            int maxOffset = maxPositions - blockSize + 1;
-            int bestStartPos = -1;
-            int minDistance = int.MaxValue;
-            
-            // We want to check positions near the parent first
-            for (int offset = 0; offset < maxOffset; offset++)
-            {
-                // Try rightward from parent position
-                int rightStartPos = parentPos + offset;
-                if (rightStartPos + blockSize <= maxPositions)
-                {
-                    bool blockAvailable = true;
-                    for (int i = 0; i < blockSize; i++)
-                    {
-                        if (rightStartPos + i >= maxPositions || occupiedPositions[depth][rightStartPos + i])
-                        {
-                            blockAvailable = false;
-                            break;
-                        }
-                    }
-                    
-                    if (blockAvailable)
-                    {
-                        int distance = Mathf.Abs(rightStartPos - idealStartPos);
-                        if (distance < minDistance)
-                        {
-                            minDistance = distance;
-                            bestStartPos = rightStartPos;
-                        }
-                    }
-                }
-                
-                // Try leftward from parent position
-                int leftStartPos = parentPos - offset - blockSize;
-                if (leftStartPos >= 0)
-                {
-                    bool blockAvailable = true;
-                    for (int i = 0; i < blockSize; i++)
-                    {
-                        if (leftStartPos + i < 0 || occupiedPositions[depth][leftStartPos + i])
-                        {
-                            blockAvailable = false;
-                            break;
-                        }
-                    }
-                    
-                    if (blockAvailable)
-                    {
-                        int distance = Mathf.Abs(leftStartPos - idealStartPos);
-                        if (distance < minDistance)
-                        {
-                            minDistance = distance;
-                            bestStartPos = leftStartPos;
-                        }
-                    }
-                }
-                
-                // Break early if we found a block near the parent
-                if (bestStartPos != -1 && offset > blockSize)
-                    break;
-            }
-            
-            // If we can't find a contiguous block, we'll need to create one
-            // by shifting existing nodes or finding the least disruptive positions
-            if (bestStartPos == -1)
-            {
-                // As a last resort, place siblings individually as close as possible to parent
-                // and to each other (adjacent if possible)
-                bestStartPos = FindBestStartPositionForSiblings(depth, blockSize, parentPos, maxPositions, occupiedPositions);
-                
-                // Clear space for the siblings by marking positions as occupied
-                // We'll actually place them later in the calling method
-                for (int i = 0; i < blockSize; i++)
-                {
-                    if (bestStartPos + i < maxPositions)
-                    {
-                        occupiedPositions[depth][bestStartPos + i] = true;
-                    }
-                }
-            }
-            
-            return bestStartPos;
-        }
-
-        /// <summary>
-        /// Finds the best starting position for a group of siblings when no contiguous block is available
-        /// </summary>
-        private int FindBestStartPositionForSiblings(
-            int depth,
-            int blockSize,
-            int parentPos,
-            int maxPositions,
-            Dictionary<int, bool[]> occupiedPositions)
-        {
-            // Start at an ideal position centered under the parent
-            int idealCenter = parentPos;
-            int halfSize = blockSize / 2;
-            int idealStart = Mathf.Max(0, idealCenter - halfSize);
-            
-            // Count how many positions are already occupied in the range we want
-            int occupiedCount = 0;
-            for (int i = 0; i < blockSize; i++)
-            {
-                int pos = idealStart + i;
-                if (pos < maxPositions && occupiedPositions[depth][pos])
-                {
-                    occupiedCount++;
-                }
-            }
-            
-            // If more than half the positions are occupied, it's better to find a different area
-            if (occupiedCount > blockSize / 2)
-            {
-                // Find a region with the fewest occupied positions
-                int bestStart = 0;
-                int minOccupied = maxPositions;
-                
-                for (int start = 0; start <= maxPositions - blockSize; start++)
-                {
-                    int occupied = 0;
-                    for (int i = 0; i < blockSize; i++)
-                    {
-                        if (occupiedPositions[depth][start + i])
-                        {
-                            occupied++;
-                        }
-                    }
-                    
-                    // If we found a completely unoccupied region, use it
-                    if (occupied == 0)
-                    {
-                        bestStart = start;
-                        break;
-                    }
-                    
-                    // Otherwise keep track of the region with fewest occupied positions
-                    if (occupied < minOccupied)
-                    {
-                        minOccupied = occupied;
-                        bestStart = start;
-                    }
-                }
-                
-                return bestStart;
-            }
-            
-            // Otherwise, use the positions near the parent and mark them for the siblings
-            return idealStart;
-        }
-
-        /// <summary>
-        /// Optimizes node positions to reduce edge crossings while preserving sibling groups
-        /// </summary>
-        private void OptimizeNodePositionsToReduceCrossingsPreservingSiblings(
-            Dictionary<StageNode, int> nodePositions, 
-            Dictionary<StageNode, List<StageNode>> nodeParents,
-            Dictionary<StageNode, List<StageNode>> nodeChildren,
-            int maxDepth)
-        {
-            // Group nodes by their primary parent to identify sibling groups
-            Dictionary<StageNode, List<StageNode>> siblingGroups = new Dictionary<StageNode, List<StageNode>>();
-            
-            // Build sibling groups
-            foreach (var pair in nodeParents)
-            {
-                StageNode child = pair.Key;
-                List<StageNode> parents = pair.Value;
-                
-                if (parents.Count > 0)
-                {
-                    // Use first parent as primary for grouping
-                    StageNode primaryParent = parents[0];
-                    
-                    if (!siblingGroups.ContainsKey(primaryParent))
-                        siblingGroups[primaryParent] = new List<StageNode>();
-                        
-                    siblingGroups[primaryParent].Add(child);
-                }
-            }
-            
-            // Multiple optimization passes
-            const int maxPasses = 3;
-            
-            for (int pass = 0; pass < maxPasses; pass++)
-            {
-                bool madeChanges = false;
-                
-                // Process depths in order
-                for (int depth = 1; depth <= maxDepth; depth++)
-                {
-                    if (!m_NodesByDepth.TryGetValue(depth, out var depthNodes))
-                        continue;
-                        
-                    // Skip special levels (boss, interzone)
-                    if (depthNodes.Any(n => n.StageType == StageType.Boss || n.StageType == StageType.Interzone))
-                        continue;
-                        
-                    // First, try to optimize sibling group positions as whole units
-                    foreach (var parent in siblingGroups.Keys)
-                    {
-                        var siblings = siblingGroups[parent].Where(s => m_NodesByDepth[depth].Contains(s)).ToList();
-                        
-                        // Skip if no siblings at this depth
-                        if (siblings.Count <= 1)
-                            continue;
-                            
-                        // Skip if not all siblings have positions
-                        if (siblings.Any(s => !nodePositions.ContainsKey(s)))
-                            continue;
-                            
-                        // Check if siblings are contiguous
-                        bool areContiguous = true;
-                        int minPos = int.MaxValue;
-                        int maxPos = int.MinValue;
-                        
-                        foreach (var sibling in siblings)
-                        {
-                            int pos = nodePositions[sibling];
-                            minPos = Mathf.Min(minPos, pos);
-                            maxPos = Mathf.Max(maxPos, pos);
-                        }
-                        
-                        // If siblings span more positions than their count, they're not contiguous
-                        if (maxPos - minPos + 1 > siblings.Count)
-                        {
-                            areContiguous = false;
-                        }
-                        else
-                        {
-                            // Check if all positions between min and max are occupied by siblings
-                            for (int pos = minPos; pos <= maxPos; pos++)
-                            {
-                                bool foundSibling = false;
-                                foreach (var sibling in siblings)
-                                {
-                                    if (nodePositions[sibling] == pos)
-                                    {
-                                        foundSibling = true;
-                                        break;
-                                    }
-                                }
-                                
-                                if (!foundSibling)
-                                {
-                                    areContiguous = false;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // If siblings are not contiguous, try to make them contiguous
-                        if (!areContiguous)
-                        {
-                            // Find optimal position for parent
-                            int parentPos = -1;
-                            if (nodePositions.TryGetValue(parent, out int pos))
-                            {
-                                parentPos = pos;
-                            }
-                            
-                            // Get average position of all siblings
-                            float avgPos = 0;
-                            foreach (var sibling in siblings)
-                            {
-                                avgPos += nodePositions[sibling];
-                            }
-                            avgPos /= siblings.Count;
-                            
-                            // Determine ideal start position
-                            int idealStart;
-                            if (parentPos >= 0)
-                            {
-                                // Center under parent
-                                idealStart = parentPos - (siblings.Count / 2);
-                            }
-                            else
-                            {
-                                // Center around average position
-                                idealStart = Mathf.FloorToInt(avgPos - (siblings.Count / 2));
-                            }
-                            
-                            // Try to move siblings into contiguous positions
-                            List<StageNode> orderedSiblings = siblings.OrderBy(s => nodePositions[s]).ToList();
-                            Dictionary<StageNode, int> newPositions = new Dictionary<StageNode, int>();
-                            
-                            // Check if proposed positions are available or occupied by non-siblings
-                            bool canMove = true;
-                            for (int i = 0; i < siblings.Count; i++)
-                            {
-                                int newPos = idealStart + i;
-                                
-                                // Check if this position is already taken by a non-sibling
-                                foreach (var node in depthNodes)
-                                {
-                                    if (!siblings.Contains(node) && 
-                                        nodePositions.TryGetValue(node, out int nodePos) && 
-                                        nodePos == newPos)
-                                    {
-                                        canMove = false;
-                                        break;
-                                    }
-                                }
-                                
-                                if (!canMove)
-                                    break;
-                                    
-                                newPositions[orderedSiblings[i]] = newPos;
-                            }
-                            
-                            // If we can move the siblings, update their positions
-                            if (canMove)
-                            {
-                                foreach (var sibling in siblings)
-                                {
-                                    nodePositions[sibling] = newPositions[sibling];
-                                }
-                                
-                                madeChanges = true;
-                            }
-                        }
-                    }
-                }
-                
-                // If no changes were made in this pass, stop optimizing
-                if (!madeChanges)
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Optimizes node positions to reduce edge crossings
-        /// </summary>
-        private void OptimizeNodePositionsToReduceCrossings(
-            Dictionary<StageNode, int> nodePositions, 
-            Dictionary<StageNode, List<StageNode>> nodeParents,
-            Dictionary<StageNode, List<StageNode>> nodeChildren,
-            int maxDepth)
-        {
-            // Multiple optimization passes
-            const int maxPasses = 3;
-            
-            for (int pass = 0; pass < maxPasses; pass++)
-            {
-                bool madeChanges = false;
-                
-                // Process depths in order
-                for (int depth = 1; depth <= maxDepth; depth++)
-                {
-                    if (!m_NodesByDepth.TryGetValue(depth, out var depthNodes))
-                        continue;
-                        
-                    // Skip special levels (boss, interzone)
-                    if (depthNodes.Any(n => n.StageType == StageType.Boss || n.StageType == StageType.Interzone))
-                        continue;
-                        
-                    // Process each node at this depth
-                    foreach (var node in depthNodes)
-                    {
-                        if (!nodePositions.ContainsKey(node))
-                            continue;
-                            
-                        // Check if node has a single parent
-                        if (nodeParents.TryGetValue(node, out var parents) && parents.Count == 1)
-                        {
-                            var parent = parents[0];
-                            
-                            if (nodePositions.TryGetValue(parent, out int parentPos))
-                            {
-                                int currentPos = nodePositions[node];
-                                
-                                // If child is not directly below parent, check if we can move it
-                                if (currentPos != parentPos)
-                                {
-                                    // Try to find positions to swap
-                                    foreach (var otherNode in depthNodes)
-                                    {
-                                        if (otherNode == node || !nodePositions.ContainsKey(otherNode))
-                                            continue;
-                                            
-                                        int otherPos = nodePositions[otherNode];
-                                        
-                                        // If this node is better positioned for our parent...
-                                        if (Mathf.Abs(otherPos - parentPos) < Mathf.Abs(currentPos - parentPos))
-                                        {
-                                            // Check if the other node would benefit from the swap
-                                            bool otherNodeBenefits = false;
-                                            
-                                            if (nodeParents.TryGetValue(otherNode, out var otherParents) && otherParents.Count > 0)
-                                            {
-                                                // Calculate average parent position for the other node
-                                                int otherAvgParentPos = 0;
-                                                int otherParentCount = 0;
-                                                
-                                                foreach (var otherParent in otherParents)
-                                                {
-                                                    if (nodePositions.TryGetValue(otherParent, out int otherParentPos))
-                                                    {
-                                                        otherAvgParentPos += otherParentPos;
-                                                        otherParentCount++;
-                                                    }
-                                                }
-                                                
-                                                if (otherParentCount > 0)
-                                                {
-                                                    otherAvgParentPos = Mathf.RoundToInt((float)otherAvgParentPos / otherParentCount);
-                                                    
-                                                    // Would other node be closer to its parents after swap?
-                                                    if (Mathf.Abs(currentPos - otherAvgParentPos) < Mathf.Abs(otherPos - otherAvgParentPos))
-                                                    {
-                                                        otherNodeBenefits = true;
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                // If other node has no parents, it benefits from any swap
-                                                otherNodeBenefits = true;
-                                            }
-                                            
-                                            // Swap if beneficial for both nodes
-                                            if (otherNodeBenefits)
-                                            {
-                                                // Swap positions
-                                                nodePositions[node] = otherPos;
-                                                nodePositions[otherNode] = currentPos;
-                                                madeChanges = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // If no changes were made in this pass, stop optimizing
-                if (!madeChanges)
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Finds the nearest available position to the target position
-        /// </summary>
-        private int FindNearestAvailablePosition(int depth, int targetPos, int maxPositions, Dictionary<int, bool[]> occupiedPositions)
-        {
-            // Check the target position first
-            if (targetPos >= 0 && targetPos < maxPositions && !occupiedPositions[depth][targetPos])
-            {
-                return targetPos;
-            }
-            
-            // Expand search outward from target position
-            for (int offset = 1; offset < maxPositions; offset++)
-            {
-                // Check position to the right
-                int rightPos = targetPos + offset;
-                if (rightPos < maxPositions && !occupiedPositions[depth][rightPos])
-                {
-                    return rightPos;
-                }
-                
-                // Check position to the left
-                int leftPos = targetPos - offset;
-                if (leftPos >= 0 && !occupiedPositions[depth][leftPos])
-                {
-                    return leftPos;
-                }
-            }
-            
-            // If all positions are occupied, return -1
-            return -1;
-        }
-
-        /// <summary>
-        /// Creates the actual node objects using the calculated positions
-        /// </summary>
-        private void CreateNodeObjects(int maxNodesInAnyLayer, Dictionary<StageNode, int> nodePositions)
-        {
-            int maxDepth = m_NodesByDepth.Keys.Count > 0 ? m_NodesByDepth.Keys.Max() : 0;
-            
-            // Calculate total width for the grid
-            float totalWidth = (maxNodesInAnyLayer - 1) * m_HorizontalSpacing;
-            
-            // Layout nodes by depth, starting from the bottom (0) to top (maxDepth)
-            for (int depth = 0; depth <= maxDepth; depth++)
-            {
-                if (!m_NodesByDepth.TryGetValue(depth, out var depthNodes))
-                    continue;
-                
-                // Determine which alignment to use for this layer
-                LayerAlignment layerAlignment = m_LayerAlignment;
-                
-                // Override alignment for special layers if specified
-                if (depth == 0 && m_UseSpecialAlignmentForFirstLayer)
-                {
-                    layerAlignment = m_FirstLayerAlignment;
-                }
-                else if (depth == maxDepth && m_UseSpecialAlignmentForLastLayer)
-                {
-                    layerAlignment = m_LastLayerAlignment;
-                }
-                
-                // Apply alignment adjustments
-                AdjustNodePositionsForLayer(depthNodes, nodePositions, maxNodesInAnyLayer, layerAlignment);
-                
-                foreach (var node in depthNodes)
-                {
-                    if (!nodePositions.TryGetValue(node, out int position))
-                        continue;
-                        
-                    // Create stage UI component
-                    GameObject stageObj = Instantiate(m_StageNodePrefab, m_StagesContainer);
-                    DungeonStageUI stageUI = stageObj.GetComponent<DungeonStageUI>();
-                    
-                    if (stageUI != null)
-                    {
-                        // Calculate position based on grid
-                        float startX = -totalWidth / 2; // Center the grid
-                        float xPos = startX + (position * m_HorizontalSpacing);
-                        float yPos = m_InitialOffset.y + (depth * m_VerticalSpacing);
-                        
-                        // Set position
-                        RectTransform rectTransform = stageObj.GetComponent<RectTransform>();
-                        if (rectTransform != null)
-                        {
-                            rectTransform.anchoredPosition = new Vector2(xPos, yPos);
-                        }
-                        
-                        // Initialize with stage data
-                        stageUI.Initialize(node, GetStageIcon(node.StageType));
-                        
-                        // Store reference
-                        m_StageUIComponents[node.ID] = stageUI;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Adjusts node positions based on the selected layer alignment
-        /// </summary>
-        private void AdjustNodePositionsForLayer(List<StageNode> nodesInLayer, Dictionary<StageNode, int> nodePositions, int maxNodesInAnyLayer, LayerAlignment alignment)
-        {
-            if (nodesInLayer.Count <= 0)
-                return;
-            
-            // Get the current min/max positions in this layer
-            int minPos = int.MaxValue;
-            int maxPos = int.MinValue;
-            
-            foreach (var node in nodesInLayer)
-            {
-                if (nodePositions.TryGetValue(node, out int position))
-                {
-                    minPos = Mathf.Min(minPos, position);
-                    maxPos = Mathf.Max(maxPos, position);
-                }
-            }
-            
-            // If all nodes have the same position, no adjustment needed
-            if (minPos == maxPos || minPos == int.MaxValue)
-                return;
-            
-            // Calculate the current width of this layer in grid positions
-            int layerWidth = maxPos - minPos;
-            
-            // Apply alignment
-            switch (alignment)
-            {
-                case LayerAlignment.Left:
-                    // Shift all nodes to start at position 0
-                    ShiftNodesInLayer(nodesInLayer, nodePositions, -minPos);
-                    break;
-                    
-                case LayerAlignment.Center:
-                    // Center nodes in the available space
-                    int centerOffset = (maxNodesInAnyLayer - 1 - layerWidth) / 2;
-                    ShiftNodesInLayer(nodesInLayer, nodePositions, centerOffset - minPos);
-                    break;
-                    
-                case LayerAlignment.Right:
-                    // Align to the right side of the layout
-                    ShiftNodesInLayer(nodesInLayer, nodePositions, (maxNodesInAnyLayer - 1 - maxPos));
-                    break;
-                    
-                case LayerAlignment.EvenlySpaced:
-                    if (nodesInLayer.Count > 1)
-                    {
-                        // Create a new mapping with nodes evenly distributed
-                        var orderedNodes = nodesInLayer.OrderBy(n => nodePositions.TryGetValue(n, out int pos) ? pos : 0).ToList();
-                        
-                        // Calculate spacing based on available width
-                        float spacing = (float)(maxNodesInAnyLayer - 1) / (orderedNodes.Count - 1);
-                        
-                        // Reassign positions
-                        for (int i = 0; i < orderedNodes.Count; i++)
-                        {
-                            nodePositions[orderedNodes[i]] = Mathf.RoundToInt(i * spacing);
-                        }
-                    }
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Shifts all nodes in a layer by a given offset
-        /// </summary>
-        private void ShiftNodesInLayer(List<StageNode> nodesInLayer, Dictionary<StageNode, int> nodePositions, int offset)
-        {
-            if (offset == 0)
-                return;
-            
-            foreach (var node in nodesInLayer)
-            {
-                if (nodePositions.TryGetValue(node, out int position))
-                {
-                    nodePositions[node] = position + offset;
-                }
-            }
-        }
-
-        /// <summary>
         /// Creates connections between stage nodes
         /// </summary>
         private void CreateStageConnections(Dictionary<string, StageNode> stageMap)
@@ -1784,31 +1413,31 @@ namespace DungeonGeneration
             {
                 if (node.NextStages.Count == 0)
                     continue;
-                
+
                 if (!m_StageUIComponents.TryGetValue(node.ID, out DungeonStageUI sourceUI))
                     continue;
-                
+
                 foreach (var nextNode in node.NextStages)
                 {
                     if (!m_StageUIComponents.TryGetValue(nextNode.ID, out DungeonStageUI targetUI))
                         continue;
-                    
+
                     // Create connection line
                     GameObject connectionObj = Instantiate(m_ConnectionPrefab, m_StagesContainer);
                     connectionObj.transform.SetAsFirstSibling(); // Put connections behind nodes
-                    
+
                     UILineRenderer lineRenderer = connectionObj.GetComponent<UILineRenderer>();
-                    
+
                     if (lineRenderer != null)
                     {
                         // Configure line
                         lineRenderer.LineThickness = m_LineThickness;
                         lineRenderer.LineCaps = m_LineCaps;
-                        
+
                         // Determine line color based on path state
                         bool isCurrentPath = nextNode == m_DungeonManager.GetCurrentStage();
                         bool isUnvisitedPath = !nextNode.IsVisited;
-                        
+
                         if (isCurrentPath)
                         {
                             lineRenderer.color = m_CurrentPathLineColor;
@@ -1821,15 +1450,15 @@ namespace DungeonGeneration
                         {
                             lineRenderer.color = m_LineColor;
                         }
-                        
+
                         if (m_ConnectionMaterial != null)
                         {
                             lineRenderer.material = m_ConnectionMaterial;
                         }
-                        
+
                         // Set connection points (using normalized space since RelativeSize is true)
                         var containerRT = m_StagesContainer.GetComponent<RectTransform>();
-                        
+
                         // Convert positions to local container space
                         RectTransformUtility.ScreenPointToLocalPointInRectangle(
                             containerRT,
@@ -1842,41 +1471,41 @@ namespace DungeonGeneration
                             RectTransformUtility.WorldToScreenPoint(null, targetUI.transform.position),
                             null,
                             out var targetLocalPos);
-                        
+
                         // Normalize to 0-1 range
                         Rect containerRect = containerRT.rect;
                         sourceLocalPos.x = (sourceLocalPos.x - containerRect.xMin) / containerRect.width;
                         sourceLocalPos.y = (sourceLocalPos.y - containerRect.yMin) / containerRect.height;
                         targetLocalPos.x = (targetLocalPos.x - containerRect.xMin) / containerRect.width;
                         targetLocalPos.y = (targetLocalPos.y - containerRect.yMin) / containerRect.height;
-                        
+
                         // Set points directly
                         lineRenderer.Points = new Vector2[] { sourceLocalPos, targetLocalPos };
                         lineRenderer.RelativeSize = true;
-                        
+
                         // Store connection
                         m_ConnectionObjects.Add(connectionObj);
                     }
                 }
             }
         }
-        
+
         /// <summary>
         /// Refreshes the visual state of all stage nodes
         /// </summary>
         private void RefreshAllNodes()
         {
             var currentStage = m_DungeonManager.GetCurrentStage();
-            
+
             foreach (var stageUI in m_StageUIComponents.Values)
             {
                 bool isCurrent = stageUI.StageNode.ID == currentStage?.ID;
                 bool isVisited = stageUI.StageNode.IsVisited && !isCurrent;
-                
+
                 stageUI.SetState(isCurrent, isVisited);
             }
         }
-        
+
         /// <summary>
         /// Gets the appropriate icon for a stage type
         /// </summary>
@@ -1894,7 +1523,7 @@ namespace DungeonGeneration
                 _ => null
             };
         }
-        
+
         #endregion
     }
 }

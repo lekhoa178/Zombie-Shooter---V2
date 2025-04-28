@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using SceneManagement;
@@ -233,17 +234,14 @@ namespace DungeonGeneration
             // Generate stages iteratively, starting at depth 1
             GenerateStagesRecursive(m_RootStage, 1);
             
-            // Post-processing: validate depth progression - ensure no stage skips depths
-            ValidateDepthProgression();
-            
             // Check for shared paths when not allowed
-            if (!m_CurrentZoneDefinition.AllowSharedPaths)
-            {
-                FixSharedPaths();
-            }
-            
-            // Validate that all nodes have a path to the boss
-            FixDeadEndNodes();
+            // if (!m_CurrentZoneDefinition.AllowSharedPaths)
+            // {
+            //    FixSharedPaths();
+            // }
+            //
+            // // Validate that all nodes have a path to the boss
+            // FixDeadEndNodes();
             
             // Set up portals for the initial stage
             CreateStageExits();
@@ -255,39 +253,33 @@ namespace DungeonGeneration
                 DebugPrintDungeonStructure();
             }
         }
-        
-        /// <summary>
-        /// Recursively generates the stages from a starting node
-        /// </summary>
+
         private void GenerateStagesRecursive(StageNode parentStage, int depth)
         {
             // Only the last layer before boss (exactly OverallLength - 1) should connect to boss
-            bool isLastLayerBeforeBoss = depth == m_CurrentZoneDefinition.OverallLength - 1;
-            
-            // If we've reached exactly the last layer before boss, connect to boss
+            var isLastLayerBeforeBoss = depth == m_CurrentZoneDefinition.OverallLength - 1;
+
             if (isLastLayerBeforeBoss)
             {
                 parentStage.AddNextStage(m_BossStage);
                 return;
             }
-            
+
             // If we've somehow gone beyond the last layer, return (shouldn't happen)
             if (depth >= m_CurrentZoneDefinition.OverallLength)
             {
+                RecursiveRemoveStage(parentStage);
                 return;
             }
-            
+
             // Track nodes at each depth to limit their count
-            if (!m_DepthNodeCounters.ContainsKey(depth))
-            {
-                m_DepthNodeCounters[depth] = 0;
-            }
-            
+            m_DepthNodeCounters.TryAdd(depth, 0);
+
             // Determine maximum number of branches based on limits
-            int maxNodesAtDepth = m_CurrentZoneDefinition.MaxNodesPerDepth;
-            int nodesLeftAtDepth = maxNodesAtDepth - m_DepthNodeCounters[depth];
-            int maxBranches = Mathf.Min(m_CurrentZoneDefinition.MaxBranchingFactor, nodesLeftAtDepth);
-            
+            var maxNodesAtDepth = m_CurrentZoneDefinition.MaxNodesPerDepth;
+            var nodesLeftAtDepth = maxNodesAtDepth - m_DepthNodeCounters[depth];
+            var maxBranches = Mathf.Min(m_CurrentZoneDefinition.MaxBranchingFactor, nodesLeftAtDepth);
+
             // If no more nodes can be added at this depth, connect to existing nodes or next depth
             if (maxBranches <= 0)
             {
@@ -298,86 +290,174 @@ namespace DungeonGeneration
                     var existingNodesAtDepth = m_StageMap.Values
                         .Where(s => Mathf.RoundToInt(s.GridPosition.y) == depth)
                         .OrderBy(s => Random.value) // Shuffle to pick random nodes
-                        .Take(1)  // Just take one existing node
+                        .Take(1) // Just take one existing node
                         .ToList();
-                    
+
                     if (existingNodesAtDepth.Count > 0)
                     {
                         parentStage.AddNextStage(existingNodesAtDepth[0]);
                     }
                     else
                     {
-                        // Skip to next depth recursively - using depth+1 ensures we follow proper depth progression
-                        GenerateStagesRecursive(parentStage, depth + 1);
+                        if (m_CurrentZoneDefinition.AllowSkipDepth)
+                        {
+                            GenerateStagesRecursive(parentStage, depth + 1);
+                        }
+                        else
+                        {
+                            RecursiveRemoveStage(parentStage);
+                        }
                     }
                 }
                 else
                 {
-                    // Skip to next depth recursively - using depth+1 ensures we follow proper depth progression
-                    GenerateStagesRecursive(parentStage, depth + 1);
+                    if (m_CurrentZoneDefinition.AllowSkipDepth)
+                    {
+                        GenerateStagesRecursive(parentStage, depth + 1);
+                    }
+                    else
+                    {
+                        RecursiveRemoveStage(parentStage);
+                    }
                 }
-                
+
                 return;
             }
-            
-            // Calculate actual number of branches to create based on weighted probabilities
-            int branches = m_CurrentZoneDefinition.GetRandomBranchingFactor();
-            // Cap the branches by the maximum allowed
+
+            var branches = m_CurrentZoneDefinition.GetRandomBranchingFactor();
             branches = Mathf.Min(branches, maxBranches);
-            
+
             // Keep track of stages created in this recursion to prevent duplicates
-            HashSet<StageNode> createdStages = new HashSet<StageNode>();
+            var createdStages = new HashSet<StageNode>();
             
-            for (int i = 0; i < branches; i++)
+            // Get initial occupied positions at this depth
+            var occupiedPositions = GetOccupiedPositionsAtDepth(depth);
+            // Create a local copy to track positions created within this recursion
+            var locallyOccupiedPositions = new HashSet<float>(occupiedPositions);
+            
+            for (var i = 0; i < branches; i++)
             {
-                StageType stageType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
-                
+                var stageType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
+
                 // Get scene name based on stage type
-                string sceneName = m_CurrentZoneDefinition.GetRandomStageScene(stageType);
+                var sceneName = m_CurrentZoneDefinition.GetRandomStageScene(stageType);
+
+                var xOffset = (i - (branches - 1) / 2f) * 2f;
+                Vector2 position;
                 
-                // Calculate position in the grid (for visualization)
-                float xOffset = (i - (branches - 1) / 2f) * 2f;
-                Vector2 position = new Vector2(xOffset, depth);
-                
-                StageNode nextStage;
-                
-                // If shared paths are not allowed, check if there are existing stages at the next depth
-                // that we can reuse from OTHER branches (not current parent's branch)
-                if (!m_CurrentZoneDefinition.AllowSharedPaths && depth < m_CurrentZoneDefinition.OverallLength - 1)
+                // Check if position is available (considering both existing and locally created positions)
+                if (IsPositionAvailable(xOffset, locallyOccupiedPositions))
                 {
-                    // Create a new stage node
-                    nextStage = new StageNode(stageType, sceneName, position);
-                    m_StageMap.Add(nextStage.ID, nextStage);
-                    
-                    // Increment node counter for this depth
-                    m_DepthNodeCounters[depth]++;
-                    
-                    // Add to our tracking set
-                    createdStages.Add(nextStage);
+                    position = new Vector2(xOffset, depth);
                 }
                 else
                 {
-                    // Create the stage node as before - allow shared paths
-                    nextStage = new StageNode(stageType, sceneName, position);
-                    m_StageMap.Add(nextStage.ID, nextStage);
-                    
-                    // Increment node counter for this depth
-                    m_DepthNodeCounters[depth]++;
+                    // Adjust position to avoid overlap with both existing and newly created positions
+                    var desiredPositions = new List<float> { xOffset };
+                    var adjustedPositions = AdjustPositionsToAvoidOverlap(desiredPositions, locallyOccupiedPositions);
+                    position = new Vector2(adjustedPositions[0], depth);
                 }
                 
-                // Connect parent to this stage
-                parentStage.AddNextStage(nextStage);
+                locallyOccupiedPositions.Add(position.x);
                 
-                // Always continue to the next depth level until we reach the last layer
-                // before boss (OverallLength - 1)
+                StageNode nextStage = null;
+
+                if (m_CurrentZoneDefinition.AllowSharedPaths)
+                {
+                    var existingNodesAtDepth = m_StageMap.Values
+                        .Where(s => Mathf.RoundToInt(s.GridPosition.y) == depth &&
+                                    !parentStage.NextStages.Contains(s) &&
+                                    !createdStages.Contains(s))
+                        .OrderBy(s => Random.value)
+                        .Take(1)
+                        .ToList();
+
+                    if (existingNodesAtDepth.Count > 0)
+                    {
+                        nextStage = existingNodesAtDepth[0];
+                        createdStages.Add(nextStage);
+                    }
+                }
+
+                // If no existing stage was found or if shared paths are not allowed, create a new one
+                if (nextStage == null)
+                {
+                    nextStage = new StageNode(stageType, sceneName, position);
+                    m_StageMap.Add(nextStage.ID, nextStage);
+
+                    m_DepthNodeCounters[depth]++;
+
+                    createdStages.Add(nextStage);
+                }
+
+                parentStage.AddNextStage(nextStage);
+
                 if (depth < m_CurrentZoneDefinition.OverallLength - 1)
                 {
-                    // Recursively generate next stages but ALWAYS at the next depth level (depth+1)
                     GenerateStagesRecursive(nextStage, depth + 1);
                 }
             }
         }
         
+        private HashSet<float> GetOccupiedPositionsAtDepth(int depth)
+        {
+            var occupied = new HashSet<float>();
+            foreach (var node in m_StageMap.Values.Where(node => Mathf.RoundToInt(node.GridPosition.y) == depth))
+            {
+                occupied.Add(Mathf.RoundToInt(node.GridPosition.x));
+            }
+            return occupied;
+        }
+
+        /// <summary>
+        /// Checks if a position is available at a given depth
+        /// </summary>
+        private bool IsPositionAvailable(float x, HashSet<float> occupiedPositions)
+        {
+            var roundedX = Mathf.RoundToInt(x);
+            
+            return occupiedPositions.Select(Mathf.RoundToInt).All(roundedPosition => roundedX != roundedPosition);
+        }
+
+        /// <summary>
+        /// Adjusts positions to avoid overlap with existing nodes
+        /// </summary>
+        private List<float> AdjustPositionsToAvoidOverlap(List<float> desiredPositions, HashSet<float> occupiedPositions)
+        {
+            const float minSpacing = 1.0f; // Minimum spacing between nodes
+            var result = new List<float>();
+            
+            foreach (var desiredX in desiredPositions)
+            {
+                var adjustedX = desiredX;
+                bool positionFound = false;
+  
+                for (float offset = minSpacing; !positionFound && offset <= 15f; offset += minSpacing)
+                {
+                    // Try right side
+                    adjustedX = desiredX + offset;
+                    if (IsPositionAvailable(adjustedX, occupiedPositions))
+                    {
+                        positionFound = true;
+                        break;
+                    }
+
+                    // Try left side
+                    adjustedX = desiredX - offset;
+                    if (IsPositionAvailable(adjustedX, occupiedPositions))
+                    {
+                        positionFound = true;
+                        break;
+                    }
+                }
+
+                result.Add(adjustedX);
+                occupiedPositions.Add(adjustedX);
+            }
+            
+            return result;
+        }
+
         /// <summary>
         /// Sets up the portals for the current stage
         /// </summary>
@@ -444,246 +524,7 @@ namespace DungeonGeneration
                 yield return null; // Wait a frame between spawns
             }
         }
-        
-        /// <summary>
-        /// Validates depth progression of the dungeon structure and fixes any stage connections that skip depths
-        /// </summary>
-        private void ValidateDepthProgression()
-        {
-            bool foundIssue = false;
-            int maxAllowedDepthJump = 1; // Only allow connections to next depth level
-            
-            // First, count existing nodes at each depth
-            Dictionary<int, int> depthNodeCounts = new Dictionary<int, int>();
-            foreach (var stage in m_StageMap.Values)
-            {
-                int depth = Mathf.RoundToInt(stage.GridPosition.y);
-                if (!depthNodeCounts.ContainsKey(depth))
-                {
-                    depthNodeCounts[depth] = 0;
-                }
-                depthNodeCounts[depth]++;
-            }
-            
-            // Update m_DepthNodeCounters to match the actual counts
-            m_DepthNodeCounters = new Dictionary<int, int>(depthNodeCounts);
-            
-            // Build parent-child relationships for checking shared paths
-            Dictionary<StageNode, List<StageNode>> nodeParents = BuildNodeParentsMap();
-            
-            // Check each node's connections
-            foreach (var stage in m_StageMap.Values.ToList()) // ToList to avoid collection modification issues
-            {
-                // Skip special nodes (boss and interzone)
-                if (stage.StageType == StageType.Boss || stage.StageType == StageType.Interzone)
-                {
-                    continue;
-                }
-                
-                // Get this stage's depth
-                int stageDepth = Mathf.RoundToInt(stage.GridPosition.y);
-                
-                List<StageNode> nextStagesToRemove = new List<StageNode>();
-                
-                // Check each of its connections
-                foreach (var nextStage in stage.NextStages.ToList()) // ToList to avoid collection modification issues
-                {
-                    // Get next stage's depth
-                    int nextStageDepth = Mathf.RoundToInt(nextStage.GridPosition.y);
-                    
-                    // Check if depth jump is too big (skipping levels)
-                    int depthJump = nextStageDepth - stageDepth;
-                    
-                    if (depthJump > maxAllowedDepthJump)
-                    {
-                        foundIssue = true;
-                        
-                        if (m_DebugMode)
-                        {
-                            Debug.LogWarning($"Found invalid depth jump: {stage.StageType} at depth {stageDepth} " +
-                                             $"connects to {nextStage.StageType} at depth {nextStageDepth}");
-                        }
-                        
-                        // Fix: Remove this connection and fix it later
-                        nextStagesToRemove.Add(nextStage);
-                        
-                        // Only try to add intermediate nodes if it's not the boss
-                        if (nextStage.StageType != StageType.Boss)
-                        {
-                            // Create a chain of nodes to fix the gap
-                            StageNode lastNode = stage;
-                            
-                            for (int intermediateDepth = stageDepth + 1; intermediateDepth < nextStageDepth; intermediateDepth++)
-                            {
-                                // Check if we've reached the max node count at this depth
-                                if (!depthNodeCounts.ContainsKey(intermediateDepth))
-                                {
-                                    depthNodeCounts[intermediateDepth] = 0;
-                                }
-                                
-                                int maxNodesAtDepth = m_CurrentZoneDefinition.MaxNodesPerDepth;
-                                bool allowSharedPaths = m_CurrentZoneDefinition.AllowSharedPaths;
-                                
-                                // If shared paths are allowed, try to find an existing node at this depth
-                                if (allowSharedPaths)
-                                {
-                                    // Try to find an existing node at the intermediate depth
-                                    var existingNodesAtDepth = m_StageMap.Values
-                                        .Where(s => Mathf.RoundToInt(s.GridPosition.y) == intermediateDepth)
-                                        .OrderBy(s => Vector2.Distance(s.GridPosition, new Vector2(lastNode.GridPosition.x, intermediateDepth)))
-                                        .Take(1)
-                                        .ToList();
-                                        
-                                    if (existingNodesAtDepth.Count > 0)
-                                    {
-                                        // Use an existing node at this depth
-                                        lastNode.AddNextStage(existingNodesAtDepth[0]);
-                                        lastNode = existingNodesAtDepth[0];
-                                        continue; // Continue to next depth level
-                                    }
-                                }
-                                
-                                // If we're at the max count, try to find an existing node to use only if shared paths are allowed
-                                if (depthNodeCounts[intermediateDepth] >= maxNodesAtDepth)
-                                {
-                                    if (allowSharedPaths)
-                                    {
-                                        // Try to find an existing node at the intermediate depth
-                                        var existingNodesAtDepth = m_StageMap.Values
-                                            .Where(s => Mathf.RoundToInt(s.GridPosition.y) == intermediateDepth)
-                                            .OrderBy(s => Vector2.Distance(s.GridPosition, new Vector2(lastNode.GridPosition.x, intermediateDepth)))
-                                            .Take(1)
-                                            .ToList();
-                                            
-                                            if (existingNodesAtDepth.Count > 0)
-                                            {
-                                                // Use an existing node at this depth
-                                                lastNode.AddNextStage(existingNodesAtDepth[0]);
-                                                lastNode = existingNodesAtDepth[0];
-                                            }
-                                            else if (m_DebugMode)
-                                            {
-                                                Debug.LogWarning($"Max nodes reached at depth {intermediateDepth}, but no good connection found. " +
-                                                              $"Skip connection from {stage.StageType} at {stageDepth} to {nextStage.StageType} at {nextStageDepth}.");
-                                            }
-                                    }
-                                    else if (m_DebugMode)
-                                    {
-                                        Debug.LogWarning($"Max nodes reached at depth {intermediateDepth} and shared paths not allowed. " +
-                                                      $"Skip connection from {stage.StageType} at {stageDepth} to {nextStage.StageType} at {nextStageDepth}.");
-                                    }
-                                }
-                                else
-                                {
-                                    // Create a new intermediate node
-                                    StageType intermediateType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
-                                    string sceneName = m_CurrentZoneDefinition.GetRandomStageScene(intermediateType);
-                                    Vector2 intermediatePosition = new Vector2(lastNode.GridPosition.x, intermediateDepth);
-                                    
-                                    StageNode intermediateNode = new StageNode(intermediateType, sceneName, intermediatePosition);
-                                    m_StageMap.Add(intermediateNode.ID, intermediateNode);
-                                    
-                                    // Connect previous node to this one
-                                    lastNode.AddNextStage(intermediateNode);
-                                    
-                                    // Increment counter for this depth
-                                    depthNodeCounts[intermediateDepth]++;
-                                    m_DepthNodeCounters[intermediateDepth] = depthNodeCounts[intermediateDepth];
-                                    
-                                    // Update last node for next iteration
-                                    lastNode = intermediateNode;
-                                }
-                            }
-                            
-                            // Connect last intermediate node to the originally skipped node
-                            if (lastNode != stage) // Only connect if we actually created/found intermediate nodes
-                            {
-                                lastNode.AddNextStage(nextStage);
-                            }
-                        }
-                        else
-                        {
-                            // Handle boss connection - ensure proper path to boss
-                            StageNode lastNode = stage;
-                            
-                            // Always ensure a path to the boss, even if we exceed max nodes
-                            for (int intermediateDepth = stageDepth + 1; intermediateDepth < nextStageDepth; intermediateDepth++)
-                            {
-                                bool allowSharedPaths = m_CurrentZoneDefinition.AllowSharedPaths;
-                                
-                                // Try to use existing nodes first to minimize node count, but respect AllowSharedPaths
-                                if (allowSharedPaths)
-                                {
-                                    var existingNodesAtDepth = m_StageMap.Values
-                                        .Where(s => Mathf.RoundToInt(s.GridPosition.y) == intermediateDepth)
-                                        .OrderBy(s => Vector2.Distance(s.GridPosition, new Vector2(lastNode.GridPosition.x, intermediateDepth)))
-                                        .Take(1)
-                                        .ToList();
-                                        
-                                    if (existingNodesAtDepth.Count > 0)
-                                    {
-                                        // Use existing node if shared paths are allowed
-                                        lastNode.AddNextStage(existingNodesAtDepth[0]);
-                                        lastNode = existingNodesAtDepth[0];
-                                        continue; // Continue to next depth level
-                                    }
-                                }
-                                
-                                // If we couldn't use an existing node, create a new one
-                                // For boss paths, we'll create new nodes even if over the limit
-                                StageType intermediateType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
-                                string sceneName = m_CurrentZoneDefinition.GetRandomStageScene(intermediateType);
-                                Vector2 intermediatePosition = new Vector2(lastNode.GridPosition.x, intermediateDepth);
-                                
-                                StageNode intermediateNode = new StageNode(intermediateType, sceneName, intermediatePosition);
-                                m_StageMap.Add(intermediateNode.ID, intermediateNode);
-                                
-                                // Connect previous node to this one
-                                lastNode.AddNextStage(intermediateNode);
-                                
-                                // Update counter
-                                if (!depthNodeCounts.ContainsKey(intermediateDepth))
-                                {
-                                    depthNodeCounts[intermediateDepth] = 0;
-                                }
-                                depthNodeCounts[intermediateDepth]++;
-                                m_DepthNodeCounters[intermediateDepth] = depthNodeCounts[intermediateDepth];
-                                
-                                // Update last node for next iteration
-                                lastNode = intermediateNode;
-                            }
-                            
-                            // Connect last intermediate node to boss
-                            if (lastNode != stage) // Only connect if we actually created/found intermediate nodes
-                            {
-                                lastNode.AddNextStage(nextStage);
-                            }
-                        }
-                    }
-                }
-                
-                // Remove any invalid connections
-                foreach (var nodeToRemove in nextStagesToRemove)
-                {
-                    stage.NextStages.Remove(nodeToRemove);
-                }
-            }
-            
-            // Final pass: check for any depth levels with too many nodes and trim if needed
-            EnforceMaxNodesPerDepth();
-            
-            // Check for shared paths when not allowed
-            if (!m_CurrentZoneDefinition.AllowSharedPaths)
-            {
-                FixSharedPaths();
-            }
-            
-            if (foundIssue && m_DebugMode)
-            {
-                Debug.Log("Fixed depth progression issues in dungeon structure");
-            }
-        }
-        
+
         /// <summary>
         /// Builds a map of parent nodes for each node
         /// </summary>
@@ -837,180 +678,64 @@ namespace DungeonGeneration
         }
         
         /// <summary>
-        /// Enforces the maximum nodes per depth limit by removing excess nodes
+        /// Recursively removes a stage and its entire path from the dungeon structure
         /// </summary>
-        private void EnforceMaxNodesPerDepth()
+        private void RecursiveRemoveStage(StageNode stage)
         {
-            Dictionary<int, List<StageNode>> nodesByDepth = new Dictionary<int, List<StageNode>>();
-            
-            // Group nodes by depth
-            foreach (var stage in m_StageMap.Values.ToList())
+            // Don't remove special stages
+            if (stage == m_RootStage || stage == m_BossStage || stage == m_InterzoneStage)
             {
-                int depth = Mathf.RoundToInt(stage.GridPosition.y);
-                
-                // Skip boss and interzone depth levels
-                if (stage.StageType == StageType.Boss || stage.StageType == StageType.Interzone)
-                {
-                    continue;
-                }
-                
-                if (!nodesByDepth.ContainsKey(depth))
-                {
-                    nodesByDepth[depth] = new List<StageNode>();
-                }
-                
-                nodesByDepth[depth].Add(stage);
+                return;
             }
-            
-            // Check each depth for excess nodes
-            foreach (var depthPair in nodesByDepth)
+
+            // Process all children recursively first (bottom-up approach)
+            foreach (var childStage in stage.NextStages.ToList())
             {
-                int depth = depthPair.Key;
-                List<StageNode> nodesAtDepth = depthPair.Value;
-                
-                int maxNodes = m_CurrentZoneDefinition.MaxNodesPerDepth;
-                
-                // If we have more nodes than allowed, trim the excess
-                if (nodesAtDepth.Count > maxNodes)
+                // Check if child has other parents
+                var childParents = FindParents(childStage);
+                if (childParents.Count <= 1)
                 {
-                    if (m_DebugMode)
-                    {
-                        Debug.LogWarning($"Found {nodesAtDepth.Count} nodes at depth {depth}, max allowed is {maxNodes}. Trimming excess nodes.");
-                    }
-                    
-                    // Sort nodes by number of connections - keep nodes with more connections
-                    nodesAtDepth.Sort((a, b) => 
-                    {
-                        int aConnections = CountConnections(a);
-                        int bConnections = CountConnections(b);
-                        return bConnections.CompareTo(aConnections); // Descending
-                    });
-                    
-                    // Remove excess nodes
-                    int excessCount = nodesAtDepth.Count - maxNodes;
-                    for (int i = 0; i < excessCount; i++)
-                    {
-                        if (nodesAtDepth.Count <= maxNodes) break;
-                        
-                        // Choose a node to remove (from the end, as we sorted by connections)
-                        var nodeToRemove = nodesAtDepth[nodesAtDepth.Count - 1];
-                        
-                        // First, check if it has any parents
-                        var parents = FindParents(nodeToRemove);
-                        
-                        if (parents.Count == 0)
-                        {
-                            // No parents, just remove it
-                            m_StageMap.Remove(nodeToRemove.ID);
-                            nodesAtDepth.RemoveAt(nodesAtDepth.Count - 1);
-                            continue;
-                        }
-                        
-                        // Has parents, need to redirect them
-                        foreach (var parent in parents)
-                        {
-                            // Remove link to the node we're removing
-                            parent.NextStages.Remove(nodeToRemove);
-                            
-                            // Check if we can create connections based on AllowSharedPaths
-                            bool allowSharedPaths = m_CurrentZoneDefinition.AllowSharedPaths;
-                            
-                            if (allowSharedPaths)
-                            {
-                                // Find a suitable replacement at this depth
-                                var replacementNode = nodesAtDepth.FirstOrDefault(n => n != nodeToRemove && n.StageType != StageType.Boss);
-                                
-                                // If no good replacement, try to find a node at the next depth
-                                if (replacementNode == null && nodesByDepth.ContainsKey(depth + 1) && nodesByDepth[depth + 1].Count > 0)
-                                {
-                                    var nextDepthNode = nodesByDepth[depth + 1].OrderBy(_ => Random.value).FirstOrDefault();
-                                    if (nextDepthNode != null)
-                                    {
-                                        parent.AddNextStage(nextDepthNode);
-                                    }
-                                }
-                                else if (replacementNode != null)
-                                {
-                                    parent.AddNextStage(replacementNode);
-                                }
-                            }
-                            else
-                            {
-                                // If shared paths aren't allowed, we need to find a unique path
-                                // Find a replacement node that isn't already connected to this parent
-                                var replacementNode = nodesAtDepth.FirstOrDefault(n => 
-                                    n != nodeToRemove && 
-                                    n.StageType != StageType.Boss && 
-                                    !parent.NextStages.Contains(n) &&
-                                    FindParents(n).Count == 0); // No other parents
-                                
-                                if (replacementNode != null)
-                                {
-                                    parent.AddNextStage(replacementNode);
-                                }
-                                else if (nodesByDepth.ContainsKey(depth + 1) && nodesByDepth[depth + 1].Count > 0)
-                                {
-                                    // Try to find a node in the next depth with no parents
-                                    var nextDepthNodes = nodesByDepth[depth + 1]
-                                        .Where(n => FindParents(n).Count == 0)
-                                        .OrderBy(_ => Random.value)
-                                        .ToList();
-                                        
-                                    if (nextDepthNodes.Count > 0)
-                                    {
-                                        parent.AddNextStage(nextDepthNodes[0]);
-                                    }
-                                    else
-                                    {
-                                        // As a last resort, create a new node at the next depth
-                                        if (depth + 1 < m_CurrentZoneDefinition.OverallLength - 1) // Don't create nodes right before boss
-                                        {
-                                            StageType newType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
-                                            string sceneName = m_CurrentZoneDefinition.GetRandomStageScene(newType);
-                                            Vector2 newPosition = new Vector2(parent.GridPosition.x, depth + 1);
-                                            
-                                            StageNode newNode = new StageNode(newType, sceneName, newPosition);
-                                            m_StageMap.Add(newNode.ID, newNode);
-                                            
-                                            parent.AddNextStage(newNode);
-                                            
-                                            // Add connections to the next depth (like the original node had)
-                                            foreach (var nextStage in nodeToRemove.NextStages)
-                                            {
-                                                newNode.AddNextStage(nextStage);
-                                            }
-                                            
-                                            // Add to depth mapping
-                                            if (!nodesByDepth.ContainsKey(depth + 1))
-                                            {
-                                                nodesByDepth[depth + 1] = new List<StageNode>();
-                                            }
-                                            nodesByDepth[depth + 1].Add(newNode);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Remove the node from the map and list
-                        m_StageMap.Remove(nodeToRemove.ID);
-                        nodesAtDepth.RemoveAt(nodesAtDepth.Count - 1);
-                        
-                        // Update counter
-                        m_DepthNodeCounters[depth] = nodesAtDepth.Count;
-                    }
+                    // Child only has this node as parent, recursively remove it
+                    RecursiveRemoveStage(childStage);
+                }
+                else
+                {
+                    // Child has other parents, just disconnect it
+                    stage.RemoveNextStage(childStage);
                 }
             }
-        }
-        
-        /// <summary>
-        /// Counts total connections (in and out) for a node
-        /// </summary>
-        private int CountConnections(StageNode node)
-        {
-            int inConnections = FindParents(node).Count;
-            int outConnections = node.NextStages.Count;
-            return inConnections + outConnections;
+
+            // Find all parents of this node
+            var parentStages = FindParents(stage);
+    
+            // Remove this node from all parents
+            foreach (var parent in parentStages)
+            {
+                parent.RemoveNextStage(stage);
+            }
+    
+            // Remove from stage map
+            m_StageMap.Remove(stage.ID);
+    
+            // Decrement node counter for this depth
+            int stageDepth = Mathf.RoundToInt(stage.GridPosition.y);
+            if (m_DepthNodeCounters.ContainsKey(stageDepth))
+            {
+                m_DepthNodeCounters[stageDepth]--;
+            }
+    
+            // Now recursively process parents that have no remaining children (going upward)
+            foreach (var parent in parentStages)
+            {
+                if (parent.NextStages.Count == 0 && 
+                    parent != m_RootStage && 
+                    parent != m_BossStage && 
+                    parent != m_InterzoneStage)
+                {
+                    // Parent has no more children, recursively remove it too
+                    RecursiveRemoveStage(parent);
+                }
+            }
         }
         
         /// <summary>

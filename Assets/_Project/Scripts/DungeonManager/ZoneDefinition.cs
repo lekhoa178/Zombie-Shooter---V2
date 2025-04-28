@@ -17,6 +17,7 @@ namespace DungeonGeneration
         public string BossStageName => m_BossStageName;
         public int MaxNodesPerDepth => m_MaxNodesPerDepth;
         public bool AllowSharedPaths => m_AllowSharedPaths;
+        public bool AllowSkipDepth => m_AllowSkipDepth;
         #endregion
 
         #region Serialized Fields
@@ -46,6 +47,9 @@ namespace DungeonGeneration
         
         [SerializeField, Tooltip("Allow different branch nodes to lead to the same destination (except for boss)")]
         private bool m_AllowSharedPaths = false;
+
+        [SerializeField, Tooltip("Allow skipping of depth levels (e.g., from 1 to 3)")]
+        private bool m_AllowSkipDepth = false;
 
         [SerializeField, Tooltip("The scene name for the boss stage")]
         private string m_BossStageName;

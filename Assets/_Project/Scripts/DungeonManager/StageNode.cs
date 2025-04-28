@@ -56,6 +56,18 @@ namespace DungeonGeneration
                 m_NextStages.Add(nextStage);
             }
         }
+        
+        /// <summary>
+        /// Removes a next stage from this node's connections
+        /// </summary>
+        /// <param name="nextStage"></param>
+        public void RemoveNextStage(StageNode nextStage)
+        {
+            if (m_NextStages.Contains(nextStage))
+            {
+                m_NextStages.Remove(nextStage);
+            }
+        }
 
         /// <summary>
         /// Marks this stage as generated
@@ -91,6 +103,15 @@ namespace DungeonGeneration
                 m_StageType = zoneDefinition.ResolveMysteryStage();
                 m_SceneName = zoneDefinition.GetRandomStageScene(m_StageType);
             }
+        }
+        
+        /// <summary>
+        /// Sets the grid position of this stage node
+        /// </summary>
+        /// <param name="gridPosition"></param>
+        public void SetGridPosition(Vector2 gridPosition)
+        {
+            m_GridPosition = gridPosition;
         }
     }
 } 
