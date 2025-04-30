@@ -26,7 +26,7 @@ namespace DungeonGeneration
         /// <param name="targetSceneName">The scene name to load</param>
         /// <param name="displayName">The display name of the target stage</param>
         /// <returns>The spawned portal GameObject</returns>
-        public GameObject SpawnPortal(string targetStageID, string targetSceneName, string displayName)
+        public GameObject SpawnPortal(string targetStageID, string targetSceneName, string displayName, StageType stageType)
         {
             if (m_IsUsed)
             {
@@ -39,7 +39,7 @@ namespace DungeonGeneration
             var portal = portalInstance.GetComponent<StagePortal>();
             if (portal)
             {
-                portal.Initialize(targetStageID, targetSceneName, displayName);
+                portal.Initialize(targetStageID, targetSceneName, displayName, stageType);
             }
             else
             {
@@ -51,6 +51,8 @@ namespace DungeonGeneration
             return portalInstance;
         }
     }
+    
+    
 
     /// <summary>
     /// Static utility class for finding and creating transition spawners

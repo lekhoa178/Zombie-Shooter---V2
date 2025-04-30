@@ -13,11 +13,14 @@ namespace DungeonGeneration
         [SerializeField] private float _scaleAnimationDuration = 0.5f;
         [SerializeField] private Vector3 _normalScale = Vector3.one;
         [SerializeField] private Vector3 _expandedScale = new Vector3(1.2f, 1.2f, 1.2f);
+        [SerializeField] private SpriteRenderer m_IconRenderer;
+        
         private Vector3 _originalScale;
         
         #region Private Fields
         private string m_TargetStageID;
         private string m_TargetSceneName;
+        private StageType m_TargetStageType;
         #endregion
 
         #region Unity Lifecycle
@@ -47,10 +50,24 @@ namespace DungeonGeneration
         {
             m_TargetStageID = targetStageID;
             m_TargetSceneName = targetSceneName;
-            
             m_DisplayName = displayName;
 
             m_SelectionText.transform.localScale = new Vector3(-1, 1, 1);
+        }
+
+        /// <summary>
+        /// Initializes the portal with the target stage information and stage type
+        /// </summary>
+        public void Initialize(string targetStageID, string targetSceneName, string displayName, StageType stageType)
+        {
+            Initialize(targetStageID, targetSceneName, displayName);
+            m_TargetStageType = stageType;
+            
+            // Set the icon if we have an icon renderer
+            if (m_IconRenderer != null)
+            {
+                m_IconRenderer.sprite = DungeonManager.Instance.GetStageIcon(stageType);
+            }
         }
 
         /// <summary>
@@ -75,9 +92,7 @@ namespace DungeonGeneration
         {
             if (!_mainCamera) return;
             
-            var direction = _mainCamera.transform.position - transform.position;
-            var rotation = Quaternion.LookRotation(direction);
-            transform.rotation = rotation;
+            transform.LookAt(transform.position - _mainCamera.transform.forward); 
         }
 
         /// <summary>

@@ -43,6 +43,8 @@ namespace DungeonGeneration
             DontDestroyOnLoad(gameObject);
             
             SceneManager.sceneLoaded += OnSceneLoaded;
+            
+            m_DungeonMapUI = GetComponent<DungeonMapUI>();
         }
         
         private void OnDestroy()
@@ -82,6 +84,7 @@ namespace DungeonGeneration
         private bool m_IsGenerating = false;
         private int m_CurrentDepth = 0;
         private Dictionary<int, int> m_DepthNodeCounters = new Dictionary<int, int>();
+        private DungeonMapUI m_DungeonMapUI;
         #endregion
 
         #region Public Properties
@@ -519,7 +522,7 @@ namespace DungeonGeneration
                 nextStage.Name = displayName;
                 
                 // Spawn the portal
-                spawner.SpawnPortal(nextStage.ID, nextStage.SceneName, displayName);
+                spawner.SpawnPortal(nextStage.ID, nextStage.SceneName, displayName, nextStage.StageType);
                 
                 yield return null; // Wait a frame between spawns
             }
@@ -1057,6 +1060,22 @@ namespace DungeonGeneration
             {
                 DebugPrintStageRecursive(nextStage, indent + "  ", debugText);
             }
+        }
+
+        /// <summary>
+        /// Gets the stage icon for a specific stage type
+        /// </summary>
+        public Sprite GetStageIcon(StageType stageType)
+        {
+            // If we have a DungeonMapUI instance, use its method
+            if (m_DungeonMapUI != null)
+            {
+                return m_DungeonMapUI.GetStageIcon(stageType);
+            }
+            
+            // If there's no DungeonMapUI instance active, return null
+            Debug.LogWarning("DungeonManager: Cannot get stage icon - DungeonMapUI not available");
+            return null;
         }
         #endregion
     }

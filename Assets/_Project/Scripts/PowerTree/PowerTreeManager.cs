@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityUtils;
 
 namespace PowerTree
 {
     /// <summary>
     /// Manages the power tree progression system
     /// </summary>
-    public class PowerTreeManager : MonoBehaviour
+    public class PowerTreeManager : PersistentSingleton<MonoBehaviour>
     {
         [SerializeField] private PowerNodeDatabase nodeDatabase;
         [SerializeField] private PlayerStats playerStats;
@@ -57,6 +58,32 @@ namespace PowerTree
         }
 
         #region Node Management
+        
+        public int GetNodeCost(string nodeID, int level = default)
+        {
+            if (!nodeCache.TryGetValue(nodeID, out PowerNode node))
+                return 0;
+
+            if (level == default)
+            {
+                if (IsNodeUnlocked(nodeID))
+                    level = GetNodeLevel(nodeID);
+                else
+                {
+                    level = 0;
+                }
+            }
+
+            return node.GetLevelCost(level);
+        }
+        
+        public string GetNodeName(string nodeID)
+        {
+            if (!nodeCache.TryGetValue(nodeID, out PowerNode node))
+                return string.Empty;
+
+            return node.displayName;
+        }
 
         public bool CanUnlockNode(string nodeID)
         {

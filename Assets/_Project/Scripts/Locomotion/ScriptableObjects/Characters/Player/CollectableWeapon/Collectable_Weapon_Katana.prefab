@@ -24754,25 +24754,50 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_ID: Collectable_Weapon_Katana_f33b0121-5f08-49ac-997e-b30881cafd66
   m_ItemName: 
-  m_DisplayName: Press E to Collect
+  m_DisplayName: Katana
   m_Type: 0
   m_VisualObject: {fileID: 8616685257067868090}
   m_CollectionRadius: 4
-  m_AutoCollectionRadius: 0
-  m_MoveToPlayerDuration: 0.5
   m_RotationSpeed: 50
   m_BobHeight: 0.2
   m_BobSpeed: 1
   m_HoverHeight: 0.5
-  m_CollectionSound: {fileID: 0}
+  m_InteractSound: {fileID: 0}
   m_SelectionTextHeight: 1.5
-  m_SelectionTextColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  m_SelectionTextColor: {r: 1, g: 1, b: 1, a: 1}
   m_SelectionTextScale: 1
   m_SelectionTextFont: {fileID: 11400000, guid: 3c7cb113e29ce1a42914508263828b97, type: 2}
   m_SelectionTextFontSize: 24
   m_EnableTextOutline: 0
   m_TextOutlineColor: {r: 0, g: 0, b: 0, a: 1}
   m_TextOutlineWidth: 0.1
+  m_SelectionScaleCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_SelectionAnimationDuration: 0.5
+  m_CompressScaleFactor: 0.7
+  m_ExpandScaleFactor: 1.2
   m_WeaponConfig: {fileID: 11400000, guid: b59dad8733fa7e64ca241746c3e8f39e, type: 2}
   m_WeaponVisualPrefab: {fileID: 0}
   m_Rarity: 0

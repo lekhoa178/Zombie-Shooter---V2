@@ -135,7 +135,7 @@ namespace LocomotionSystem
             TargetAvatar = transform.GetChild(0).gameObject;
             TargetAvatarRenderer = TargetAvatar.GetComponentInChildren<SkinnedMeshRenderer>();
             
-            PlayerStats = GetComponent<PlayerStats>();
+            PlayerStats = FindAnyObjectByType<PlayerStats>();
         }
 
         private void Start()

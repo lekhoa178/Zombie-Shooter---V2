@@ -253,6 +253,24 @@ namespace DungeonGeneration
             }
         }
 
+        /// <summary>
+        /// Gets the appropriate icon for a stage type
+        /// </summary>
+        public Sprite GetStageIcon(StageType stageType)
+        {
+            return stageType switch
+            {
+                StageType.Combat => m_CombatStageIcon,
+                StageType.Challenge => m_ChallengeStageIcon,
+                StageType.Boss => m_BossStageIcon,
+                StageType.Shop => m_ShopStageIcon,
+                StageType.Healing => m_HealingStageIcon,
+                StageType.Mystery => m_MysteryStageIcon,
+                StageType.Interzone => m_InterzoneStageIcon,
+                _ => null
+            };
+        }
+
         #endregion
 
         #region Private Methods
@@ -1415,24 +1433,6 @@ namespace DungeonGeneration
 
                 stageUI.SetState(isCurrent, isVisited);
             }
-        }
-
-        /// <summary>
-        /// Gets the appropriate icon for a stage type
-        /// </summary>
-        private Sprite GetStageIcon(StageType stageType)
-        {
-            return stageType switch
-            {
-                StageType.Combat => m_CombatStageIcon,
-                StageType.Challenge => m_ChallengeStageIcon,
-                StageType.Boss => m_BossStageIcon,
-                StageType.Shop => m_ShopStageIcon,
-                StageType.Healing => m_HealingStageIcon,
-                StageType.Mystery => m_MysteryStageIcon,
-                StageType.Interzone => m_InterzoneStageIcon,
-                _ => null
-            };
         }
 
         #endregion

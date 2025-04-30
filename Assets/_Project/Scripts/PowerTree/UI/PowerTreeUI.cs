@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI.Extensions;
 
@@ -17,6 +18,7 @@ namespace PowerTree
         [SerializeField] private GameObject m_NodePrefab;
         [SerializeField] private GameObject m_ConnectionPrefab;
         [SerializeField] private Canvas m_RootCanvas;
+        [SerializeField] private TextMeshProUGUI m_ShardsText;
         
         [Header("Connection Settings")]
         [SerializeField] private Material m_ConnectionMaterial;
@@ -51,6 +53,11 @@ namespace PowerTree
         private void Start()
         {
             BuildTreeUI();
+            
+            if (m_ShardsText != null && m_TreeManager != null)
+            {
+                m_ShardsText.text = m_TreeManager.GetAetherShards().ToString();
+            }
         }
         
         private void Update()
@@ -594,15 +601,33 @@ namespace PowerTree
             {
                 if (m_TreeManager.CanUpgradeNode(nodeID))
                 {
-                    m_TreeManager.UpgradeNode(nodeID);
-                    RefreshAllNodes();
+                    UIManager.Instance.ShowPopup("", $"Node {m_TreeManager.GetNodeName(nodeID)} upgraded to level {m_TreeManager.GetNodeLevel(nodeID) + 1}.\nCosts {m_TreeManager.GetNodeCost(nodeID)} Aether Shards.",
+                        UIManager.PopupType.ContinueCancel, () =>
+                        {
+                            m_TreeManager.UpgradeNode(nodeID);
+                            RefreshAllNodes();           
+                        });
+                    
+                    return;
                 }
             }
             else if (m_TreeManager.CanUnlockNode(nodeID))
             {
-                m_TreeManager.UnlockNode(nodeID);
-                RefreshAllNodes();
+                UIManager.Instance.ShowPopup("", $"Costs {m_TreeManager.GetNodeCost(nodeID, 0)} Aether Shards to unlock this node.",
+                    UIManager.PopupType.ContinueCancel, () =>
+                    {
+                        m_TreeManager.UnlockNode(nodeID);
+                        RefreshAllNodes();
+                    });
+
+                return;
             }
+
+            UIManager.Instance.ShowPopup("",
+                m_TreeManager.IsNodeUnlocked(nodeID)
+                    ? "Node reached max level."
+                    : "Not enough Aether Shards to unlock/upgrade this node or unlocked prerequisites first.",
+                UIManager.PopupType.Info);
         }
     }
 }

@@ -329,7 +329,7 @@ namespace LocomotionSystem
                 {
                     ""name"": """",
                     ""id"": ""6542faa9-4680-4e7d-a43f-aea622cdfe7d"",
-                    ""path"": ""<Keyboard>/e"",
+                    ""path"": ""<Keyboard>/f"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";PC"",

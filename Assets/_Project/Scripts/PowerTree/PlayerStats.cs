@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 namespace PowerTree
 {
@@ -51,18 +52,32 @@ namespace PowerTree
 
         private bool damageTakenThisLevel = false;
 
+        private void Awake()
+        {
+            SceneManager.sceneLoaded += (_, _) =>
+            {
+                BroadcastPlayerStats();
+            };
+        }
+        
         private void Start()
         {
-            OnHeartChanged.Invoke(HeartType.Red, currentRedHearts, maxRedHearts);
-            OnHeartChanged.Invoke(HeartType.Blue, currentBlueHearts, 0);
-            OnHeartChanged.Invoke(HeartType.Black, currentBlackHearts, 0);
+            BroadcastPlayerStats();
         }
 
         private void OnValidate()
         {
+            BroadcastPlayerStats();
+
+        }
+        
+        private void BroadcastPlayerStats()
+        {
             OnHeartChanged.Invoke(HeartType.Red, currentRedHearts, maxRedHearts);
             OnHeartChanged.Invoke(HeartType.Blue, currentBlueHearts, 0);
-            OnHeartChanged.Invoke(HeartType.Black, currentBlackHearts, 0);        }
+            OnHeartChanged.Invoke(HeartType.Black, currentBlackHearts, 0);
+            
+        }
 
         private void Update()
         {
