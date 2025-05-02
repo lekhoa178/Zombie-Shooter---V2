@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
+using UnityUtils;
 
 namespace PowerTree
 {
     /// <summary>
     /// Manages the player's hearts, stats, and power effects
     /// </summary>
-    public class PlayerStats : MonoBehaviour
+    public class PlayerStats : PersistentSingleton<PlayerStats>
     {
         [Header("Health")] [SerializeField] private float maxRedHearts = 3f;
         [SerializeField] private float currentRedHearts = 3f;
@@ -52,8 +53,10 @@ namespace PowerTree
 
         private bool damageTakenThisLevel = false;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+            
             SceneManager.sceneLoaded += (_, _) =>
             {
                 BroadcastPlayerStats();
@@ -76,7 +79,6 @@ namespace PowerTree
             OnHeartChanged.Invoke(HeartType.Red, currentRedHearts, maxRedHearts);
             OnHeartChanged.Invoke(HeartType.Blue, currentBlueHearts, 0);
             OnHeartChanged.Invoke(HeartType.Black, currentBlackHearts, 0);
-            
         }
 
         private void Update()

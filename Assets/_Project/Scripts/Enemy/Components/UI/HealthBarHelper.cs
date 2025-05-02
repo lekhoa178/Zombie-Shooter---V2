@@ -84,11 +84,8 @@ public static class HealthBarHelper
     {
         if (enemy == null) return;
         
-        if (s_ActiveHealthBars.TryGetValue(enemy, out var healthBar))
+        if (s_ActiveHealthBars.Remove(enemy, out var healthBar))
         {
-            // Remove from active dictionary
-            s_ActiveHealthBars.Remove(enemy);
-            
             // Return to pool
             FlyweightFactory.ReturnToPool(healthBar);
         }

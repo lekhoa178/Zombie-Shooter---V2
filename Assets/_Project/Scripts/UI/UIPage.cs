@@ -1,5 +1,6 @@
 using System.Collections;
 using LocomotionSystem;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -68,16 +69,16 @@ public class UIPage : MonoBehaviour
         }
     }
 
-    private void OnEnable()
+    protected void OnEnable()
     {
         StartCoroutine(DelayedEnable());
     }
 
     IEnumerator DelayedEnable()
     {
-        yield return new WaitForEndOfFrame();
+        yield return new WaitForNextFrameUnit();
 
-        if (m_ShowCursorWhenActive && m_CameraCursor)
+        if (m_ShowCursorWhenActive && m_CameraCursor && !m_CameraCursor.IsUICursorVisible)
         {
             m_CameraCursor.UIToggleCursor(true);
             m_CameraCursor.enabled = false;
@@ -86,7 +87,7 @@ public class UIPage : MonoBehaviour
 
     private void OnDisable()
     {
-        if (m_ShowCursorWhenActive && m_CameraCursor != null)
+        if (m_ShowCursorWhenActive && m_CameraCursor != null && !UIManager.Instance.IsLastPageInHistory)
         {
             m_CameraCursor.UIToggleCursor(false);
             m_CameraCursor.enabled = true;

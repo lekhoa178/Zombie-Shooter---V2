@@ -10,7 +10,7 @@ namespace PowerTree
     /// <summary>
     /// Manages the power tree progression system
     /// </summary>
-    public class PowerTreeManager : PersistentSingleton<MonoBehaviour>
+    public class PowerTreeManager : PersistentSingleton<PowerTreeManager>
     {
         [SerializeField] private PowerNodeDatabase nodeDatabase;
         [SerializeField] private PlayerStats playerStats;
@@ -20,14 +20,25 @@ namespace PowerTree
         
         public UnityEvent OnAetherShardChanged = new UnityEvent(); 
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+            
             // Initialize cache
             if (nodeDatabase != null)
             {
                 foreach (var node in nodeDatabase.AllNodes)
                 {
                     nodeCache[node.nodeID] = node;
+                }
+            }
+            
+            if (playerStats == null)
+            {
+                playerStats = FindAnyObjectByType<PlayerStats>();
+                if (playerStats == null)
+                {
+                    Debug.LogError("PlayerStats not found in the scene.");
                 }
             }
 

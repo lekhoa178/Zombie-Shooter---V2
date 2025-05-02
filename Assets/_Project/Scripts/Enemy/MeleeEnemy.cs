@@ -4,6 +4,7 @@ using LocomotionSystem;
 using UnityEngine;
 using Flyweight;
 using MoreMountains.Feedbacks;
+using Unity.VisualScripting;
 
 public class MeleeEnemy : BaseEnemy, IAttacker
 {
@@ -14,6 +15,8 @@ public class MeleeEnemy : BaseEnemy, IAttacker
     [Header("Telegraph Feedback")]
     [Tooltip("Optional feedback player for telegraph effects")]
     [SerializeField] private MMF_Player telegraphFeedback;
+    
+    VFXFlyweight _activeTelegraph = null;
     
     // IAttacker implementation
     public bool CanAttack => (Time.time > lastAttackTime + GetEffectiveAttackCooldown()) && !isDead;
@@ -29,6 +32,16 @@ public class MeleeEnemy : BaseEnemy, IAttacker
     {
         base.Awake();
         perception = GetComponent<IPerception>();
+    }
+    
+    private void OnDestroy()
+    {
+        if (!_activeTelegraph.IsUnityNull())
+        {
+            _activeTelegraph.transform.parent = null;
+            VFXFlyweightHelper.ReturnVfxToPool(_activeTelegraph);
+            _activeTelegraph = null;
+        }
     }
     
     public void PerformAttack(Transform target)
@@ -53,13 +66,13 @@ public class MeleeEnemy : BaseEnemy, IAttacker
         
         if (enemyData.telegraphVfxSettings)
         {
-            var telegraph = VFXFlyweightHelper.SpawnVfxAtPosition(
+            _activeTelegraph = VFXFlyweightHelper.SpawnVfxAtPosition(
                 enemyData.telegraphVfxSettings,
                 transform.position + Vector3.up,
                 Quaternion.identity
             );
             
-            telegraph.transform.SetParent(transform, true);
+            _activeTelegraph.transform.SetParent(transform, true);
         }
         
         OnAttackTelegraphStart?.Invoke(this);

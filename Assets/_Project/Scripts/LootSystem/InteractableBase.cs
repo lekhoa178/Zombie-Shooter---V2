@@ -69,6 +69,18 @@ namespace LocomotionSystem
         protected Canvas m_TextCanvas;
         protected Collider m_Collider;
         protected Camera _mainCamera;
+
+        protected Camera MainCamera
+        {
+            get
+            {
+                if (_mainCamera == null)
+                {
+                    _mainCamera = Camera.main;
+                }
+                return _mainCamera;
+            }
+        }
         #endregion
         
         public InteractableType Type => m_Type;
@@ -307,7 +319,7 @@ namespace LocomotionSystem
         private void SetupVisuals()
         {
             // Wait until after the scale animation completes before setting up floating effects
-            DOVirtual.DelayedCall(0.7f, () => {
+            DOVirtual.DelayedCall(1f, () => {
                 // Floating effect - hover slightly above ground with bobbing motion
                 m_VisualObject.transform.position = new Vector3(
                     m_VisualObject.transform.position.x, 

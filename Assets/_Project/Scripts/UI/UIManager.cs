@@ -24,7 +24,11 @@ public class UIManager : PersistentSingleton<UIManager>
     private Dictionary<string, UIPage> m_RegisteredPages = new Dictionary<string, UIPage>();
     private Stack<UIPage> m_PageHistory = new Stack<UIPage>();
     private UIPage m_CurrentPage;
+    private Stack<UIPopupPage> m_PopupHistory = new Stack<UIPopupPage>();
     private UIPopupPage m_CurrentPopup;
+    
+    public bool IsPageHistoryEmpty => m_PageHistory.Count == 0;
+    public bool IsLastPageInHistory => m_PageHistory.Count == 1;
 
     protected override void Awake()
     {
@@ -134,6 +138,14 @@ public class UIManager : PersistentSingleton<UIManager>
 
     public void GoBack()
     {
+        // First handle any active popups - they take priority in navigation
+        if (m_CurrentPopup != null)
+        {
+            ClosePopup();
+            return;
+        }
+        
+        // Then handle regular page history
         if (m_PageHistory.Count == 0)
         {
             HideCurrentPage();
@@ -152,6 +164,12 @@ public class UIManager : PersistentSingleton<UIManager>
 
     public void HideCurrentPage()
     {
+        // First close any active popups
+        if (m_CurrentPopup != null)
+        {
+            CloseAllPopups();
+        }
+        
         if (m_CurrentPage != null)
         {
             m_CurrentPage.Exit();
@@ -183,10 +201,11 @@ public class UIManager : PersistentSingleton<UIManager>
         string denyText = "Deny", string cancelText = "Cancel",
         Sprite continueIcon = null, Sprite acceptIcon = null, Sprite denyIcon = null, Sprite cancelIcon = null)
     {
+        // If there's a current popup, add it to history instead of destroying it
         if (m_CurrentPopup != null)
         {
-            m_CurrentPopup.Exit();
-            Destroy(m_CurrentPopup.gameObject);
+            m_CurrentPopup.gameObject.SetActive(false);
+            m_PopupHistory.Push(m_CurrentPopup);
         }
 
         if (m_PopupPrefab == null)
@@ -252,8 +271,38 @@ public class UIManager : PersistentSingleton<UIManager>
     {
         if (m_CurrentPopup != null)
         {
-            m_CurrentPopup.Exit();
+            // Close current popup
+            var popupToClose = m_CurrentPopup;
             m_CurrentPopup = null;
+            
+            popupToClose.Exit();
+            Destroy(popupToClose.gameObject);
+            
+            // If there's a popup in history, show it
+            if (m_PopupHistory.Count > 0)
+            {
+                m_CurrentPopup = m_PopupHistory.Pop();
+                m_CurrentPopup.gameObject.SetActive(true);
+                m_CurrentPopup.Enter();
+            }
+        }
+    }
+    
+    public void CloseAllPopups()
+    {
+        // Close current popup if exists
+        if (m_CurrentPopup != null)
+        {
+            m_CurrentPopup.Exit();
+            Destroy(m_CurrentPopup.gameObject);
+            m_CurrentPopup = null;
+        }
+        
+        // Close all popups in history
+        while (m_PopupHistory.Count > 0)
+        {
+            var popup = m_PopupHistory.Pop();
+            Destroy(popup.gameObject);
         }
     }
     

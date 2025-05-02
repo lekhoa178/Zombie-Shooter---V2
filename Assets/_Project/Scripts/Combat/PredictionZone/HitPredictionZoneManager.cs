@@ -2,46 +2,10 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Flyweight;
+using UnityUtils;
 
-public class HitPredictionZoneManager : MonoBehaviour
+public class HitPredictionZoneManager : PersistentSingleton<HitPredictionZoneManager>
 {
-    private static HitPredictionZoneManager instance;
-    private static readonly object lockObject = new object();
-    private static bool applicationIsQuitting = false;
-
-    public static HitPredictionZoneManager Instance
-    {
-        get
-        {
-            if (applicationIsQuitting)
-            {
-                return null;
-            }
-
-            lock (lockObject)
-            {
-                if (instance == null)
-                {
-                    instance = (HitPredictionZoneManager)FindObjectOfType(typeof(HitPredictionZoneManager));
-
-                    if (instance == null)
-                    {
-                        GameObject singleton = new GameObject();
-                        instance = singleton.AddComponent<HitPredictionZoneManager>();
-                        singleton.name = typeof(HitPredictionZoneManager).ToString();
-                        DontDestroyOnLoad(singleton);
-                    }
-                }
-                return instance;
-            }
-        }
-    }
-
-    void OnApplicationQuit()
-    {
-        applicationIsQuitting = true;
-    }
-
     [Header("Default Prefabs for Different Shapes")]
     public FlyweightSettings circlePrefabSettings;
     public FlyweightSettings squarePrefabSettings;
@@ -51,8 +15,10 @@ public class HitPredictionZoneManager : MonoBehaviour
     private Dictionary<PredictionType, FlyweightSettings> defaultSettings = new Dictionary<PredictionType, FlyweightSettings>();
     private int idCounter = 0;
 
-    void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        
         // Initialize default settings
         defaultSettings[PredictionType.Circle] = circlePrefabSettings;
         defaultSettings[PredictionType.Square] = squarePrefabSettings;

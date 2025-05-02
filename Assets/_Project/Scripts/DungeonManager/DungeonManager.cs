@@ -7,44 +7,21 @@ using SceneManagement;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
+using UnityUtils;
 
 namespace DungeonGeneration
 {
     /// <summary>
     /// Main manager class for the procedural dungeon generation system
     /// </summary>
-    public class DungeonManager : MonoBehaviour
+    public class DungeonManager : PersistentSingleton<DungeonManager>
     {
         #region Singleton
-        private static DungeonManager s_Instance;
-        public static DungeonManager Instance
+        protected override void Awake()
         {
-            get
-            {
-                if (s_Instance != null) return s_Instance;
-                
-                var go = new GameObject("DungeonManager");
-                s_Instance = go.AddComponent<DungeonManager>();
-                DontDestroyOnLoad(go);
-                
-                return s_Instance;
-            }
-        }
-        
-        private void Awake()
-        {
-            if (s_Instance != null && s_Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            
-            s_Instance = this;
-            DontDestroyOnLoad(gameObject);
+            base.Awake();
             
             SceneManager.sceneLoaded += OnSceneLoaded;
-            
-            m_DungeonMapUI = GetComponent<DungeonMapUI>();
         }
         
         private void OnDestroy()
@@ -170,8 +147,22 @@ namespace DungeonGeneration
         #endregion
         
         #region Unity Lifecycle
-        private void Start()
+        // private void Start()
+        // {
+        //     m_CurrentZoneDefinition = GetZoneDefinitionAtIndex(m_ZoneIndex);
+        //     
+        //     if (m_CurrentZoneDefinition == null)
+        //     {
+        //         Debug.LogError("No Zone Definition assigned to DungeonManager!");
+        //         return;
+        //     }
+        //     
+        //     StartCoroutine(GenerateDungeon());
+        // }
+        
+        public void StartDungeonGeneration()
         {
+            m_ZoneIndex = 0;
             m_CurrentZoneDefinition = GetZoneDefinitionAtIndex(m_ZoneIndex);
             
             if (m_CurrentZoneDefinition == null)
@@ -340,7 +331,8 @@ namespace DungeonGeneration
             
             for (var i = 0; i < branches; i++)
             {
-                var stageType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
+                // var stageType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
+                var stageType = StageType.Combat;
 
                 // Get scene name based on stage type
                 var sceneName = m_CurrentZoneDefinition.GetRandomStageScene(stageType);
@@ -517,14 +509,13 @@ namespace DungeonGeneration
                     continue;
                 }
                 
-                // Get appropriate display name based on stage type
                 var displayName = GetStageDisplayName(nextStage.StageType);
                 nextStage.Name = displayName;
                 
                 // Spawn the portal
                 spawner.SpawnPortal(nextStage.ID, nextStage.SceneName, displayName, nextStage.StageType);
                 
-                yield return null; // Wait a frame between spawns
+                yield return null;
             }
         }
 
@@ -971,7 +962,7 @@ namespace DungeonGeneration
 
             if (SceneUtilities.SceneExists(targetStage.SceneName))
             {
-                SceneManager.LoadScene(targetStage.SceneName);
+                SceneTransitionManager.Instance.LoadScene(targetStage.SceneName);
             }
             else
             {
@@ -1067,8 +1058,12 @@ namespace DungeonGeneration
         /// </summary>
         public Sprite GetStageIcon(StageType stageType)
         {
-            // If we have a DungeonMapUI instance, use its method
-            if (m_DungeonMapUI != null)
+            if (!m_DungeonMapUI)
+            {
+                m_DungeonMapUI = FindAnyObjectByType<DungeonMapUI>(FindObjectsInactive.Include);
+            }
+            
+            if (m_DungeonMapUI)
             {
                 return m_DungeonMapUI.GetStageIcon(stageType);
             }

@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 
 namespace LocomotionSystem
 {
-    public class HitStopManager : Singleton<HitStopManager>
+    public class HitStopManager : PersistentSingleton<HitStopManager>
     {
         public bool IsTimeStopped => isTimeStopped;
         

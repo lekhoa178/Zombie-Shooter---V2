@@ -85,7 +85,7 @@ namespace LocomotionSystem
                     float directionAngle = Mathf.Atan2(StateMachine.ReusableData.MovementInput.x, StateMachine.ReusableData.MovementInput.y) * Mathf.Rad2Deg;
                     directionAngle += StateMachine.Player.MainCameraTransform.eulerAngles.y;
 
-                    StateMachine.Player.transform.DOLocalRotate(
+                    StateMachine.Player.transform.DORotate(
                         new Vector3(0, directionAngle, 0),
                         0f,
                         RotateMode.Fast

@@ -83,11 +83,11 @@ public class EnemyHealthBarComponent : MonoBehaviour
         CleanupHealthBar();
     }
     
-    private void OnDisable()
-    {
-        // Return the health bar to the pool when disabled
-        CleanupHealthBar();
-    }
+    // private void OnDisable()
+    // {
+    //     // Return the health bar to the pool when disabled
+    //     CleanupHealthBar();
+    // }
     #endregion
     
     #region Public Methods
@@ -223,6 +223,7 @@ public class EnemyHealthBarComponent : MonoBehaviour
         else if (m_HealthBar != null)
         {
             // Return world-space health bar to pool
+            m_HealthBar.transform.parent = null; // Detach from enemy
             HealthBarHelper.ReleaseHealthBar(m_Enemy);
             m_HealthBar = null;
         }

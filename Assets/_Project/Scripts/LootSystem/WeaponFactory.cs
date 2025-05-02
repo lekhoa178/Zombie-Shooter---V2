@@ -1,6 +1,7 @@
 using System;
 using Locomotion.LootSystem;
 using UnityEngine;
+using UnityUtils;
 using Random = UnityEngine.Random;
 
 namespace LocomotionSystem
@@ -8,32 +9,8 @@ namespace LocomotionSystem
     /// <summary>
     /// Factory for creating weapon collectables in the game world
     /// </summary>
-    public class WeaponFactory : MonoBehaviour
+    public class WeaponFactory : PersistentSingleton<WeaponFactory>
     {
-        #region Singleton
-        public static WeaponFactory Instance { get; private set; }
-        
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        
-        private void OnDestroy()
-        {
-            if (Instance == this)
-            {
-                Instance = null;
-            }
-        }
-        #endregion
-        
         #region Private Fields
         [Header("Default Settings")]
         [SerializeField] private GameObject m_DefaultWeaponPrefab;

@@ -58,7 +58,7 @@ MonoBehaviour:
   m_BobSpeed: 0
   m_HoverHeight: 0
   m_InteractSound: {fileID: 0}
-  m_SelectionTextHeight: 1.7
+  m_SelectionTextHeight: 1
   m_SelectionTextColor: {r: 1, g: 1, b: 1, a: 1}
   m_SelectionTextScale: 1
   m_SelectionTextFont: {fileID: 11400000, guid: fca14170ec7e57a4dbeabe7a46286fc9, type: 2}
@@ -10470,7 +10470,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607160706928432091, guid: 2cacfc12ba486104db7aef17f99a0621, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5607160706928432091, guid: 2cacfc12ba486104db7aef17f99a0621, type: 3}
       propertyPath: m_LocalPosition.z

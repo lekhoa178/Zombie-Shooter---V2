@@ -9,9 +9,9 @@ namespace LocomotionSystem
         
         private Player player;
 
-        private void Awake()
+        private void Start()
         {
-            player = transform.parent ? transform.parent.GetComponent<Player>() : GetComponent<Player>();
+            player = GetComponent<Player>();
         }
 
         public void TriggerOnMovementStateAnimationEnterEvent()

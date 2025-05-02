@@ -21,7 +21,7 @@ namespace LocomotionSystem
         protected override void FixedUpdate()
         {
             if (!m_IsSelected || !m_TextCanvas || !m_TextCanvas.gameObject.activeSelf) return;
-            if (_mainCamera)
+            if (MainCamera)
             {
                 m_TextCanvas.transform.rotation = _mainCamera.transform.rotation;
             }

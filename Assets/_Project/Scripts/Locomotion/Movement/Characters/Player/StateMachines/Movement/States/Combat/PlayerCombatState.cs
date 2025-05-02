@@ -107,7 +107,6 @@ namespace LocomotionSystem
 
             FaceThis(targetEnemy.transform.position);
             Vector3 finalPos = TargetOffset(targetEnemy.transform.position, 1f);
-            finalPos.y = 0;
             StateMachine.Player.Rigidbody.MovePosition(finalPos);
         }
         
@@ -132,7 +131,7 @@ namespace LocomotionSystem
             Quaternion lookAtRotation = Quaternion.LookRotation(target - StateMachine.Player.transform.position);
             lookAtRotation.x = 0;
             lookAtRotation.z = 0;
-            StateMachine.Player.transform.DOLocalRotateQuaternion(lookAtRotation, duration);
+            StateMachine.Player.transform.DORotateQuaternion(lookAtRotation, duration);
         }
 
         public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)

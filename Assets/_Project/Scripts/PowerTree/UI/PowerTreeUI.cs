@@ -48,6 +48,11 @@ namespace PowerTree
         private void Awake()
         {
             m_MainCamera = Camera.main;
+            
+            if (m_TreeManager == null)
+            {
+                m_TreeManager = FindAnyObjectByType<PowerTreeManager>();
+            }
         }
 
         private void Start()

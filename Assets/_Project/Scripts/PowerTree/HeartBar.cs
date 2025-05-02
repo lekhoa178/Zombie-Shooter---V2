@@ -45,6 +45,10 @@ namespace PowerTree
                 Destroy(child.gameObject);
             }
             
+            UpdateHeart(HeartType.Red, PlayerStats.Instance.GetCurrentRedHearts(), PlayerStats.Instance.GetMaxRedHearts());
+            UpdateHeart(HeartType.Blue, PlayerStats.Instance.GetCurrentBlueHearts(), -1);
+            UpdateHeart(HeartType.Black, PlayerStats.Instance.GetCurrentBlackHearts(), -1);
+            
             _playerStats.OnHeartChanged.AddListener(UpdateHeart);
         }
 

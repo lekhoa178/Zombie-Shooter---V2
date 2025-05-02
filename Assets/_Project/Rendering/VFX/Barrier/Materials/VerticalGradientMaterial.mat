@@ -15,8 +15,6 @@ Material:
   m_InvalidKeywords:
   - _INVERTDISSOLVEY_ON
   - _USEALPHAGRADIENT_ON
-  - _USECIRCLEMASK_ON
-  - _USECOLORMAP_ON
   - _USEDEPTHEFFECT_ON
   - _USEDISSOLVE_ON
   - _USEINTERSECTION_ON
@@ -41,7 +39,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ColorTex:
-        m_Texture: {fileID: 2800000, guid: 585eee555734fd44aa9f2cd34865f253, type: 3}
+        m_Texture: {fileID: 2800000, guid: 7cb82023c4fa1bb4aaa9c4ea9d984b38, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DissolveTex:
@@ -97,15 +95,15 @@ Material:
     - _StarScrollSpeed: -0.035
     - _UseAlphaGradient: 1
     - _UseAlphaMask: 0
-    - _UseCircleMask: 1
-    - _UseColorMap: 1
+    - _UseCircleMask: 0
+    - _UseColorMap: 0
     - _UseDepthEffect: 1
     - _UseDissolve: 1
     - _UseIntersection: 1
     - _UseNoise: 1
     - _UseStars: 1
     m_Colors:
-    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BaseColor: {r: 0, g: 0.16556035, b: 0.6981132, a: 1}
     - _EdgeColor: {r: 0.8415094, g: 0.5702775, b: 0.2969099, a: 1}
     - _IntersectionColor: {r: 0.8660377, g: 1, b: 0.9801219, a: 1}
     - _TopColor: {r: 1, g: 1, b: 1, a: 1}

@@ -4,11 +4,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using Flyweight;
 using UnityEngine.Events;
+using UnityUtils;
 
 /// <summary>
 /// Factory class for spawning enemies with telegraph effects and handling death events.
 /// </summary>
-public class EnemyFactory : MonoBehaviour
+public class EnemyFactory : PersistentSingleton<EnemyFactory>
 {
     #region Serialized Fields
     [Header("Telegraph Settings")]
@@ -43,47 +44,6 @@ public class EnemyFactory : MonoBehaviour
     private Dictionary<Vector3, Coroutine> m_ActiveTelegraphs = new Dictionary<Vector3, Coroutine>();
     // Dictionary to track custom telegraph configurations
     private Dictionary<string, EnemyTelegraphConfig> m_CustomTelegraphConfigs = new Dictionary<string, EnemyTelegraphConfig>();
-    #endregion
-    
-    #region Singleton Pattern
-    private static EnemyFactory s_Instance;
-    
-    public static EnemyFactory Instance
-    {
-        get
-        {
-            if (s_Instance == null)
-            {
-                s_Instance = FindObjectOfType<EnemyFactory>();
-                
-                if (s_Instance == null)
-                {
-                    GameObject factoryObject = new GameObject("EnemyFactory");
-                    s_Instance = factoryObject.AddComponent<EnemyFactory>();
-                }
-            }
-            
-            return s_Instance;
-        }
-    }
-    #endregion
-    
-    #region Unity Lifecycle
-    private void Awake()
-    {
-        if (s_Instance != null && s_Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        
-        s_Instance = this;
-        
-        if (transform.parent == null)
-        {
-            DontDestroyOnLoad(gameObject);
-        }
-    }
     #endregion
     
     #region Public API
@@ -486,15 +446,15 @@ public class EnemyFactory : MonoBehaviour
 public class EnemyTelegraphConfig
 {
     public VFXFlyweightSettings telegraphVfx;
-    public Vector3 vfxOffset = Vector3.zero;
-    public Vector3 vfxScale = Vector3.one;
+    public Vector3 vfxOffset;
+    public Vector3 vfxScale;
     public AudioClip telegraphSound;
     
-    public EnemyTelegraphConfig(VFXFlyweightSettings _vfx, Vector3 _offset, Vector3 _scale, AudioClip _sound)
+    public EnemyTelegraphConfig(VFXFlyweightSettings vfx, Vector3 offset, Vector3 scale, AudioClip sound)
     {
-        telegraphVfx = _vfx;
-        vfxOffset = _offset;
-        vfxScale = _scale;
-        telegraphSound = _sound;
+        telegraphVfx = vfx;
+        vfxOffset = offset;
+        vfxScale = scale;
+        telegraphSound = sound;
     }
 } 

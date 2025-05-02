@@ -34,7 +34,7 @@ namespace DungeonGeneration
                 return null;
             }
 
-            var portalInstance = Instantiate(m_PortalPrefab, transform.position, transform.rotation);
+            var portalInstance = Instantiate(m_PortalPrefab, transform);
             
             var portal = portalInstance.GetComponent<StagePortal>();
             if (portal)

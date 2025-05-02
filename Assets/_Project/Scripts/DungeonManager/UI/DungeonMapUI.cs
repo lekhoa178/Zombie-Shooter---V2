@@ -412,6 +412,9 @@ namespace DungeonGeneration
 
             // Calculate the center of all nodes
             Vector2 center = (m_MapBoundsMin + m_MapBoundsMax) * 0.5f;
+            center.x = 340;
+            
+            Debug.Log($"Center: {center}");
 
             // Calculate the required offset to center everything in the container
             Vector2 offset = -center;

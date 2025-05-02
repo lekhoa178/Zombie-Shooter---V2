@@ -8,41 +8,8 @@ using UnityUtils;
 /// Decouples systems by allowing components to broadcast and listen for events
 /// without direct references to each other.
 /// </summary>
-public class CombatEventManager : MonoBehaviour
+public class CombatEventManager : PersistentSingleton<CombatEventManager>
 {
-    #region Singleton Pattern
-    private static CombatEventManager _instance;
-    
-    public static CombatEventManager Instance
-    {
-        get
-        {
-            if (_instance == null)
-            {
-                GameObject go = new GameObject("CombatEventManager");
-                _instance = go.AddComponent<CombatEventManager>();
-                DontDestroyOnLoad(go);
-            }
-            return _instance;
-        }
-    }
-    
-    private void Awake()
-    {
-        if (_instance == null)
-        {
-            _instance = this;
-            DontDestroyOnLoad(gameObject);
-            Debug.Log("<color=green>CombatEventManager initialized successfully</color>");
-        }
-        else if (_instance != this)
-        {
-            Debug.Log("<color=orange>Duplicate CombatEventManager found and destroyed</color>");
-            Destroy(gameObject);
-        }
-    }
-    #endregion
-    
     // Define event context classes to carry more detailed information
     
     #region Event Context Classes
@@ -183,7 +150,7 @@ public class CombatEventManager : MonoBehaviour
     // Hit Trigger Methods
     public static void TriggerHit(GameObject source, GameObject target, Vector3 direction, Vector3 position, float damage)
     {
-        if (!_instance)
+        if (!instance)
         {
             Debug.LogError("CombatEventManager instance is null!");
             return;
@@ -192,14 +159,12 @@ public class CombatEventManager : MonoBehaviour
         // Prevent duplicate hit processing in the same frame
         string hitKey = $"{source?.GetInstanceID()}_{target?.GetInstanceID()}_{Time.frameCount}";
         
-        if (_instance._processedHitsThisFrame.Contains(hitKey))
+        if (!instance._processedHitsThisFrame.Add(hitKey))
         {
             Debug.LogWarning($"Prevented duplicate hit event in the same frame: {hitKey}");
             return;
         }
-        
-        _instance._processedHitsThisFrame.Add(hitKey);
-        
+
         var context = new HitEventContext(source, target, direction, position, damage);
 
         Debug.Log($"<color=cyan>Triggering Hit Event</color> - " +

@@ -23,7 +23,8 @@ MonoBehaviour:
   m_AllowSharedPaths: 0
   m_AllowSkipDepth: 0
   m_BossStageName: 
-  m_CombatStages: []
+  m_CombatStages:
+  - Combat-1
   m_ChallengeStages: []
   m_ShopStageName: 
   m_HealingStageName: 

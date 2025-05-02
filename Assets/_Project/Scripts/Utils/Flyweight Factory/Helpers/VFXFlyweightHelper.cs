@@ -33,6 +33,14 @@ namespace Flyweight
             return SpawnVfxAtPosition(settings, position, rotation, Vector3.zero); // Zero tells the method to preserve prefab scale
         }
         
+        public static void ReturnVfxToPool(VFXFlyweight vfx)
+        {
+            if (vfx)
+            {
+                FlyweightFactory.ReturnToPool(vfx);
+            }
+        }
+        
         // Helper coroutine with explicit scale parameter
         public static IEnumerator SpawnDelayedVfx(VFXFlyweightSettings settings, Vector3 position, Vector3 scale, float delay)
         {

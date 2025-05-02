@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using Flyweight;
 using MoreMountains.Feedbacks;
+using Unity.VisualScripting;
 using Random = UnityEngine.Random;
 
 public class RangedEnemy : BaseEnemy, IAttacker
@@ -22,6 +23,7 @@ public class RangedEnemy : BaseEnemy, IAttacker
     private Transform currentTarget;
     private RangedEnemyData rangedData => enemyData as RangedEnemyData;
     private Coroutine currentFiringCoroutine;
+    VFXFlyweight _activeTelegraph = null;
     
     // IAttacker implementation
     public bool CanAttack => Time.time > lastAttackTime + GetEffectiveAttackCooldown();
@@ -85,7 +87,17 @@ public class RangedEnemy : BaseEnemy, IAttacker
             ProjectileFlyweightHelper.SetDebugVisualization(showDebugTrajectories, debugLineDuration);
         }
     }
-    
+
+    private void OnDestroy()
+    {
+        if (!_activeTelegraph.IsUnityNull())
+        {
+            _activeTelegraph.transform.parent = null;
+            VFXFlyweightHelper.ReturnVfxToPool(_activeTelegraph);
+            _activeTelegraph = null;
+        }
+    }
+
     public void PerformAttack(Transform target)
     {
         if (!CanAttack || target == null) return;
@@ -105,15 +117,15 @@ public class RangedEnemy : BaseEnemy, IAttacker
             telegraphFeedback.PlayFeedbacks();
         }
         
-        if (rangedData.telegraphVfxSettings != null)
+        if (rangedData.telegraphVfxSettings)
         {
-            var telegraph = VFXFlyweightHelper.SpawnVfxAtPosition(
+            _activeTelegraph = VFXFlyweightHelper.SpawnVfxAtPosition(
                 rangedData.telegraphVfxSettings,
                 transform.position + Vector3.up,
                 Quaternion.identity
             );
             
-            telegraph.transform.SetParent(transform, true);
+            _activeTelegraph.transform.SetParent(transform, true);
         }
         
         OnAttackTelegraphStart?.Invoke(this);

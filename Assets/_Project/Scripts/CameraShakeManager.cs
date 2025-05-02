@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityUtils;
 
-public class CameraShakeManager : Singleton<CameraShakeManager>
+public class CameraShakeManager : PersistentSingleton<CameraShakeManager>
 {
     [SerializeField] private MMF_Player normalShakeFeedback;
     

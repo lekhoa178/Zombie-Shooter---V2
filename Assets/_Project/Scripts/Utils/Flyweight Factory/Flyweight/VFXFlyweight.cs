@@ -1,3 +1,4 @@
+using System;
 using Flyweight;
 using System.Collections;
 using UnityEngine;
@@ -27,7 +28,7 @@ namespace Flyweight
 
         public void StartReturnTimer()
         {
-            if (settings is VFXFlyweightSettings vfxSettings)
+            if (settings is { } vfxSettings)
             {
                 StopReturnTimer();
                 _autoReturnCoroutine = StartCoroutine(ReturnAfterDelay(vfxSettings.autoReturnDuration));

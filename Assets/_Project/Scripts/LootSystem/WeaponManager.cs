@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Locomotion.LootSystem;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityUtils;
 using Random = UnityEngine.Random;
 
 namespace LocomotionSystem
@@ -10,33 +11,8 @@ namespace LocomotionSystem
     /// <summary>
     /// Manager class for weapon handling and switching
     /// </summary>
-    public class WeaponManager : MonoBehaviour
+    public class WeaponManager : PersistentSingleton<WeaponManager>
     {
-        #region Singleton
-        private static WeaponManager s_Instance;
-        
-        public static WeaponManager Instance
-        {
-            get
-            {
-                if (s_Instance == null)
-                {
-                    s_Instance = FindObjectOfType<WeaponManager>();
-                    
-                    if (s_Instance == null)
-                    {
-                        GameObject obj = new GameObject("WeaponManager");
-                        s_Instance = obj.AddComponent<WeaponManager>();
-                    }
-                }
-                
-                return s_Instance;
-            }
-        }
-        
-        public static bool HasInstance => s_Instance != null;
-        #endregion
-        
         #region Events
         // Event triggered when a weapon is equipped
         public event Action<Player, IInteractable> OnWeaponEquipped;
@@ -59,21 +35,6 @@ namespace LocomotionSystem
         
         // Dictionary mapping players to their active ComboConfiguration
         private Dictionary<Player, ComboConfiguration> m_PlayerComboConfigs = new Dictionary<Player, ComboConfiguration>();
-        #endregion
-
-        #region Unity Lifecycle
-        private void Awake()
-        {
-            // Ensure singleton pattern
-            if (s_Instance != null && s_Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            
-            s_Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
         #endregion
 
         #region Public Methods

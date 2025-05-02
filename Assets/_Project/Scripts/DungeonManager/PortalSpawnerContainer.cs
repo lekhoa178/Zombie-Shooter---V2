@@ -156,7 +156,7 @@ namespace DungeonGeneration
             GameObject spawnerObj = Instantiate(_spawnerPrefab, _position, transform.rotation);
             
             // Parent to container
-            spawnerObj.transform.SetParent(m_SpawnersParent);
+            spawnerObj.transform.SetParent(m_SpawnersParent, true);
             
             // Get the TransitionSpawner component
             TransitionSpawner spawner = spawnerObj.GetComponent<TransitionSpawner>();

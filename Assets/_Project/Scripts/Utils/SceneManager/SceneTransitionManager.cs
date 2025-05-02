@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Flyweight;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -31,8 +32,8 @@ namespace SceneManagement
         #endregion
 
         #region Private Fields
-        private bool m_IsLoading = false;
-        private Dictionary<string, int> m_SceneIndices = new Dictionary<string, int>();
+        private bool m_IsLoading;
+        private Dictionary<string, int> m_SceneIndices = new();
         #endregion
 
         #region Unity Lifecycle
@@ -72,80 +73,98 @@ namespace SceneManagement
             m_IsLoading = false;
         }
 
-        private IEnumerator LoadSceneAsync(string _sceneName, Action _onComplete = null)
+        private IEnumerator LoadSceneAsync(string sceneName, Action onComplete = null)
         {
             ShowLoadingScreen();
             
             // Fade in
             yield return StartCoroutine(FadeCanvasGroup(m_FadeCanvasGroup, 0f, 1f, m_FadeDuration));
+
+            yield return new WaitForSeconds(2f);
             
             // Start scene loading
             AsyncOperation asyncOperation;
             
-            if (m_SceneIndices.TryGetValue(_sceneName, out int sceneIndex))
+            if (m_SceneIndices.TryGetValue(sceneName, out int sceneIndex))
             {
                 asyncOperation = SceneManager.LoadSceneAsync(sceneIndex);
             }
             else
             {
-                Debug.LogWarning($"Scene '{_sceneName}' not found in build settings. Attempting to load by name.");
-                asyncOperation = SceneManager.LoadSceneAsync(_sceneName);
+                Debug.LogWarning($"Scene '{sceneName}' not found in build settings. Attempting to load by name.");
+                asyncOperation = SceneManager.LoadSceneAsync(sceneName);
             }
-            
-            asyncOperation.allowSceneActivation = false;
-            
-            float startTime = Time.time;
-            float progress = 0f;
-            
-            // Update progress while scene loads
-            while (progress < 0.9f)
+
+            if (asyncOperation != null)
             {
-                progress = Mathf.Clamp01(asyncOperation.progress / 0.9f);
-                m_ProgressBar.fillAmount = progress;
-                m_ProgressText.text = $"{Mathf.Round(progress * 100)}%";
-                yield return null;
+                asyncOperation.allowSceneActivation = false;
+
+                float startTime = Time.time;
+                float progress = 0f;
+
+                // Update progress while scene loads
+                while (progress < 0.9f)
+                {
+                    progress = Mathf.Clamp01(asyncOperation.progress / 0.9f);
+                    
+                    if (m_ProgressBar)
+                    {
+                        m_ProgressBar.fillAmount = progress;
+                    }
+                    if (m_ProgressText)
+                    {
+                        m_ProgressText.text = $"{Mathf.Round(progress * 100)}%";
+                    }
+                    yield return null;
+                }
+
+                // Ensure minimum loading time for better UX
+                var elapsedTime = Time.time - startTime;
+                if (elapsedTime < m_MinimumLoadTime)
+                {
+                    yield return new WaitForSeconds(m_MinimumLoadTime - elapsedTime);
+                }
+
+                // Complete loading
+                if (m_ProgressBar)
+                {
+                    m_ProgressBar.fillAmount = 1f;
+                }
+                if (m_ProgressText)
+                {
+                    m_ProgressText.text = "100%";
+                }
+
+                // Activate the scene
+                asyncOperation.allowSceneActivation = true;
+
+                // Wait for scene activation
+                while (!asyncOperation.isDone)
+                {
+                    yield return null;
+                }
             }
-            
-            // Ensure minimum loading time for better UX
-            float elapsedTime = Time.time - startTime;
-            if (elapsedTime < m_MinimumLoadTime)
-            {
-                yield return new WaitForSeconds(m_MinimumLoadTime - elapsedTime);
-            }
-            
-            // Complete loading
-            m_ProgressBar.fillAmount = 1f;
-            m_ProgressText.text = "100%";
-            
-            // Activate the scene
-            asyncOperation.allowSceneActivation = true;
-            
-            // Wait for scene activation
-            while (!asyncOperation.isDone)
-            {
-                yield return null;
-            }
-            
+
             // Fade out
             yield return StartCoroutine(FadeCanvasGroup(m_FadeCanvasGroup, 1f, 0f, m_FadeDuration));
             
             HideLoadingScreen();
             
-            _onComplete?.Invoke();
+            onComplete?.Invoke();
         }
 
-        private IEnumerator FadeCanvasGroup(CanvasGroup _canvasGroup, float _startAlpha, float _targetAlpha, float _duration)
+        private IEnumerator FadeCanvasGroup(CanvasGroup canvasGroup, float startAlpha, float targetAlpha, float duration)
         {
-            float elapsedTime = 0f;
+            var elapsedTime = 0f;
             
-            while (elapsedTime < _duration)
+            while (elapsedTime < duration)
             {
-                _canvasGroup.alpha = Mathf.Lerp(_startAlpha, _targetAlpha, elapsedTime / _duration);
+                canvasGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, elapsedTime / duration);
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
             
-            _canvasGroup.alpha = _targetAlpha;
+            canvasGroup.alpha = targetAlpha;
         }
         #endregion
 
@@ -153,25 +172,31 @@ namespace SceneManagement
         /// <summary>
         /// Loads a scene by name with optional callback when complete.
         /// </summary>
-        /// <param name="_sceneName">Scene name to load</param>
-        /// <param name="_onComplete">Optional callback when scene load completes</param>
-        public void LoadScene(string _sceneName, Action _onComplete = null)
+        /// <param name="sceneName">Scene name to load</param>
+        /// <param name="onComplete">Optional callback when scene load completes</param>
+        public void LoadScene(string sceneName, Action onComplete = null)
         {
             if (m_IsLoading)
             {
                 Debug.LogWarning("Scene transition already in progress. Ignoring request.");
                 return;
             }
-            
-            StartCoroutine(LoadSceneAsync(_sceneName, _onComplete));
+
+            if (FlyweightFactory.HasInstance)
+            {
+                FlyweightFactory.ReturnAllToPool();
+                FlyweightFactory.ClearAllPools();
+            }
+
+            StartCoroutine(LoadSceneAsync(sceneName, onComplete));
         }
 
         /// <summary>
         /// Loads a scene by build index with optional callback when complete.
         /// </summary>
-        /// <param name="_buildIndex">Scene build index to load</param>
-        /// <param name="_onComplete">Optional callback when scene load completes</param>
-        public void LoadScene(int _buildIndex, Action _onComplete = null)
+        /// <param name="buildIndex">Scene build index to load</param>
+        /// <param name="onComplete">Optional callback when scene load completes</param>
+        public void LoadScene(int buildIndex, Action onComplete = null)
         {
             if (m_IsLoading)
             {
@@ -179,17 +204,17 @@ namespace SceneManagement
                 return;
             }
             
-            string scenePath = SceneUtility.GetScenePathByBuildIndex(_buildIndex);
+            string scenePath = SceneUtility.GetScenePathByBuildIndex(buildIndex);
             string sceneName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
             
-            StartCoroutine(LoadSceneAsync(sceneName, _onComplete));
+            StartCoroutine(LoadSceneAsync(sceneName, onComplete));
         }
 
         /// <summary>
         /// Reloads the current active scene.
         /// </summary>
-        /// <param name="_onComplete">Optional callback when scene reload completes</param>
-        public void ReloadCurrentScene(Action _onComplete = null)
+        /// <param name="onComplete">Optional callback when scene reload completes</param>
+        public void ReloadCurrentScene(Action onComplete = null)
         {
             if (m_IsLoading)
             {
@@ -198,7 +223,7 @@ namespace SceneManagement
             }
             
             string currentSceneName = SceneManager.GetActiveScene().name;
-            StartCoroutine(LoadSceneAsync(currentSceneName, _onComplete));
+            StartCoroutine(LoadSceneAsync(currentSceneName, onComplete));
         }
         #endregion
     }

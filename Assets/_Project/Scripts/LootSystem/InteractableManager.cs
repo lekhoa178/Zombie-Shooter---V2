@@ -5,34 +5,15 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.Serialization;
+using UnityUtils;
 
 namespace LocomotionSystem
 {
     /// <summary>
     /// Manager class for all loot-related functionality
     /// </summary>
-    public class InteractableManager : MonoBehaviour
+    public class InteractableManager : PersistentSingleton<InteractableManager>
     {
-        #region Singleton
-        private static InteractableManager _instance;
-        
-        public static InteractableManager Instance
-        {
-            get
-            {
-                if (_instance) return _instance;
-                _instance = FindAnyObjectByType<InteractableManager>();
-
-                if (_instance) return _instance;
-                
-                var obj = new GameObject("InteractableManager");
-                _instance = obj.AddComponent<InteractableManager>();
-
-                return _instance;
-            }
-        }
-        #endregion
-        
         #region Private Fields
         [FormerlySerializedAs("_autoCollectionCheckInterval")]
         [FormerlySerializedAs("m_AutoCollectionCheckInterval")]
@@ -65,17 +46,9 @@ namespace LocomotionSystem
         #endregion
 
         #region Unity Lifecycle
-        private void Awake()
+        protected override void Awake()
         {
-            // Ensure singleton pattern
-            if (_instance != null && _instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            
-            _instance = this;
-            DontDestroyOnLoad(gameObject);
+            base.Awake();
             
             m_MainCamera = Camera.main;
         }
@@ -95,6 +68,8 @@ namespace LocomotionSystem
 
         private void OnDestroy()
         {
+            if (this != Instance) return;
+
             // Unsubscribe from input action
             if (collectAction != null)
             {

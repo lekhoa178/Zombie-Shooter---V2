@@ -23,9 +23,8 @@ namespace DungeonGeneration
     {
         #region Serialized Fields
         [Header("Wave Configuration")]
-        [SerializeField] private List<WaveSet> m_WaveSets = new List<WaveSet>();
-        [SerializeField] private float m_TimeBetweenWaves = 3f;
-        [SerializeField] private float m_TimeBetweenSpawns = 0.5f;
+        [SerializeField] private List<WaveCombination> m_WaveCombinations = new List<WaveCombination>();
+        [SerializeField] private float m_TimeBetweenSpawns = 0.25f;
         
         [Header("Wave Progression")]
         [SerializeField] private WaveProgressionMode m_ProgressionMode = WaveProgressionMode.EnemyBased;
@@ -51,12 +50,12 @@ namespace DungeonGeneration
         
         #region Events
         public event Action OnWaveCompleted;
-        public event Action<int, int> OnWaveStarted; // WaveIndex, WaveSetIndex
+        public event Action<int, int> OnWaveStarted; // WaveSetIndex, CombinationIndex
         #endregion
         
         #region Private Fields
         private int m_CurrentWaveSetIndex = 0;
-        private int m_CurrentWaveIndex = 0;
+        private WaveCombination m_SelectedCombination;
         private List<BaseEnemy> m_ActiveEnemies = new List<BaseEnemy>();
         private bool m_StageCleared = false;
         private bool m_StageActive = false;
@@ -110,8 +109,10 @@ namespace DungeonGeneration
         #endregion
         
         #region Unity Lifecycle
-        private void Start()
+        protected override void Start()
         {
+            base.Start();
+            
             // Find player reference
             m_Player = GameObject.FindGameObjectWithTag("Player");
             if (m_Player == null)
@@ -126,6 +127,9 @@ namespace DungeonGeneration
                 Debug.LogWarning("No spawn points defined! Using random spawns instead.");
                 m_UseRandomSpawns = true;
             }
+            
+            // Select a random wave combination
+            SelectRandomCombination();
             
             // Start combat after a delay
             if (m_AutoStartFirstWave)
@@ -166,10 +170,18 @@ namespace DungeonGeneration
             {
                 OnWaveCompleted?.Invoke();
                 
+                // Check if this was the last wave set
+                if (m_CurrentWaveSetIndex >= m_SelectedCombination.WaveSets.Count)
+                {
+                    // All wave sets completed and all enemies defeated
+                    OnCombatComplete();
+                    return;
+                }
+                
                 if (m_ProgressionMode == WaveProgressionMode.EnemyBased)
                 {
                     // Start next wave automatically when enemies are defeated
-                    m_WaveCoroutine = StartCoroutine(StartNextWave());
+                    m_WaveCoroutine = StartCoroutine(StartNextWaveSet());
                 }
                 else if (m_ProgressionMode == WaveProgressionMode.Manual)
                 {
@@ -178,7 +190,7 @@ namespace DungeonGeneration
                     
                     if (m_DebugMode)
                     {
-                        Debug.Log("Wave completed. Waiting for manual trigger to start next wave.");
+                        Debug.Log("Wave set completed. Waiting for manual trigger to start next wave set.");
                     }
                 }
                 // TimeBased mode handles its own wave spawning via coroutine
@@ -195,11 +207,11 @@ namespace DungeonGeneration
             if ((m_WaitingForManualTrigger || m_ActiveEnemies.Count == 0) && m_WaveCoroutine == null && !m_StageCleared)
             {
                 m_WaitingForManualTrigger = false;
-                m_WaveCoroutine = StartCoroutine(StartNextWave());
+                m_WaveCoroutine = StartCoroutine(StartNextWaveSet());
                 
                 if (m_DebugMode)
                 {
-                    Debug.Log("Manually triggering next wave.");
+                    Debug.Log("Manually triggering next wave set.");
                 }
             }
         }
@@ -226,16 +238,39 @@ namespace DungeonGeneration
         
         #region Wave Management
         /// <summary>
+        /// Selects a random wave combination to use
+        /// </summary>
+        private void SelectRandomCombination()
+        {
+            if (m_WaveCombinations.Count == 0)
+            {
+                Debug.LogError("No wave combinations defined!");
+                return;
+            }
+            
+            int randomIndex = UnityEngine.Random.Range(0, m_WaveCombinations.Count);
+            m_SelectedCombination = m_WaveCombinations[randomIndex];
+            
+            if (m_DebugMode)
+            {
+                Debug.Log($"Selected wave combination: {m_SelectedCombination.Name} (index: {randomIndex})");
+            }
+            
+            // Reset wave set index
+            m_CurrentWaveSetIndex = 0;
+        }
+        
+        /// <summary>
         /// Start combat after a delay
         /// </summary>
-        private IEnumerator StartCombatAfterDelay(float _delay)
+        private IEnumerator StartCombatAfterDelay(float delay)
         {
-            yield return new WaitForSeconds(_delay);
+            yield return new WaitForSeconds(delay);
             
             m_StageActive = true;
             
-            // Start first wave
-            m_WaveCoroutine = StartCoroutine(StartNextWave());
+            // Start first wave set
+            m_WaveCoroutine = StartCoroutine(StartNextWaveSet());
             
             // Start time-based wave spawner if needed
             if (m_ProgressionMode == WaveProgressionMode.TimeBased)
@@ -263,7 +298,7 @@ namespace DungeonGeneration
                 // Time's up, spawn next wave if not already spawning
                 if (m_WaveCoroutine == null && !m_StageCleared)
                 {
-                    m_WaveCoroutine = StartCoroutine(StartNextWave());
+                    m_WaveCoroutine = StartCoroutine(StartNextWaveSet());
                 }
                 
                 // Reset timer
@@ -272,82 +307,86 @@ namespace DungeonGeneration
         }
         
         /// <summary>
-        /// Starts the next wave of enemies
+        /// Starts the next wave set of enemies
         /// </summary>
-        private IEnumerator StartNextWave()
+        private IEnumerator StartNextWaveSet()
         {
-            // Wait before next wave
-            if (m_CurrentWaveIndex > 0 || m_CurrentWaveSetIndex > 0)
+            if (m_SelectedCombination == null || m_SelectedCombination.WaveSets.Count == 0)
             {
-                yield return new WaitForSeconds(m_TimeBetweenWaves);
-            }
-            
-            // Check if we've completed all wave sets
-            if (m_CurrentWaveSetIndex >= m_WaveSets.Count)
-            {
+                Debug.LogError("No wave sets defined in the selected combination!");
                 OnCombatComplete();
                 m_WaveCoroutine = null;
                 yield break;
             }
             
-            // Get current wave set
-            WaveSet currentWaveSet = m_WaveSets[m_CurrentWaveSetIndex];
-            
-            // Check if we've completed all waves in the current set
-            if (m_CurrentWaveIndex >= currentWaveSet.Waves.Count)
+            // Check if we've completed all wave sets in the combination
+            if (m_CurrentWaveSetIndex >= m_SelectedCombination.WaveSets.Count)
             {
-                // Move to next wave set
-                m_CurrentWaveSetIndex++;
-                m_CurrentWaveIndex = 0;
-                
-                // Restart the coroutine
+                // No more wave sets to spawn, but wait for all enemies to be defeated
+                // before calling OnCombatComplete (handled in CheckWaveCompletion)
                 m_WaveCoroutine = null;
                 yield break;
             }
             
-            // Get current wave
-            Wave currentWave = currentWaveSet.Waves[m_CurrentWaveIndex];
+            // Get current wave set
+            var currentWaveSet = m_SelectedCombination.WaveSets[m_CurrentWaveSetIndex];
             
             if (m_DebugMode)
             {
-                Debug.Log($"Starting Wave {m_CurrentWaveIndex + 1} of WaveSet {m_CurrentWaveSetIndex + 1}");
+                Debug.Log($"Starting WaveSet {m_CurrentWaveSetIndex + 1} of Combination {m_SelectedCombination.Name}");
             }
             
-            // Notify that a wave is starting
-            OnWaveStarted?.Invoke(m_CurrentWaveIndex, m_CurrentWaveSetIndex);
+            // Notify that a wave set is starting
+            OnWaveStarted?.Invoke(m_CurrentWaveSetIndex, m_WaveCombinations.IndexOf(m_SelectedCombination));
             
-            // Handle wild mode
-            if (currentWave.IsWildWave && m_AllowWildWaves)
+            // Spawn all waves in this wave set
+            foreach (Wave wave in currentWaveSet.Waves)
             {
-                yield return StartCoroutine(SpawnWildWave());
-            }
-            else
-            {
-                // Spawn all enemies in the wave
-                for (int i = 0; i < currentWave.SpawnCount; i++)
+                if (wave.IsWildWave && m_AllowWildWaves)
                 {
-                    Vector3 spawnPosition = GetSpawnPosition();
-                    
-                    BaseEnemy enemy = SpawnEnemy(
-                        currentWave.EnemyPrefab, 
-                        spawnPosition, 
-                        Quaternion.identity);
-                        
-                    if (enemy)
-                    {
-                        m_ActiveEnemies.Add(enemy);
-                    }
-                    
-                    // Wait between spawns
-                    yield return new WaitForSeconds(m_TimeBetweenSpawns);
+                    yield return StartCoroutine(SpawnWildWave());
                 }
+                else
+                {
+                    // Spawn all enemies in the wave
+                    for (int i = 0; i < wave.SpawnCount; i++)
+                    {
+                        Vector3 spawnPosition = GetSpawnPosition();
+                        
+                        BaseEnemy enemy = SpawnEnemy(
+                            wave.EnemyPrefab, 
+                            spawnPosition, 
+                            Quaternion.identity);
+                            
+                        if (enemy)
+                        {
+                            m_ActiveEnemies.Add(enemy);
+                        }
+                        
+                        // Wait between spawns
+                        if (m_TimeBetweenSpawns != 0)
+                            yield return new WaitForSeconds(m_TimeBetweenSpawns);
+                    }
+                }
+                
+                // Short wait between waves in the same set
+                if (m_TimeBetweenSpawns > 0)
+                    yield return new WaitForSeconds(m_TimeBetweenSpawns);
             }
             
-            // Increment wave index
-            m_CurrentWaveIndex++;
+            // Increment wave set index for next time
+            m_CurrentWaveSetIndex++;
             
             // Clear coroutine reference
             m_WaveCoroutine = null;
+            
+            // Check if we need to proceed to the next wave set immediately
+            // This is only for EnemyBased progression when there are no enemies spawned
+            // if (m_ActiveEnemies.Count == 0 && m_ProgressionMode == WaveProgressionMode.EnemyBased)
+            // {
+            //     yield return new WaitForSeconds(3f);
+            //     CheckWaveCompletion();
+            // }
         }
         
         /// <summary>
@@ -428,23 +467,22 @@ namespace DungeonGeneration
             else
             {
                 // Use NavMesh to find valid spawn position
-                Vector3 playerPos = m_Player.transform.position;
+                var playerPos = m_Player.transform.position;
                 
-                for (int i = 0; i < 30; i++) // Max attempts
+                for (var i = 0; i < 30; i++) // Max attempts
                 {
-                    Vector3 randomDirection = UnityEngine.Random.insideUnitSphere * m_MaxSpawnDistance;
+                    var randomDirection = UnityEngine.Random.insideUnitSphere * m_MaxSpawnDistance;
                     randomDirection += playerPos;
+
+                    if (!NavMesh.SamplePosition(randomDirection, out var hit, m_MaxSpawnDistance, NavMesh.AllAreas))
+                        continue;
                     
-                    NavMeshHit hit;
-                    if (NavMesh.SamplePosition(randomDirection, out hit, m_MaxSpawnDistance, NavMesh.AllAreas))
-                    {
-                        float distToPlayer = Vector3.Distance(hit.position, playerPos);
+                    var distToPlayer = Vector3.Distance(hit.position, playerPos);
                         
-                        // Ensure it's not too close to the player
-                        if (distToPlayer >= m_MinSpawnDistance)
-                        {
-                            return hit.position;
-                        }
+                    // Ensure it's not too close to the player
+                    if (distToPlayer >= m_MinSpawnDistance)
+                    {
+                        return hit.position;
                     }
                 }
                 
@@ -472,6 +510,16 @@ namespace DungeonGeneration
             return null;
         }
         #endregion
+    }
+    
+    /// <summary>
+    /// Represents a combination of wave sets that can be selected randomly
+    /// </summary>
+    [Serializable]
+    public class WaveCombination
+    {
+        public string Name;
+        public List<WaveSet> WaveSets = new List<WaveSet>();
     }
     
     /// <summary>

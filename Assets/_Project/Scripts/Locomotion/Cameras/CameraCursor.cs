@@ -1,3 +1,4 @@
+using System;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,7 +17,17 @@ namespace LocomotionSystem
         [Tooltip("If you're using Cinemachine 2.8.4 or under, untick this option.\nIf unticked, both Look and Zoom will be disabled.")]
         [SerializeField] private bool fixedCinemachineVersion;
         
-        private bool isUICursorVisible;
+        private bool _isUICursorVisible;
+        
+        public bool IsUICursorVisible
+        {
+            get => _isUICursorVisible;
+            set
+            {
+                _isUICursorVisible = value;
+                UIToggleCursor(_isUICursorVisible);
+            }
+        }
 
         private void Awake()
         {
@@ -25,7 +36,7 @@ namespace LocomotionSystem
 
             if (startHidden)
             {
-                ToggleCursor();
+                UIToggleCursor(false);
             }
         }
 
@@ -39,6 +50,11 @@ namespace LocomotionSystem
             cameraToggleInputAction.action.Disable();
         }
 
+        private void OnDestroy()
+        {
+            cameraToggleInputAction.action.started -= OnCameraCursorToggled;
+            cameraToggleInputAction.action.canceled -= OnCameraCursorToggled;        }
+
         private void OnCameraCursorToggled(InputAction.CallbackContext context)
         {
             ToggleCursor();
@@ -46,7 +62,7 @@ namespace LocomotionSystem
         
         public void UIToggleCursor(bool show)
         {
-            isUICursorVisible = show;
+            _isUICursorVisible = show;
             
             if (show)
             {
@@ -72,7 +88,7 @@ namespace LocomotionSystem
 
         private void ToggleCursor()
         {
-            if (isUICursorVisible)
+            if (_isUICursorVisible)
             {
                 return;
             }

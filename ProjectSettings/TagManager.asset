@@ -15,6 +15,7 @@ TagManager:
   - FreeClimb
   - ClimbDirection
   - Bullet
+  - PlayerSpawn
   layers:
   - Default
   - TransparentFX

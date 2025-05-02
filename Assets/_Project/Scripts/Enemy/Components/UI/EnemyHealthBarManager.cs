@@ -2,11 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using Flyweight;
 using UnityEngine.UI;
+using UnityUtils;
 
 /// <summary>
 /// Manages health bar settings and initialization for enemies using the Flyweight pattern
 /// </summary>
-public class EnemyHealthBarManager : MonoBehaviour
+public class EnemyHealthBarManager : PersistentSingleton<EnemyHealthBarManager>
 {
     public static EnemyHealthBarManager Instance { get; private set; }
     
@@ -26,17 +27,9 @@ public class EnemyHealthBarManager : MonoBehaviour
     // Dictionary to track active boss health bars
     private Dictionary<EnemyHealthBarComponent, HealthBarFlyweight> m_ActiveBossHealthBars = new Dictionary<EnemyHealthBarComponent, HealthBarFlyweight>();
     
-    private void Awake()
+    protected override void Awake()
     {
-        // Singleton pattern
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
+        base.Awake();
         
         // Initialize the helper with our default settings
         if (m_DefaultHealthBarSettings != null)
@@ -225,10 +218,8 @@ public class EnemyHealthBarManager : MonoBehaviour
     /// </summary>
     private void UpdateBossHealthBarLayout()
     {
-        // If we have a layout group, it will handle the positioning
-        if (m_BossHealthBarContainer != null)
+        if (m_BossHealthBarContainer)
         {
-            // Force layout refresh
             LayoutRebuilder.ForceRebuildLayoutImmediate(m_BossHealthBarContainer);
         }
     }
@@ -238,7 +229,6 @@ public class EnemyHealthBarManager : MonoBehaviour
         if (Instance == this)
         {
             ClearAllHealthBars();
-            Instance = null;
         }
     }
 } 

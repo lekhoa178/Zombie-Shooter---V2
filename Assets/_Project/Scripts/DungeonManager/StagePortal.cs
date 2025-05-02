@@ -51,8 +51,6 @@ namespace DungeonGeneration
             m_TargetStageID = targetStageID;
             m_TargetSceneName = targetSceneName;
             m_DisplayName = displayName;
-
-            m_SelectionText.transform.localScale = new Vector3(-1, 1, 1);
         }
 
         /// <summary>
