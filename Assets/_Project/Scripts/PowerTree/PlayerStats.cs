@@ -1,6 +1,7 @@
 ﻿    
 using System;
 using System.Collections.Generic;
+using DungeonGeneration;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -60,6 +61,11 @@ namespace PowerTree
             SceneManager.sceneLoaded += (_, _) =>
             {
                 BroadcastPlayerStats();
+
+                var curStage = FindAnyObjectByType<StageBaseManager>();
+                curStage?.onStageCompleted.AddListener(OnLevelComplete);
+                //TODO: Need to find a better way to do this
+                curStage?.onStageCompleted.AddListener(() => OnLevelCompletedWithoutDamage?.Invoke(true));
             };
         }
         
@@ -153,6 +159,8 @@ namespace PowerTree
 
         public bool TakeDamage(float amount, Vector3 hitPosition)
         {
+            Debug.Log($"Taking damage: {amount} at {hitPosition}");
+            
             if (UnityEngine.Random.value < dodgeChance)
             {
                 OnDodgeSuccessful.Invoke();

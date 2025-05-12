@@ -181,14 +181,15 @@ namespace SceneManagement
                 Debug.LogWarning("Scene transition already in progress. Ignoring request.");
                 return;
             }
-
+            
             if (FlyweightFactory.HasInstance)
             {
-                FlyweightFactory.ReturnAllToPool();
-                FlyweightFactory.ClearAllPools();
+                FlyweightFactory.ClearAllPools(() => StartCoroutine(LoadSceneAsync(sceneName, onComplete)));
             }
-
-            StartCoroutine(LoadSceneAsync(sceneName, onComplete));
+            else
+            {
+                StartCoroutine(LoadSceneAsync(sceneName, onComplete));
+            }
         }
 
         /// <summary>

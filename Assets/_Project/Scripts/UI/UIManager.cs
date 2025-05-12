@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using LocomotionSystem;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityUtils;
+using PlayerInput = LocomotionSystem.PlayerInput;
 
 public class UIManager : PersistentSingleton<UIManager>
 {
@@ -26,6 +28,19 @@ public class UIManager : PersistentSingleton<UIManager>
     private UIPage m_CurrentPage;
     private Stack<UIPopupPage> m_PopupHistory = new Stack<UIPopupPage>();
     private UIPopupPage m_CurrentPopup;
+    
+    private PlayerInput _playerInput;
+    private PlayerInput PlayerInput
+    {
+        get
+        {
+            if (_playerInput == null)
+            {
+                _playerInput = FindAnyObjectByType<PlayerInput>();
+            }
+            return _playerInput;
+        }
+    }
     
     public bool IsPageHistoryEmpty => m_PageHistory.Count == 0;
     public bool IsLastPageInHistory => m_PageHistory.Count == 1;
@@ -188,10 +203,27 @@ public class UIManager : PersistentSingleton<UIManager>
     
     #region Popup System
     
+    public void DisableGameplayInput()
+    {
+        if (PlayerInput != null)
+        {
+            PlayerInput.enabled = false;
+        }
+    }
+    
+    public void EnableGameplayInput()
+    {
+        if (PlayerInput != null)
+        {
+            PlayerInput.enabled = true;
+        }
+    }
+    
     public enum PopupType
     {
         Info,
         ContinueCancel,
+        AcceptDeny,
         AcceptDenyCancel
     }
 
@@ -246,6 +278,12 @@ public class UIManager : PersistentSingleton<UIManager>
                 popupPage.SetupButtons(
                     new UIPopupPage.PopupButton(cancelText, null, cancelIcon),
                     new UIPopupPage.PopupButton(continueText, continueAction, continueIcon)
+                );
+                break;
+            case PopupType.AcceptDeny:
+                popupPage.SetupButtons(
+                    new UIPopupPage.PopupButton(denyText, denyAction, denyIcon),
+                    new UIPopupPage.PopupButton(acceptText, acceptAction, acceptIcon)
                 );
                 break;
             case PopupType.AcceptDenyCancel:

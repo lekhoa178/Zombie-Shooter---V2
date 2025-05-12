@@ -9,8 +9,6 @@ using UnityUtils;
 /// </summary>
 public class EnemyHealthBarManager : PersistentSingleton<EnemyHealthBarManager>
 {
-    public static EnemyHealthBarManager Instance { get; private set; }
-    
     [Header("Health Bar Settings")]
     [SerializeField] private HealthBarFlyweightSettings m_DefaultHealthBarSettings;
     [SerializeField] private HealthBarFlyweightSettings m_BossHealthBarSettings;

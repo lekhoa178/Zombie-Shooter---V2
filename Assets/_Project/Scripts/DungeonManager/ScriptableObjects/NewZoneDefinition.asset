@@ -18,17 +18,19 @@ MonoBehaviour:
     weight: 0.453
   - branchCount: 2
     weight: 1
-  m_OverallLength: 5
+  m_OverallLength: 3
   m_MaxNodesPerDepth: 4
   m_AllowSharedPaths: 0
   m_AllowSkipDepth: 0
-  m_BossStageName: 
+  m_BossStageName: Boss-1
   m_CombatStages:
   - Combat-1
-  m_ChallengeStages: []
+  - Combat-2
+  m_ChallengeStages:
+  - Challenge-1
   m_ShopStageName: 
   m_HealingStageName: 
-  m_InterzoneStageName: 
+  m_InterzoneStageName: Interzone
   m_CombatStageWeight: 0.6
   m_ChallengeStageWeight: 0.2
   m_ShopStageWeight: 0.1

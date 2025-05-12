@@ -13304,10 +13304,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1653407788}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 0, y: 131.94}
-  m_SizeDelta: {x: 0, y: 100}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -450}
+  m_SizeDelta: {x: 1200, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1001 &829494530
 PrefabInstance:
@@ -28394,6 +28394,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   AutoUnparentOnAwake: 1
   zoneDefinitions:
+  - {fileID: 11400000, guid: c72554fdf41a3ea4c862a045ed356fcd, type: 2}
   - {fileID: 11400000, guid: c72554fdf41a3ea4c862a045ed356fcd, type: 2}
   m_TransitionSpawnerPrefab: {fileID: 8551163790673894226, guid: 37f5eefa64434a545904d417722b61b7, type: 3}
   m_MinDistanceFromPlayer: 3

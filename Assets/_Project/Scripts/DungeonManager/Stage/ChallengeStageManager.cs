@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using TMPro;
+using UnityEngine.AI;
 
 namespace DungeonGeneration
 {
@@ -22,6 +23,7 @@ namespace DungeonGeneration
         [SerializeField] private float m_TimeLimit = 60f;
         [SerializeField] private int m_TargetKills = 10;
         [SerializeField] private int m_TargetScore = 1000;
+        [SerializeField] private WaveSpawner m_WaveSpawner;
         
         [Header("Puzzle Settings")]
         [SerializeField] private int m_PuzzleSteps = 3;
@@ -38,7 +40,6 @@ namespace DungeonGeneration
         [SerializeField] private TextMeshProUGUI m_TimerText;
         [SerializeField] private TextMeshProUGUI m_ProgressText;
         [SerializeField] private GameObject m_ChallengeUI;
-        [SerializeField] private GameObject m_AcceptUI;
         [SerializeField] private GameObject m_CompleteUI;
         [SerializeField] private GameObject m_FailUI;
         
@@ -60,11 +61,16 @@ namespace DungeonGeneration
         private int m_CurrentProgress = 0;
         private int m_CurrentScore = 0;
         private Coroutine m_ChallengeCoroutine;
+        private List<BaseEnemy> m_ActiveEnemies = new List<BaseEnemy>();
+        
+        private bool shouldUpdateTimer = true;
         #endregion
         
         #region Unity Lifecycle
-        private void Start()
+        protected override void Start()
         {
+            base.Start();
+            
             // Initialize UI
             if (m_TitleText != null)
             {
@@ -75,7 +81,53 @@ namespace DungeonGeneration
             {
                 m_DescriptionText.text = m_ChallengeDescription;
             }
-            
+
+            // Initialize WaveSpawner if null
+            if (m_ChallengeType == ChallengeType.TimeTrial && m_WaveSpawner == null)
+            {
+                m_WaveSpawner = GetComponent<WaveSpawner>();
+                if (m_WaveSpawner == null)
+                {
+                    m_WaveSpawner = gameObject.AddComponent<WaveSpawner>();
+                }
+            }
+
+            // Initialize enemy tracking for TimeTrial
+            if (m_ChallengeType == ChallengeType.TimeTrial && EnemyManager.Instance)
+            {
+                EnemyManager.Instance.OnEnemyRegistered.AddListener((enemy) =>
+                {
+                    if (enemy)
+                    {
+                        m_ActiveEnemies.Add(enemy);
+                    }
+                });
+                
+                EnemyManager.Instance.OnEnemyUnregistered.AddListener((enemy) =>
+                {
+                    if (enemy)
+                    {
+                        m_ActiveEnemies.Remove(enemy);
+                        if (m_IsChallengeActive && !m_IsChallengeComplete)
+                        {
+                            IncrementProgress(); // Count each defeated enemy
+                        }
+                    }
+                });
+            }
+
+            if (m_WaveSpawner != null)
+            {
+                m_WaveSpawner.OnWaveCompleted += () =>
+                {
+                    if (m_ChallengeType == ChallengeType.TimeTrial)
+                    {
+                        onStageCompleted?.Invoke();
+                        shouldUpdateTimer = false;
+                    }
+                };
+            }
+
             // Show accept UI if challenge is optional
             if (m_OptionalChallenge)
             {
@@ -93,7 +145,10 @@ namespace DungeonGeneration
                 return;
                 
             // Update timer UI
-            UpdateTimerUI();
+            if (shouldUpdateTimer)
+            {
+                UpdateTimerUI();
+            }
             
             // Update progress UI
             UpdateProgressUI();
@@ -113,12 +168,6 @@ namespace DungeonGeneration
                 return;
                 
             m_IsChallengeActive = true;
-            
-            // Hide accept UI
-            if (m_AcceptUI != null)
-            {
-                m_AcceptUI.SetActive(false);
-            }
             
             // Show challenge UI
             if (m_ChallengeUI != null)
@@ -144,18 +193,9 @@ namespace DungeonGeneration
             if (m_IsChallengeActive || !m_OptionalChallenge)
                 return;
                 
-            // Hide accept UI
-            if (m_AcceptUI != null)
-            {
-                m_AcceptUI.SetActive(false);
-            }
-            
             // Invoke event
             m_OnChallengeSkipped?.Invoke();
-            
-            // Continue to next stage
-            // This would typically notify the DungeonManager or create portals
-            CreateExitPortals();
+            onStageCompleted?.Invoke();
         }
         
         /// <summary>
@@ -215,10 +255,9 @@ namespace DungeonGeneration
         /// </summary>
         private void ShowAcceptPrompt()
         {
-            if (m_AcceptUI != null)
-            {
-                m_AcceptUI.SetActive(true);
-            }
+            UIManager.Instance.ShowPopup("", $"{m_ChallengeDescription}\nAccept Challenge?", UIManager.PopupType.AcceptDeny,
+                AcceptChallenge, 
+                denyAction: SkipChallenge);
             
             if (m_ChallengeUI != null)
             {
@@ -246,6 +285,10 @@ namespace DungeonGeneration
                 case ChallengeType.TimeTrial:
                     m_RemainingTime = m_TimeLimit;
                     m_CurrentProgress = 0;
+                    if (m_WaveSpawner != null)
+                    {
+                        m_WaveSpawner.StartSpawning();
+                    }
                     break;
                     
                 case ChallengeType.Puzzle:
@@ -294,7 +337,7 @@ namespace DungeonGeneration
             {
                 int minutes = Mathf.FloorToInt(m_RemainingTime / 60);
                 int seconds = Mathf.FloorToInt(m_RemainingTime % 60);
-                m_TimerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+                m_TimerText.text = $"{minutes:00}:{seconds:00}";
                 
                 // Change color when time is low
                 if (m_RemainingTime <= 10f)
@@ -386,6 +429,12 @@ namespace DungeonGeneration
                 StopCoroutine(m_ChallengeCoroutine);
             }
             
+            // Stop wave spawner if TimeTrial
+            if (m_ChallengeType == ChallengeType.TimeTrial && m_WaveSpawner != null)
+            {
+                m_WaveSpawner.StopSpawning();
+            }
+            
             // Show complete UI
             if (m_CompleteUI != null)
             {
@@ -402,9 +451,7 @@ namespace DungeonGeneration
             
             // Invoke event
             m_OnChallengeCompleted?.Invoke();
-            
-            // Create exit portals
-            CreateExitPortals();
+            onStageCompleted?.Invoke();
         }
         
         /// <summary>
@@ -413,6 +460,12 @@ namespace DungeonGeneration
         private void FailChallenge()
         {
             m_IsChallengeActive = false;
+            
+            // Stop wave spawner if TimeTrial
+            if (m_ChallengeType == ChallengeType.TimeTrial && m_WaveSpawner != null)
+            {
+                m_WaveSpawner.StopSpawning();
+            }
             
             // Show fail UI
             if (m_FailUI != null)
@@ -428,8 +481,7 @@ namespace DungeonGeneration
             // Invoke event
             m_OnChallengeFailed?.Invoke();
             
-            // Create exit portals after a delay
-            StartCoroutine(CreateExitPortalsDelayed(3f));
+            onStageCompleted?.Invoke(); 
         }
         
         /// <summary>
@@ -443,27 +495,6 @@ namespace DungeonGeneration
             }
         }
         
-        /// <summary>
-        /// Create exit portals to leave the challenge stage
-        /// </summary>
-        private void CreateExitPortals()
-        {
-            // This would typically notify the DungeonManager to create portals to the next stages
-            // For now, we'll just log it
-            Debug.Log("Creating exit portals from challenge stage");
-            
-            // In a real implementation, this might look like:
-            // DungeonManager.Instance.CreateStageExits();
-        }
-        
-        /// <summary>
-        /// Create exit portals after a delay
-        /// </summary>
-        private IEnumerator CreateExitPortalsDelayed(float _delay)
-        {
-            yield return new WaitForSeconds(_delay);
-            CreateExitPortals();
-        }
         #endregion
     }
     

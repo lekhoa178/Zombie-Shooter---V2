@@ -87,7 +87,6 @@ namespace PowerTree
             _currentRedThreshold = levelsToHealRed[level - 1];
             _currentBlueThreshold = levelsToHealBlue[level - 1];
             
-            // Subscribe to level completion event
             player.OnLevelCompleted.AddListener(() => OnLevelCompleted(player));
         }
         
@@ -129,7 +128,7 @@ namespace PowerTree
     [CreateAssetMenu(fileName = "TemporaryShield", menuName = "PowerTree/Nodes/Survival/TemporaryShield")]
     public class TemporaryShieldNode : PowerNode
     {
-        [SerializeField] private float[] blueHeartsValues = new float[] { 2f, 3f, 3f };
+        [SerializeField] private float[] blueHeartsValues = new float[] { 0.5f, 1f, 1f };
         [SerializeField] private float[] nonLossChanceValues = new float[] { 0f, 0f, 0.1f };
         
         private void OnValidate()

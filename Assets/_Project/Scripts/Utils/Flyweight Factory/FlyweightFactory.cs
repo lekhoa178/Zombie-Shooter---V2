@@ -45,14 +45,29 @@ namespace Flyweight
             instance.ReturnAllActiveToPool();
         }
         
-        public static void ClearAllPools()
+        public static void ClearAllPools(Action onComplete = null)
         {
+            // Safety check for any remaining active flyweights
+            if (instance.m_ActiveFlyweights.Count > 0)
+            {
+                Debug.LogWarning($"Found {instance.m_ActiveFlyweights.Count} active flyweights during pool cleanup");
+                ReturnAllToPool(); // Ensure everything is returned first
+            }
+
+            // Clear each pool (this calls the destroy callback for each pooled item)
             foreach (var pool in instance.m_Pools.Values)
             {
                 pool.Clear();
             }
-            
+    
+            // Clear the dictionary of pools
             instance.m_Pools.Clear();
+    
+            // Verify cleanup was successful
+            Debug.Assert(instance.m_ActiveFlyweights.Count == 0, "Active flyweights remain after pool clearing");
+            
+            // Optionally invoke the callback
+            onComplete?.Invoke();
         }
 
         #endregion

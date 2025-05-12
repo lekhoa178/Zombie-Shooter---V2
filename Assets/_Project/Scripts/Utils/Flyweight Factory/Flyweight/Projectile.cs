@@ -1,7 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityUtils;
+using Random = UnityEngine.Random;
 
 namespace Flyweight
 {
@@ -89,7 +91,7 @@ namespace Flyweight
             ConfigureProjectile();
             StartCoroutine(DespawnAfterDelay(settings.despawnDelay));
         }
-        
+
         private void Update()
         {
             if (!isInitialized) return;

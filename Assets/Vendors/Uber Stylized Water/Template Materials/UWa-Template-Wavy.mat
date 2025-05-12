@@ -26,6 +26,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _ENABLECAUSTICS
+  - _ENABLEWAVE
   m_InvalidKeywords:
   - _ENABLEINTERSECTION
   - _ENABLESURFACEFOAM
@@ -185,12 +186,12 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _1st_Wave_Height: 0.01
-    - _1st_Wave_Length: 3
+    - _1st_Wave_Height: 0.008
+    - _1st_Wave_Length: 26
     - _1st_Wave_Sharpness: 0
     - _1st_Wave_Speed: 0.3
     - _2nd_Wave_Height: 0.01
-    - _2nd_Wave_Length: 5
+    - _2nd_Wave_Length: 16.73
     - _2nd_Wave_Sharpness: 0
     - _2nd_Wave_Speed: 0.5
     - _A: 11.3
@@ -220,10 +221,10 @@ Material:
     - _Caustics_Distortion_Scale: 3.6
     - _Caustics_Distortion_Strength: 5.28
     - _Caustics_Fade: 7.8
-    - _Caustics_Pan: 1.45
-    - _Caustics_Scale: 2.6
+    - _Caustics_Pan: 0.42
+    - _Caustics_Scale: 1.28
     - _Caustics_Start: 12.28
-    - _Caustics_Strength: 1.86
+    - _Caustics_Strength: 2.47
     - _ConformToGeometry: 0
     - _Cull: 2
     - _Depth_Distance: 1.26
@@ -243,7 +244,7 @@ Material:
     - _ENABLESHORELINE: 0
     - _ENABLESURFACEFOAM: 1
     - _ENABLEUNDERWATERLAYER: 0
-    - _ENABLEWAVE: 0
+    - _ENABLEWAVE: 1
     - _ENABLE_UNDERWATERLAYER: 0
     - _ENVIRONMENTREFLECTIONS_OFF: 1
     - _Enable_Intersection: 0

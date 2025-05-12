@@ -15,10 +15,10 @@ namespace UnityUtils
         {
             get
             {
-                if (instance == null)
+                if (!instance)
                 {
                     instance = FindAnyObjectByType<T>();
-                    if (instance == null)
+                    if (!instance)
                     {
                         var go = new GameObject(typeof(T).Name + " Auto-Generated");
                         instance = go.AddComponent<T>();

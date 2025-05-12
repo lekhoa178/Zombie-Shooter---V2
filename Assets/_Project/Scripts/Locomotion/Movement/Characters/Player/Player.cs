@@ -2,8 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Climbing;
+using DG.Tweening;
 using MoreMountains.Feedbacks;
 using PowerTree;
+using SceneManagement;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -134,12 +137,12 @@ namespace LocomotionSystem
 
             TargetAvatar = transform.GetChild(0).gameObject;
             TargetAvatarRenderer = TargetAvatar.GetComponentInChildren<SkinnedMeshRenderer>();
-            
-            PlayerStats = FindAnyObjectByType<PlayerStats>();
         }
 
         private void Start()
         {
+            PlayerStats = PlayerStats.Instance ? PlayerStats.Instance : FindAnyObjectByType<PlayerStats>();
+
             AddInputActionsCallbacks();
             
             MovementStateMachine.ChangeState(MovementStateMachine.DefaultState);
@@ -259,7 +262,7 @@ namespace LocomotionSystem
             
             var hitDirection = hitContext.HitDirection;
             hitDirection.y = 0f;
-            
+
             // Process damage
             if (PlayerStats && !PlayerStats.TakeDamage(0.5f, hitContext.HitPosition))
             {
@@ -329,6 +332,8 @@ namespace LocomotionSystem
             ResizableCapsuleCollider.CapsuleColliderData.Collider.enabled = false;
             
             AnimationData.PlayInteractionAnimation(Animator, AnimationData.DieStateName, 0);
+            
+            DOVirtual.DelayedCall(2f, () => SceneTransitionManager.Instance.LoadScene("ResultScreen_Success"));
         }
         #endregion
         

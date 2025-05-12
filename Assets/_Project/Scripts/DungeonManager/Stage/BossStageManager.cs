@@ -1,39 +1,25 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using TMPro;
+using UnityEngine.AI;
 
 namespace DungeonGeneration
 {
     /// <summary>
-    /// Manages a boss stage with phases and custom mechanics
+    /// Manages a boss stage with wave-based boss spawning
     /// </summary>
     public class BossStageManager : StageBaseManager
     {
         #region Serialized Fields
-        [Header("Boss Configuration")]
-        [SerializeField] private GameObject m_BossPrefab;
-        [SerializeField] private Transform m_BossSpawnPoint;
-        [SerializeField] private string m_BossName = "Boss";
-        [SerializeField] private float m_BossIntroDelay = 3f;
-        [SerializeField] private int m_NumPhases = 3;
-        [SerializeField] private bool m_HasPhaseTransitions = true;
-        
-        [Header("Arena Settings")]
-        [SerializeField] private GameObject[] m_ArenaElements;
-        [SerializeField] private GameObject[] m_ArenaPhaseTwoElements;
-        [SerializeField] private GameObject[] m_ArenaPhaseThreeElements;
-        [SerializeField] private Light m_ArenaLight;
-        [SerializeField] private Color m_PhaseOneColor = Color.white;
-        [SerializeField] private Color m_PhaseTwoColor = new Color(1f, 0.5f, 0f);
-        [SerializeField] private Color m_PhaseThreeColor = Color.red;
+        [Header("Boss Spawner")]
+        [SerializeField] private WaveSpawner m_WaveSpawner;
+        [SerializeField] private bool m_UseSpecificSpawnPoints = true;
+        [SerializeField] private Transform[] m_BossSpawnPoints;
         
         [Header("UI")]
-        [SerializeField] private GameObject m_BossUI;
-        [SerializeField] private TextMeshProUGUI m_BossNameText;
-        [SerializeField] private GameObject m_HealthBarObject;
-        [SerializeField] private RectTransform m_HealthBarFill;
-        [SerializeField] private TextMeshProUGUI m_PhaseText;
         [SerializeField] private GameObject m_IntroUI;
         [SerializeField] private GameObject m_DefeatedUI;
         
@@ -41,24 +27,53 @@ namespace DungeonGeneration
         [SerializeField] private AudioClip m_BossIntroMusic;
         [SerializeField] private AudioClip m_BossBattleMusic;
         [SerializeField] private AudioClip m_BossDefeatedMusic;
-        [SerializeField] private AudioClip m_PhaseTransitionSound;
         
         [Header("Events")]
         [SerializeField] private UnityEvent m_OnBossIntro;
         [SerializeField] private UnityEvent m_OnBossBattleStart;
-        [SerializeField] private UnityEvent m_OnPhaseChange;
         [SerializeField] private UnityEvent m_OnBossDefeated;
+        
+        [Header("Debug")]
+        [SerializeField] private bool m_DebugMode = false;
+        #endregion
+        
+        #region Events
+        public event Action OnWaveCompleted;
+        public event Action<int, int> OnWaveStarted; // WaveSetIndex, CombinationIndex
         #endregion
         
         #region Private Fields
-        private GameObject m_BossInstance;
-        private BaseEnemy m_BossEnemy;
-        private int m_CurrentPhase = 0;
-        private bool m_IsBattleActive = false;
-        private bool m_IsBossDefeated = false;
+        private bool m_StageCleared = false;
+        private bool m_StageActive = false;
         private AudioSource m_MusicSource;
         private AudioSource m_SfxSource;
-        private float[] m_PhaseThresholds;
+        #endregion
+        
+        #region Properties
+        /// <summary>
+        /// Returns true if the current wave is complete and waiting for the next wave to be triggered
+        /// </summary>
+        public bool IsReadyForNextWave => m_StageActive && !m_StageCleared && m_WaveSpawner != null && m_WaveSpawner.IsReadyForNextWave;
+        
+        /// <summary>
+        /// Returns true if stage is completely finished
+        /// </summary>
+        public bool IsStageCleared => m_StageCleared;
+        
+        /// <summary>
+        /// Current wave progression mode
+        /// </summary>
+        public WaveProgressionMode ProgressionMode
+        {
+            get => m_WaveSpawner != null ? m_WaveSpawner.ProgressionMode : WaveProgressionMode.EnemyBased;
+            set
+            {
+                if (m_WaveSpawner != null)
+                {
+                    m_WaveSpawner.ProgressionMode = value;
+                }
+            }
+        }
         #endregion
         
         #region Unity Lifecycle
@@ -74,108 +89,107 @@ namespace DungeonGeneration
             m_SfxSource.loop = false;
             m_SfxSource.volume = 1.0f;
             m_SfxSource.spatialBlend = 0f; // 2D sound
-            
-            // Calculate phase thresholds
-            m_PhaseThresholds = new float[m_NumPhases];
-            for (int i = 0; i < m_NumPhases; i++)
-            {
-                m_PhaseThresholds[i] = 1.0f - ((float)(i + 1) / m_NumPhases);
-            }
         }
         
-        private void Start()
+        protected override void Start()
         {
-            // Hide boss UI initially
-            if (m_BossUI != null)
-            {
-                m_BossUI.SetActive(false);
-            }
+            base.Start();
             
             if (m_DefeatedUI != null)
             {
                 m_DefeatedUI.SetActive(false);
             }
             
-            // Start the boss intro sequence
+            // Initialize wave spawner if null
+            if (m_WaveSpawner == null)
+            {
+                m_WaveSpawner = GetComponent<WaveSpawner>();
+                if (m_WaveSpawner == null)
+                {
+                    m_WaveSpawner = gameObject.AddComponent<WaveSpawner>();
+                }
+            }
+            
+            // Override wave spawner's spawn position method if we have specific boss spawn points
+            if (m_UseSpecificSpawnPoints && m_BossSpawnPoints != null && m_BossSpawnPoints.Length > 0)
+            {
+                // Connect our custom spawn position handler to the wave spawner
+                m_WaveSpawner.GetCustomSpawnPosition = CustomBossSpawnPosition;
+            }
+            
+            // Subscribe to wave spawner events
+            if (m_WaveSpawner != null)
+            {
+                m_WaveSpawner.OnWaveCompleted += () => 
+                {
+                    OnWaveCompleted?.Invoke();
+                    CheckStageCompletion();
+                };
+                
+                m_WaveSpawner.OnWaveStarted += (waveSetIndex, combinationIndex) => 
+                {
+                    OnWaveStarted?.Invoke(waveSetIndex, combinationIndex);
+                };
+            }
+            
+            // Start with the boss intro
             StartCoroutine(BossIntroSequence());
         }
         
-        private void Update()
+        private void OnEnable()
         {
-            if (!m_IsBattleActive || m_IsBossDefeated || m_BossInstance == null)
-                return;
-            
-            // Check for phase transition
-            CheckPhaseTransition();
+            // Subscribe to enemy events if needed
+            if (EnemyManager.Instance != null)
+            {
+                EnemyManager.Instance.OnEnemyRegistered.AddListener(OnBossRegistered);
+                EnemyManager.Instance.OnEnemyUnregistered.AddListener(OnBossUnregistered);
+            }
+        }
+        
+        private void OnDisable()
+        {
+            // Unsubscribe from events
+            if (EnemyManager.Instance != null)
+            {
+                EnemyManager.Instance.OnEnemyRegistered.RemoveListener(OnBossRegistered);
+                EnemyManager.Instance.OnEnemyUnregistered.RemoveListener(OnBossUnregistered);
+            }
         }
         #endregion
         
-        #region Boss Sequences
+        #region Boss Management
         /// <summary>
         /// Handles the boss introduction sequence
         /// </summary>
         private IEnumerator BossIntroSequence()
         {
             // Play intro music
-            if (m_MusicSource != null && m_BossIntroMusic != null)
+            if (m_MusicSource && m_BossIntroMusic)
             {
                 m_MusicSource.clip = m_BossIntroMusic;
                 m_MusicSource.Play();
             }
             
             // Show intro UI
-            if (m_IntroUI != null)
+            if (m_IntroUI)
             {
-                m_IntroUI.SetActive(true);
+                UIManager.Instance?.ShowPage(m_IntroUI.GetComponent<UIPage>());
             }
             
             // Fire intro event
             m_OnBossIntro?.Invoke();
             
             // Wait for intro delay
-            yield return new WaitForSeconds(m_BossIntroDelay);
+            yield return new WaitForSeconds(3f);
             
             // Hide intro UI
-            if (m_IntroUI != null)
+            if (m_IntroUI)
             {
-                m_IntroUI.SetActive(false);
+                UIManager.Instance?.GoBack();
             }
-            
-            // Spawn the boss
-            SpawnBoss();
-            
-            // Wait a moment for dramatic effect
-            yield return new WaitForSeconds(1.5f);
             
             // Start the battle
             StartBossBattle();
-        }
-        
-        /// <summary>
-        /// Spawns the boss
-        /// </summary>
-        private void SpawnBoss()
-        {
-            if (m_BossPrefab == null || m_BossSpawnPoint == null)
-            {
-                Debug.LogError("Boss prefab or spawn point not set!");
-                return;
-            }
-            
-            // Spawn the boss
-            m_BossInstance = Instantiate(m_BossPrefab, m_BossSpawnPoint.position, m_BossSpawnPoint.rotation);
-            
-            // Get components
-            m_BossEnemy = m_BossInstance.GetComponent<BaseEnemy>();
-            
-            // Subscribe to death event
-            // m_BossHealth.OnDeath += OnBossDeath;
-            
-            // Set boss name in UI
-            if (m_BossNameText != null)
-            {
-                m_BossNameText.text = m_BossName;
-            }
         }
         
         /// <summary>
@@ -183,20 +197,7 @@ namespace DungeonGeneration
         /// </summary>
         private void StartBossBattle()
         {
-            m_IsBattleActive = true;
-            m_CurrentPhase = 1;
-            
-            // Update phase text
-            if (m_PhaseText != null)
-            {
-                m_PhaseText.text = $"Phase {m_CurrentPhase}";
-            }
-            
-            // Show boss UI
-            if (m_BossUI != null)
-            {
-                m_BossUI.SetActive(true);
-            }
+            m_StageActive = true;
             
             // Switch to battle music
             if (m_MusicSource != null && m_BossBattleMusic != null)
@@ -205,26 +206,45 @@ namespace DungeonGeneration
                 m_MusicSource.Play();
             }
             
-            // Set arena light to phase one color
-            if (m_ArenaLight != null)
-            {
-                m_ArenaLight.color = m_PhaseOneColor;
-            }
+            // Start spawning bosses
+            m_WaveSpawner.StartSpawning();
             
             // Fire event
             m_OnBossBattleStart?.Invoke();
         }
         
         /// <summary>
-        /// Handles boss defeat
+        /// Called when a boss is registered with the enemy manager
         /// </summary>
-        private void OnBossDeath()
+        private void OnBossRegistered(BaseEnemy boss)
         {
-            if (m_IsBossDefeated)
-                return;
-                
-            m_IsBossDefeated = true;
-            m_IsBattleActive = false;
+            if (boss != null && m_StageActive && !m_StageCleared)
+            {
+                // Set boss name if available
+                // if (m_BossNameText != null && boss.name != null)
+                // {
+                //     m_BossNameText.text = boss.name;
+                // }
+            }
+        }
+        
+        /// <summary>
+        /// Called when a boss is unregistered with the enemy manager
+        /// </summary>
+        private void OnBossUnregistered(BaseEnemy boss)
+        {
+            if (boss != null)
+            {
+                // Check completion in wave spawner event handler
+            }
+        }
+        
+        /// <summary>
+        /// Called when all bosses are defeated
+        /// </summary>
+        private void OnBossesDefeated()
+        {
+            if (m_StageCleared) return;
             
             // Switch to victory music
             if (m_MusicSource != null && m_BossDefeatedMusic != null)
@@ -242,150 +262,115 @@ namespace DungeonGeneration
             // Fire event
             m_OnBossDefeated?.Invoke();
             
-            // Create exit portal after delay
-            StartCoroutine(CreateExitPortalDelayed(5f));
+            // Mark stage as cleared
+            SetStageCleared();
+        }
+        
+        /// <summary>
+        /// Mark the stage as cleared and invoke the completion event
+        /// </summary>
+        private void SetStageCleared()
+        {
+            m_StageCleared = true;
+            
+            if (m_DebugMode)
+            {
+                Debug.Log("Boss stage complete!");
+            }
+            
+            onStageCompleted?.Invoke();
         }
         #endregion
         
-        #region Phase Management
+        #region Stage Management
         /// <summary>
-        /// Checks if it's time to transition to the next phase
+        /// Manually trigger the next wave (only works when in Manual mode or when no wave is active)
         /// </summary>
-        private void CheckPhaseTransition()
+        public void TriggerNextWave()
         {
-            // if (m_BossHealth == null || !m_HasPhaseTransitions || m_CurrentPhase >= m_NumPhases)
-            //     return;
-            //     
-            // float healthPercentage = m_BossHealth.CurrentHealth / m_BossHealth.MaxHealth;
-
-            if (!m_HasPhaseTransitions || m_CurrentPhase >= m_NumPhases)
-                return;
-            
-            // float healthPercentage = m_BossHealth.CurrentHealth / m_BossHealth.MaxHealth;
-            float healthPercentage = 0.4f;
-            
-            // Check if health has dropped below the next phase threshold
-            if (healthPercentage <= m_PhaseThresholds[m_CurrentPhase - 1])
+            if (m_WaveSpawner != null && !m_StageCleared)
             {
-                TransitionToNextPhase();
+                m_WaveSpawner.TriggerNextWave();
+                
+                if (m_DebugMode)
+                {
+                    Debug.Log("Manually triggering next boss wave.");
+                }
             }
         }
         
         /// <summary>
-        /// Transitions to the next phase
+        /// Set wave progression mode
         /// </summary>
-        private void TransitionToNextPhase()
+        public void SetProgressionMode(WaveProgressionMode mode)
         {
-            m_CurrentPhase++;
-            
-            // Play phase transition sound
-            if (m_SfxSource != null && m_PhaseTransitionSound != null)
-            {
-                m_SfxSource.PlayOneShot(m_PhaseTransitionSound);
-            }
-            
-            // Update phase text
-            if (m_PhaseText != null)
-            {
-                m_PhaseText.text = $"Phase {m_CurrentPhase}";
-            }
-            
-            // Update arena elements based on phase
-            UpdateArenaForPhase();
-            
-            // Fire event
-            m_OnPhaseChange?.Invoke();
-            
-            // Optional: Make boss temporarily invulnerable during transition
-            // if (m_BossHealth != null)
-            // {
-            //     StartCoroutine(TemporaryInvulnerability(2f));
-            // }
+            ProgressionMode = mode;
         }
         
         /// <summary>
-        /// Updates the arena based on the current phase
+        /// Set the time interval for time-based progression mode
         /// </summary>
-        private void UpdateArenaForPhase()
+        public void SetTimeBasedInterval(float seconds)
         {
-            switch (m_CurrentPhase)
+            if (seconds > 0 && m_WaveSpawner != null)
             {
-                case 2:
-                    // Update light color
-                    if (m_ArenaLight != null)
-                    {
-                        m_ArenaLight.color = m_PhaseTwoColor;
-                    }
-                    
-                    // Activate phase two elements
-                    foreach (GameObject element in m_ArenaPhaseTwoElements)
-                    {
-                        if (element != null)
-                        {
-                            element.SetActive(true);
-                        }
-                    }
-                    break;
-                    
-                case 3:
-                    // Update light color
-                    if (m_ArenaLight != null)
-                    {
-                        m_ArenaLight.color = m_PhaseThreeColor;
-                    }
-                    
-                    // Activate phase three elements
-                    foreach (GameObject element in m_ArenaPhaseThreeElements)
-                    {
-                        if (element != null)
-                        {
-                            element.SetActive(true);
-                        }
-                    }
-                    break;
+                m_WaveSpawner.SetTimeBasedInterval(seconds);
             }
         }
         
         /// <summary>
-        /// Makes the boss temporarily invulnerable during phase transitions
+        /// Check if the stage is complete (all bosses defeated)
         /// </summary>
-        private IEnumerator TemporaryInvulnerability(float _duration)
+        private void CheckStageCompletion()
         {
-            // if (m_BossHealth != null)
-            // {
-            //     m_BossHealth.SetInvulnerable(true);
-            // }
-            //
-            // yield return new WaitForSeconds(_duration);
-            //
-            // if (m_BossHealth != null)
-            // {
-            //     m_BossHealth.SetInvulnerable(false);
-            // }
-            yield return null;
-        }
-        #endregion
-        
-        #region Exit Handling
-        /// <summary>
-        /// Creates the exit portal after a delay
-        /// </summary>
-        private IEnumerator CreateExitPortalDelayed(float _delay)
-        {
-            yield return new WaitForSeconds(_delay);
-            CreateExitPortal();
+            if (m_WaveSpawner != null && m_WaveSpawner.IsReadyForNextWave && !m_StageCleared)
+            {
+                // Check if the current wave set index is beyond the available wave sets
+                var selectedCombination = m_WaveSpawner.SelectedCombination;
+                if (selectedCombination == null || m_WaveSpawner.IsReadyForNextWave)
+                {
+                    // All wave sets completed and all enemies defeated
+                    OnBossesDefeated();
+                }
+            }
         }
         
         /// <summary>
-        /// Creates the exit portal to the interzone/next zone
+        /// Custom spawn position handler for bosses
         /// </summary>
-        private void CreateExitPortal()
+        private Vector3 CustomBossSpawnPosition(int waveSetIndex, int waveIndex, int enemyIndex, GameObject enemyPrefab)
         {
-            // This would typically notify the DungeonManager to create a portal to the interzone
-            Debug.Log("Creating exit portal to interzone");
+            if (m_UseSpecificSpawnPoints && m_BossSpawnPoints != null && m_BossSpawnPoints.Length > 0)
+            {
+                // Calculate a unique index based on all three indices
+                int bossIndex;
+                
+                if (m_BossSpawnPoints.Length == 1)
+                {
+                    // If only one spawn point, use it for everything
+                    bossIndex = 0;
+                }
+                else if (waveSetIndex < m_BossSpawnPoints.Length)
+                {
+                    // If we have enough spawn points for each phase, use phase-based spawning
+                    bossIndex = waveSetIndex;
+                }
+                else
+                {
+                    // Otherwise, create a combined index
+                    bossIndex = (waveSetIndex * 100 + waveIndex * 10 + enemyIndex) % m_BossSpawnPoints.Length;
+                }
+                
+                if (m_DebugMode)
+                {
+                    Debug.Log($"Using boss spawn point {bossIndex} for boss in wave set {waveSetIndex}, wave {waveIndex}, enemy {enemyIndex}");
+                }
+                
+                return m_BossSpawnPoints[bossIndex].position;
+            }
             
-            // In a real implementation, this might look like:
-            // DungeonManager.Instance.TransitionToNextZone();
+            // Return Vector3.zero to fall back to the default spawning
+            return Vector3.zero;
         }
         #endregion
     }

@@ -48,12 +48,22 @@ namespace LocomotionSystem
         private void OnDisable()
         {
             cameraToggleInputAction.action.Disable();
+            
+            UIToggleCursor(true);
         }
 
         private void OnDestroy()
         {
             cameraToggleInputAction.action.started -= OnCameraCursorToggled;
-            cameraToggleInputAction.action.canceled -= OnCameraCursorToggled;        }
+            cameraToggleInputAction.action.canceled -= OnCameraCursorToggled;
+        }
+        
+        [UnityEditor.MenuItem("Tools/Reset Cursor")]
+        private static void ResetCursor()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
 
         private void OnCameraCursorToggled(InputAction.CallbackContext context)
         {

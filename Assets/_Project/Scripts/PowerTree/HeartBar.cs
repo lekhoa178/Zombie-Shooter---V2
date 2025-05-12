@@ -19,7 +19,7 @@ namespace PowerTree
 
         private void Awake()
         {
-            _playerStats = FindAnyObjectByType<PlayerStats>();
+            _playerStats = PlayerStats.Instance;
 
             if (heartContainer == null)
             {

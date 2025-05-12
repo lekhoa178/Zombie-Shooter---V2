@@ -634,6 +634,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5e0c6272c2031e4495da536677991ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  upgradePage: {fileID: 1250517124}
+  storyPage: {fileID: 1236172592}
 --- !u!1 &155444028
 GameObject:
   m_ObjectHideFlags: 0
@@ -1551,9 +1553,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1833202115}
-        m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
-        m_MethodName: GoBack
+      - m_Target: {fileID: 101435204}
+        m_TargetAssemblyTypeName: UIMenuPage, Assembly-CSharp
+        m_MethodName: OnClosePage
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4870,13 +4872,13 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1833202115}
-        m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
-        m_MethodName: ShowPage
-        m_Mode: 2
+      - m_Target: {fileID: 101435204}
+        m_TargetAssemblyTypeName: UIMenuPage, Assembly-CSharp
+        m_MethodName: OnStoryMenu
+        m_Mode: 1
         m_Arguments:
-          m_ObjectArgument: {fileID: 1236172592}
-          m_ObjectArgumentAssemblyTypeName: UIPage, Assembly-CSharp
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -6602,9 +6604,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1833202115}
-        m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
-        m_MethodName: GoBack
+      - m_Target: {fileID: 101435204}
+        m_TargetAssemblyTypeName: UIMenuPage, Assembly-CSharp
+        m_MethodName: OnClosePage
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7117,22 +7119,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: -SceneTransitionManager
       objectReference: {fileID: 0}
-    - target: {fileID: 4419873075330776988, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 4419873075330776988, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 4419873075330776988, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4419873075330776988, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5082348903074562060, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -7171,22 +7157,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5082348903074562060, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5603807272026639870, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
-      propertyPath: m_AdditionalShaderChannelsFlag
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6941077099528868838, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 150
-      objectReference: {fileID: 0}
-    - target: {fileID: 6941077099528868838, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 150
-      objectReference: {fileID: 0}
-    - target: {fileID: 8242177948208147468, guid: 1c1eb8f36b5bb8c4eba8656b4cc71c54, type: 3}
-      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -7918,13 +7888,13 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1833202115}
-        m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
-        m_MethodName: ShowPage
-        m_Mode: 2
+      - m_Target: {fileID: 101435204}
+        m_TargetAssemblyTypeName: UIMenuPage, Assembly-CSharp
+        m_MethodName: OnUpgradeMenu
+        m_Mode: 1
         m_Arguments:
-          m_ObjectArgument: {fileID: 1250517124}
-          m_ObjectArgumentAssemblyTypeName: UIPage, Assembly-CSharp
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 

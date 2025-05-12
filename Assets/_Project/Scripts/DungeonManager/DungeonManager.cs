@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using DG.Tweening;
 using SceneManagement;
 using UnityEngine;
 using UnityEngine.Events;
@@ -68,6 +69,8 @@ namespace DungeonGeneration
         public ZoneDefinition CurrentZoneDefinition => m_CurrentZoneDefinition;
         public int ZoneCount => zoneDefinitions.Count;
         public int ZoneIndex => m_ZoneIndex;
+        public bool IsLastZone => m_ZoneIndex == zoneDefinitions.Count - 1;
+        public bool IsLastStage => m_CurrentStage == m_BossStage;
         #endregion
 
         #region Public Methods for UI Access
@@ -139,9 +142,16 @@ namespace DungeonGeneration
             if (m_InterzoneStage == null) return;
             
             TransitionToStage(m_InterzoneStage.ID);
-                
-            m_CurrentZoneDefinition = GetZoneDefinitionAtIndex(++m_ZoneIndex);
-                
+
+            m_ZoneIndex += 1;
+            m_CurrentZoneDefinition = GetZoneDefinitionAtIndex(m_ZoneIndex);
+            
+            if (m_CurrentZoneDefinition == null)
+            {
+                Debug.LogError("No Zone Definition assigned to DungeonManager!");
+                return;
+            }
+            
             StartCoroutine(GenerateDungeon());
         }
         #endregion
@@ -548,130 +558,6 @@ namespace DungeonGeneration
         }
         
         /// <summary>
-        /// Fixes shared paths when they're not allowed in the zone configuration
-        /// </summary>
-        private void FixSharedPaths()
-        {
-            if (m_CurrentZoneDefinition.AllowSharedPaths)
-                return;
-                
-            bool foundSharedPath;
-            Dictionary<int, int> depthNodeCounts = new Dictionary<int, int>();
-            
-            // Build the initial parent map
-            Dictionary<StageNode, List<StageNode>> parentMap = BuildNodeParentsMap();
-            
-            // Count nodes at each depth
-            foreach (var stage in m_StageMap.Values)
-            {
-                int depth = Mathf.RoundToInt(stage.GridPosition.y);
-                if (!depthNodeCounts.ContainsKey(depth))
-                {
-                    depthNodeCounts[depth] = 0;
-                }
-                depthNodeCounts[depth]++;
-            }
-            
-            do
-            {
-                foundSharedPath = false;
-                
-                // Check each node for multiple parents
-                foreach (var entry in parentMap)
-                {
-                    StageNode node = entry.Key;
-                    List<StageNode> parents = entry.Value;
-                    
-                    // Skip boss and interzone (they always have shared paths)
-                    if (node.StageType == StageType.Boss || node.StageType == StageType.Interzone)
-                        continue;
-                        
-                    // If this node has multiple parents, we need to fix it
-                    if (parents.Count > 1)
-                    {
-                        foundSharedPath = true;
-                        
-                        if (m_DebugMode)
-                        {
-                            Debug.LogWarning($"Found shared path to {node.StageType} at depth {Mathf.RoundToInt(node.GridPosition.y)} with {parents.Count} parents");
-                        }
-                        
-                        // Keep the first parent connection, replace others
-                        StageNode keepParent = parents[0];
-                        
-                        // For each additional parent, create a new node
-                        for (int i = 1; i < parents.Count; i++)
-                        {
-                            StageNode parent = parents[i];
-                            
-                            // Remove this connection
-                            parent.NextStages.Remove(node);
-                            
-                            // Create a replacement node at the same depth
-                            int depth = Mathf.RoundToInt(node.GridPosition.y);
-                            
-                            // Check if we can create a new node at this depth
-                            if (depthNodeCounts.ContainsKey(depth) && 
-                                depthNodeCounts[depth] >= m_CurrentZoneDefinition.MaxNodesPerDepth)
-                            {
-                                // We're at the max, just disconnect this path
-                                if (m_DebugMode)
-                                {
-                                    Debug.LogWarning($"Max nodes reached at depth {depth}, removing connection from {parent.StageType}");
-                                }
-                                continue;
-                            }
-                            
-                            // Create a new node with similar properties but at parent's X-position
-                            StageType newType = node.StageType;
-                            string sceneName = node.SceneName;
-                            
-                            // If it's a mystery stage, get a new random type
-                            if (newType == StageType.Mystery)
-                            {
-                                newType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
-                                sceneName = m_CurrentZoneDefinition.GetRandomStageScene(newType);
-                            }
-                            
-                            // Create at parent's x-coordinate with node's y-coordinate
-                            Vector2 newPosition = new Vector2(parent.GridPosition.x, node.GridPosition.y);
-                            
-                            // Create the new node
-                            StageNode newNode = new StageNode(newType, sceneName, newPosition);
-                            
-                            // Connect parent to new node
-                            parent.AddNextStage(newNode);
-                            
-                            // Connect new node to all the same destinations as the original node
-                            foreach (var nextNode in node.NextStages)
-                            {
-                                newNode.AddNextStage(nextNode);
-                            }
-                            
-                            // Add to stage map
-                            m_StageMap.Add(newNode.ID, newNode);
-                            
-                            // Increment node count at this depth
-                            depthNodeCounts[depth]++;
-                            m_DepthNodeCounters[depth] = depthNodeCounts[depth];
-                        }
-                        
-                        // Rebuild parent map for next iteration
-                        parentMap = BuildNodeParentsMap();
-                        
-                        // Break after handling one node to avoid concurrent modification issues
-                        break;
-                    }
-                }
-            } while (foundSharedPath);
-            
-            if (m_DebugMode && foundSharedPath)
-            {
-                Debug.Log("Fixed shared paths in dungeon structure");
-            }
-        }
-        
-        /// <summary>
         /// Recursively removes a stage and its entire path from the dungeon structure
         /// </summary>
         private void RecursiveRemoveStage(StageNode stage)
@@ -750,190 +636,6 @@ namespace DungeonGeneration
             return parents;
         }
         
-        /// <summary>
-        /// Fixes any nodes that don't have a path to the boss stage (dead ends)
-        /// </summary>
-        private void FixDeadEndNodes()
-        {
-            bool fixedSomething = true;
-            int iterationCount = 0;
-            int maxIterations = 5; // Prevent infinite loops
-            
-            // Dictionary to keep track of which nodes can reach the boss
-            Dictionary<StageNode, bool> canReachBoss = new Dictionary<StageNode, bool>();
-            
-            // The boss can obviously reach itself
-            canReachBoss[m_BossStage] = true;
-            canReachBoss[m_InterzoneStage] = true;
-            
-            // First, mark all nodes that can definitely reach the boss (bottom-up traversal)
-            while (fixedSomething && iterationCount < maxIterations)
-            {
-                fixedSomething = false;
-                iterationCount++;
-                
-                // Check each node
-                foreach (var node in m_StageMap.Values.ToList())
-                {
-                    // Skip if we already know this node can reach the boss
-                    if (canReachBoss.TryGetValue(node, out bool reachable) && reachable)
-                        continue;
-                        
-                    // Check if any of this node's next stages can reach the boss
-                    foreach (var nextStage in node.NextStages)
-                    {
-                        if (canReachBoss.TryGetValue(nextStage, out bool nextCanReach) && nextCanReach)
-                        {
-                            canReachBoss[node] = true;
-                            fixedSomething = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            // Now identify and fix any nodes that can't reach the boss
-            foreach (var node in m_StageMap.Values.ToList())
-            {
-                // Skip special nodes
-                if (node.StageType == StageType.Boss || node.StageType == StageType.Interzone)
-                    continue;
-                    
-                // If we already know this node can reach the boss, skip it
-                if (canReachBoss.TryGetValue(node, out bool reachable) && reachable)
-                    continue;
-                    
-                if (m_DebugMode)
-                {
-                    Debug.LogWarning($"Found dead-end node: {node.StageType} at depth {Mathf.RoundToInt(node.GridPosition.y)}");
-                }
-                
-                // We need to fix this node by connecting it to the boss or to a node that can reach the boss
-                int nodeDepth = Mathf.RoundToInt(node.GridPosition.y);
-                
-                if (nodeDepth == m_CurrentZoneDefinition.OverallLength - 2)
-                {
-                    // If this node is right before the boss, connect directly
-                    node.AddNextStage(m_BossStage);
-                    if (m_DebugMode)
-                    {
-                        Debug.Log($"Connected dead-end node at depth {nodeDepth} directly to boss");
-                    }
-                    continue;
-                }
-                
-                // Otherwise, try to find a nearby node that can reach the boss
-                List<StageNode> reachableNodes = new List<StageNode>();
-                foreach (var otherNode in m_StageMap.Values)
-                {
-                    int otherDepth = Mathf.RoundToInt(otherNode.GridPosition.y);
-                    
-                    // Only consider nodes at the next depth level
-                    if (otherDepth != nodeDepth + 1)
-                        continue;
-                        
-                    // And only if they can reach the boss
-                    if (canReachBoss.TryGetValue(otherNode, out bool otherReachable) && otherReachable)
-                    {
-                        reachableNodes.Add(otherNode);
-                    }
-                }
-                
-                if (reachableNodes.Count > 0)
-                {
-                    // Sort by horizontal distance to make connections look better
-                    reachableNodes.Sort((a, b) => 
-                        Vector2.Distance(node.GridPosition, a.GridPosition).CompareTo(
-                        Vector2.Distance(node.GridPosition, b.GridPosition)));
-                        
-                    // Connect to the closest node
-                    node.AddNextStage(reachableNodes[0]);
-                    
-                    if (m_DebugMode)
-                    {
-                        Debug.Log($"Connected dead-end node at depth {nodeDepth} to {reachableNodes[0].StageType} " +
-                                 $"at depth {Mathf.RoundToInt(reachableNodes[0].GridPosition.y)}");
-                    }
-                }
-                else
-                {
-                    // No good existing node found, create a new path to the boss
-                    StageNode currentNode = node;
-                    
-                    // Create a path to the boss through new nodes
-                    for (int depth = nodeDepth + 1; depth < m_CurrentZoneDefinition.OverallLength - 1; depth++)
-                    {
-                        // Create a new intermediate node
-                        StageType newType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
-                        string sceneName = m_CurrentZoneDefinition.GetRandomStageScene(newType);
-                        Vector2 newPosition = new Vector2(currentNode.GridPosition.x, depth);
-                        
-                        StageNode newNode = new StageNode(newType, sceneName, newPosition);
-                        m_StageMap.Add(newNode.ID, newNode);
-                        
-                        // Connect current node to new node
-                        currentNode.AddNextStage(newNode);
-                        
-                        // Update current node for next iteration
-                        currentNode = newNode;
-                        
-                        // Mark this new node as reachable
-                        canReachBoss[newNode] = true;
-                    }
-                    
-                    // Connect the last node to the boss
-                    currentNode.AddNextStage(m_BossStage);
-                    
-                    if (m_DebugMode)
-                    {
-                        Debug.Log($"Created new path from dead-end node at depth {nodeDepth} to boss");
-                    }
-                }
-                
-                // Mark this node as now reachable
-                canReachBoss[node] = true;
-            }
-            
-            // Final check for any remaining unreachable nodes
-            foreach (var node in m_StageMap.Values.ToList())
-            {
-                if (!canReachBoss.TryGetValue(node, out bool reachable) || !reachable)
-                {
-                    if (m_DebugMode)
-                    {
-                        Debug.LogWarning($"Found unreachable node after fixes: {node.StageType} at {node.GridPosition}");
-                    }
-                    
-                    // As a last resort, directly connect to boss if we couldn't fix it
-                    if (node.StageType != StageType.Boss && node.StageType != StageType.Interzone)
-                    {
-                        int nodeDepth = Mathf.RoundToInt(node.GridPosition.y);
-                        
-                        if (nodeDepth < m_CurrentZoneDefinition.OverallLength - 1)
-                        {
-                            // Create a chain to the boss
-                            StageNode lastNode = node;
-                            
-                            for (int depth = nodeDepth + 1; depth < m_CurrentZoneDefinition.OverallLength - 1; depth++)
-                            {
-                                StageType newType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
-                                string sceneName = m_CurrentZoneDefinition.GetRandomStageScene(newType);
-                                Vector2 newPosition = new Vector2(lastNode.GridPosition.x, depth);
-                                
-                                StageNode newNode = new StageNode(newType, sceneName, newPosition);
-                                m_StageMap.Add(newNode.ID, newNode);
-                                
-                                lastNode.AddNextStage(newNode);
-                                lastNode = newNode;
-                            }
-                            
-                            // Connect to boss
-                            lastNode.AddNextStage(m_BossStage);
-                        }
-                    }
-                }
-            }
-        }
         #endregion
 
         #region Stage Transitions
@@ -995,7 +697,19 @@ namespace DungeonGeneration
             var stageManager = FindAnyObjectByType<StageBaseManager>();
             if (stageManager != null)
             {
-                stageManager.onStageCompleted.AddListener(CreateStageExits);
+                stageManager.onStageCompleted.AddListener(() =>
+                {
+                    if (IsLastStage && IsLastZone)
+                    {
+                        DOVirtual.DelayedCall(2f, () => {
+                            SceneTransitionManager.Instance.LoadScene("ResultScreen_Success");
+                        });
+                    }
+                    else
+                    {
+                        CreateStageExits();
+                    }
+                });
             }
         }
         #endregion

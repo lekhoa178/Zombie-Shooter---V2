@@ -71,6 +71,8 @@ public class UIPage : MonoBehaviour
 
     protected void OnEnable()
     {
+        UIManager.Instance.DisableGameplayInput();
+
         StartCoroutine(DelayedEnable());
     }
 
@@ -87,6 +89,8 @@ public class UIPage : MonoBehaviour
 
     private void OnDisable()
     {
+        UIManager.Instance.EnableGameplayInput();
+        
         if (m_ShowCursorWhenActive && m_CameraCursor != null && !UIManager.Instance.IsLastPageInHistory)
         {
             m_CameraCursor.UIToggleCursor(false);
