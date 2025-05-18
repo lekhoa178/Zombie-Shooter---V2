@@ -222,17 +222,14 @@ namespace DungeonGeneration
             m_CurrentStage = m_RootStage;
             m_StageMap.Add(m_RootStage.ID, m_RootStage);
             
-            // Generate boss stage with the precise depth level at OverallLength - 1
             m_BossStage = new StageNode(StageType.Boss, m_CurrentZoneDefinition.BossStageName, 
                 new Vector2(0, m_CurrentZoneDefinition.OverallLength - 1));
             m_StageMap.Add(m_BossStage.ID, m_BossStage);
             
-            // Generate interzone stage (for after boss) with the precise depth level at OverallLength
             m_InterzoneStage = new StageNode(StageType.Interzone, m_CurrentZoneDefinition.GetRandomStageScene(StageType.Interzone), 
                 new Vector2(0, m_CurrentZoneDefinition.OverallLength));
             m_StageMap.Add(m_InterzoneStage.ID, m_InterzoneStage);
             
-            // Connect boss to interzone
             m_BossStage.AddNextStage(m_InterzoneStage);
             
             // Generate stages iteratively, starting at depth 1
@@ -260,7 +257,6 @@ namespace DungeonGeneration
 
         private void GenerateStagesRecursive(StageNode parentStage, int depth)
         {
-            // Only the last layer before boss (exactly OverallLength - 1) should connect to boss
             var isLastLayerBeforeBoss = depth == m_CurrentZoneDefinition.OverallLength - 1;
 
             if (isLastLayerBeforeBoss)
@@ -269,7 +265,6 @@ namespace DungeonGeneration
                 return;
             }
 
-            // If we've somehow gone beyond the last layer, return (shouldn't happen)
             if (depth >= m_CurrentZoneDefinition.OverallLength)
             {
                 RecursiveRemoveStage(parentStage);
@@ -341,8 +336,8 @@ namespace DungeonGeneration
             
             for (var i = 0; i < branches; i++)
             {
-                // var stageType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
-                var stageType = StageType.Combat;
+                var stageType = m_CurrentZoneDefinition.GetWeightedRandomStageType();
+                // var stageType = StageType.Healing;
 
                 // Get scene name based on stage type
                 var sceneName = m_CurrentZoneDefinition.GetRandomStageScene(stageType);

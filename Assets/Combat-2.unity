@@ -4524,7 +4524,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: 1699122b78b0213419d34b0a305eb21d, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: 549e2f0aa0218f34cb600cdd127e9b49, type: 2}
   m_BuildHeightMesh: 0
 --- !u!4 &763552153
 Transform:
@@ -9573,6 +9573,8 @@ MonoBehaviour:
   playerPrefab: {fileID: 8600471821050633075, guid: 089e20580852a5546987bd8f006ce355, type: 3}
   playerSpawnPointTag: PlayerSpawn
   hudPrefab: {fileID: 8860198512651457756, guid: 15f71b78cc88a7b4eb216834ab6873c0, type: 3}
+  coinEarnAmount: 25
+  shardsEarnProbability: 0.1
   onStageCompleted:
     m_PersistentCalls:
       m_Calls: []
@@ -9621,6 +9623,32 @@ MonoBehaviour:
         IsWildWave: 0
       - EnemyPrefab: {fileID: 1116067486118601656, guid: b5fd6fe55010dfb4d9201c1337070d5e, type: 3}
         SpawnCount: 2
+        IsWildWave: 0
+  - Name: 
+    WaveSets:
+    - Name: 
+      Waves:
+      - EnemyPrefab: {fileID: 694684454292242040, guid: 8153a7c45ae935c4aa5d21cbc02cddb5, type: 3}
+        SpawnCount: 6
+        IsWildWave: 0
+    - Name: 
+      Waves:
+      - EnemyPrefab: {fileID: 4547096635960529848, guid: 89a9fd55c41da5948ba84332705ff47c, type: 3}
+        SpawnCount: 6
+        IsWildWave: 0
+  - Name: 
+    WaveSets:
+    - Name: 
+      Waves:
+      - EnemyPrefab: {fileID: 3810108578128922762, guid: b24a1ef26b8a7c441b6ec4c1cdd6dd2a, type: 3}
+        SpawnCount: 5
+        IsWildWave: 0
+  - Name: 
+    WaveSets:
+    - Name: 
+      Waves:
+      - EnemyPrefab: {fileID: 6346280662521349968, guid: bc01147e91fe12d47b251a950d954c2b, type: 3}
+        SpawnCount: 10
         IsWildWave: 0
   m_TimeBetweenSpawns: 0
   m_ProgressionMode: 2

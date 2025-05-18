@@ -87,14 +87,14 @@ public class UIPopupPage : UIPage
             {
                 button.onClick.AddListener(() => 
                 {
+                    UIManager.Instance.GoBack();
                     buttonConfig.Action?.Invoke();
-                    Exit();
                 });
             }
             else
             {
                 // Default action for buttons without a specified action (usually Cancel)
-                button.onClick.AddListener(Exit);
+                button.onClick.AddListener(UIManager.Instance.GoBack);
             }
         
             m_SpawnedButtons.Add(button);

@@ -25,7 +25,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cdba6838364613648b5ca36096d72356, type: 2}
   requiredNodes: []
   aetherCosts: 010000000200000003000000
+  onNodeUnlockedOrUpgraded:
+    m_PersistentCalls:
+      m_Calls: []
   discountPercent:
-  - 5
-  - 10
-  - 15
+  - 0.05
+  - 0.1
+  - 0.15

@@ -86,7 +86,7 @@ namespace LocomotionSystem
                     .SetEase(Ease.OutBounce);
             }
             
-            WeaponManager.Instance.RemoveWeaponByInstance(m_Player, currentWeapon);
+            WeaponManager.Instance.RemoveWeaponByInstance(currentWeapon);
         }
         
         /// <summary>
@@ -107,7 +107,7 @@ namespace LocomotionSystem
         {
             if (WeaponManager.Instance)
             {
-                return WeaponManager.Instance.GetEquippedWeapon(m_Player);
+                return WeaponManager.Instance.GetEquippedWeapon();
             }
             
             return null;
@@ -120,7 +120,7 @@ namespace LocomotionSystem
         {
             if (WeaponManager.Instance != null)
             {
-                return WeaponManager.Instance.GetWeaponInventory(m_Player);
+                return WeaponManager.Instance.GetWeaponInventory();
             }
             
             return new List<IInteractable>();

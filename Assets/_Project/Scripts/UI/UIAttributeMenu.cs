@@ -90,7 +90,7 @@ public class UIAttributeMenu : MonoBehaviour
         
         // Economy attributes
         CreateAttributeRow("Gold Drop", () => playerStats.GetGoldDropMultiplier().ToString("F2") + "x");
-        CreateAttributeRow("Shop Discount", () => playerStats.GetShopDiscountPercent().ToString("F0") + "%");
+        CreateAttributeRow("Shop Discount", () => (playerStats.GetShopDiscountPercent() * 100).ToString("F0") + "%");
     }
 
     private void CreateAttributeRow(string attributeName, Func<string> valueGetter)

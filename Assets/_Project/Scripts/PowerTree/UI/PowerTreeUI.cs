@@ -35,7 +35,8 @@ namespace PowerTree
         [Header("Cheat Settings")]
         [SerializeField] private KeyCode m_LevelUpKey = KeyCode.UpArrow;
         [SerializeField] private KeyCode m_LevelDownKey = KeyCode.DownArrow;
-        [SerializeField] private KeyCode m_AddShardsKey = KeyCode.S;
+        [SerializeField] private KeyCode m_AddShardsKey = KeyCode.RightArrow;
+        [SerializeField] private KeyCode m_SubtractShardsKey = KeyCode.LeftArrow;
         [SerializeField] private int m_ShardsToAdd = 100;
         [SerializeField] private bool m_EnableCheats = false;
 
@@ -89,6 +90,18 @@ namespace PowerTree
                     RefreshAllNodes();
                 }
             }
+            
+            // Subtract Aether shards
+            if (Input.GetKeyDown(m_SubtractShardsKey))
+            {
+                if (m_TreeManager != null)
+                {
+                    m_TreeManager.RemoveAetherShards(m_ShardsToAdd);
+                    Debug.Log($"<color=yellow>[CHEAT]</color> Subtracted {m_ShardsToAdd} Aether shards. New total: {m_TreeManager.GetAetherShards()}");
+                    RefreshAllNodes();
+                }
+            }
+            
 
             // Handle node level manipulation (only if a node is hovered)
             if (m_CurrentlyHoveredNode != null && m_CurrentlyHoveredNode.Node != null)

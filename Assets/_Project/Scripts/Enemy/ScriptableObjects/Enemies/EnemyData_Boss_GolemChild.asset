@@ -1,0 +1,136 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0c70ec74e6b42bbacc863cbabe94d21, type: 3}
+  m_Name: EnemyData_Boss_GolemChild
+  m_EditorClassIdentifier: 
+  enemyName: 'Enemy [Elite]'
+  maxHealth: 5000
+  moveSpeed: 1
+  attackDamage: 10
+  attackRange: 10
+  attackCooldown: 6
+  telegraphDuration: 0.2
+  telegraphVfxSettings: {fileID: 11400000, guid: e45398f049154594a91c6ff344b38f59, type: 2}
+  canBeElite: 0
+  eliteSpawnChance: 0.1
+  eliteScaleMultiplier: 1.2
+  isBoss: 1
+  overrideEliteHealth: 1
+  eliteHealthMultiplier: 2
+  overrideEliteDamage: 1
+  eliteDamageMultiplier: 1.5
+  overrideEliteSpeed: 1
+  eliteSpeedMultiplier: 1.3
+  overrideEliteAttackCooldown: 1
+  eliteAttackCooldownMultiplier: 0.75
+  overrideEliteAttackRange: 0
+  eliteAttackRangeMultiplier: 1.2
+  overrideEliteResistances: 1
+  eliteStunResistanceBonus: 0.2
+  elitePushbackResistanceBonus: 0.2
+  elitePersistentVfxSettings: {fileID: 0}
+  elitePersistentVfxOffset: {x: 0, y: 0.5, z: 0}
+  elitePersistentVfxScale: {x: 1, y: 1, z: 1}
+  eliteSpawnVfxSettings: {fileID: 0}
+  eliteDeathVfxSettings: {fileID: 0}
+  eliteSpawnSound: {fileID: 0}
+  eliteAttackSounds: []
+  eliteHitSounds: []
+  eliteDeathSounds: []
+  pushBackResistance: 0.3
+  stunDurationResistance: 0.2
+  applyExtraDeathPushBack: 1
+  deathPushBackMultiplier: 1.5
+  enableStunResistance: 1
+  stunResistanceThreshold: 3
+  stunStressAccumulationRate: 2
+  stunStressDecayRate: 0.5
+  stunRecoveryDuration: 5
+  stunStressResetDelay: 4
+  stunRecoveryVfxSettings: {fileID: 0}
+  empowerDuringRecovery: 0
+  recoveryDamageMultiplier: 1.2
+  recoverySpeedMultiplier: 1.2
+  attackCanPushBack: 0
+  attackPushbackDistance: 1
+  attackPushbackDuration: 0.5
+  attackCanStun: 0
+  attackStunThreshold: 5
+  attackStunDuration: 1
+  hitVfxSettings: {fileID: 0}
+  overrideHitVfxScale: 0
+  hitVfxScale: {x: 1, y: 1, z: 1}
+  enableAdditionalVfx: 0
+  additionalVfxSettings: {fileID: 0}
+  spawnPerHit: 0
+  spawnAtHitLocation: 1
+  spawnAtEnemyLocation: 0
+  additionalVfxOffset: {x: 0, y: 0, z: 0}
+  additionalVfxRotation: {x: 0, y: 0, z: 0}
+  faceHitDirection: 0
+  overrideAdditionalVfxScale: 0
+  additionalVfxScale: {x: 1, y: 1, z: 1}
+  additionalVfxDelay: 0
+  hitReactionVfxSettings: {fileID: 0}
+  overrideHitReactionVfxScale: 0
+  hitReactionVfxScale: {x: 1, y: 1, z: 1}
+  enableAdditionalHitReactionVfx: 0
+  additionalHitReactionVfxSettings: {fileID: 0}
+  spawnHitReactionPerHit: 1
+  spawnHitReactionAtHitLocation: 1
+  additionalHitReactionVfxOffset: {x: 0, y: 0, z: 0}
+  additionalHitReactionVfxRotation: {x: 0, y: 0, z: 0}
+  hitReactionFaceHitDirection: 1
+  overrideAdditionalHitReactionVfxScale: 0
+  additionalHitReactionVfxScale: {x: 1, y: 1, z: 1}
+  additionalHitReactionVfxDelay: 0
+  enableStartMovingVfx: 0
+  startMovingVfxSettings: {fileID: 0}
+  overrideStartMovingVfxScale: 0
+  startMovingVfxScale: {x: 1, y: 1, z: 1}
+  startMovingVfxOffset: {x: 0, y: 0.1, z: 0}
+  startMovingVfxRotation: {x: -90, y: 0, z: 0}
+  minSpeedForStartMovingVfx: 0.5
+  startMovingVfxCooldown: 1
+  enableStepVfx: 0
+  stepVfxSettings: {fileID: 0}
+  overrideStepVfxScale: 0
+  stepVfxScale: {x: 1, y: 1, z: 1}
+  stepVfxInterval: 0.3
+  stepVfxOffset: {x: 0, y: 0.05, z: 0}
+  stepVfxRotation: {x: -90, y: 0, z: 0}
+  alternateStepVfx: 1
+  leftFootOffset: {x: -0.2, y: 0.05, z: 0}
+  rightFootOffset: {x: 0.2, y: 0.05, z: 0}
+  scaleStepVfxWithSpeed: 1
+  minSpeedForStepVfx: 0.5
+  goldDropAmount: 2
+  goldDropVFX: {fileID: 11400000, guid: 2f93b526e2a07a94b9e01bf33b4415a2, type: 2}
+  deathVFX: {fileID: 0}
+  hitSounds: []
+  deathSounds: []
+  rotateToFaceHitDirection: 1
+  hitDirectionRotationSpeed: 10
+  onlyRotateWhenStunned: 0
+  onlyRotateWhenPushedBack: 0
+  attackInterruptible: 1
+  projectileSettings: {fileID: 11400000, guid: 2bd2221916274264f93cbb5731f9299a, type: 2}
+  minAttackDistance: 6
+  consecutiveCount: 3
+  consecutiveDelay: 0.4
+  simultaneousCount: 15
+  spreadAngle: 360
+  useRandomSpread: 1
+  randomSpreadFactor: 12
+  leadTarget: 0
+  leadFactor: 0.5
+  directionVariance: 0

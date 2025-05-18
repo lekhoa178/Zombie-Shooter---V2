@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1fccfdfdaabc5ab45b1f4fba2f7fdb97, type: 3}
-  m_Name: NewZoneDefinition
+  m_Name: ZoneDefinition_1
   m_EditorClassIdentifier: 
   m_ZoneName: ZONE 1
   m_BranchingFactors:
@@ -18,7 +18,7 @@ MonoBehaviour:
     weight: 0.453
   - branchCount: 2
     weight: 1
-  m_OverallLength: 3
+  m_OverallLength: 5
   m_MaxNodesPerDepth: 4
   m_AllowSharedPaths: 0
   m_AllowSkipDepth: 0
@@ -26,13 +26,15 @@ MonoBehaviour:
   m_CombatStages:
   - Combat-1
   - Combat-2
+  - Combat-3
+  - Combat-4
   m_ChallengeStages:
   - Challenge-1
-  m_ShopStageName: 
-  m_HealingStageName: 
+  m_ShopStageName: Shop
+  m_HealingStageName: Healing
   m_InterzoneStageName: Interzone
-  m_CombatStageWeight: 0.6
-  m_ChallengeStageWeight: 0.2
+  m_CombatStageWeight: 0.5
+  m_ChallengeStageWeight: 0.3
   m_ShopStageWeight: 0.1
   m_HealingStageWeight: 0.1
   m_MysteryStageWeight: 0.2

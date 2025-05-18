@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Locomotion.LootSystem;
 using UnityEngine;
 using UnityEngine.Events;
@@ -15,13 +16,13 @@ namespace LocomotionSystem
     {
         #region Events
         // Event triggered when a weapon is equipped
-        public event Action<Player, IInteractable> OnWeaponEquipped;
+        public event Action<IInteractable> OnWeaponEquipped;
         
         // Event triggered when a weapon is added to inventory
-        public event Action<Player, IInteractable> OnWeaponAdded;
+        public event Action<IInteractable> OnWeaponAdded;
         
         // Event triggered when a weapon is removed from inventory
-        public event Action<Player, IInteractable> OnWeaponRemoved;
+        public event Action<IInteractable> OnWeaponRemoved;
         #endregion
         
         #region Private Fields
@@ -31,10 +32,10 @@ namespace LocomotionSystem
         [SerializeField] private ComboConfiguration m_DefaultComboConfig;
         
         // Dictionary mapping players to their equipped weapons and inventory
-        private Dictionary<Player, PlayerWeaponInventory> m_PlayerWeapons = new Dictionary<Player, PlayerWeaponInventory>();
+        private PlayerWeaponInventory m_PlayerInventory;
         
         // Dictionary mapping players to their active ComboConfiguration
-        private Dictionary<Player, ComboConfiguration> m_PlayerComboConfigs = new Dictionary<Player, ComboConfiguration>();
+        private ComboConfiguration m_PlayerComboConfig;
         #endregion
 
         #region Public Methods
@@ -57,23 +58,19 @@ namespace LocomotionSystem
             if (!player.GetComponent<PlayerWeaponHandler>().OnWeaponCollecting(interactable))
                 return false;
             
-            if (!m_PlayerWeapons.TryGetValue(player, out var inventory))
-            {
-                inventory = new PlayerWeaponInventory(m_MaxWeaponSlots);
-                m_PlayerWeapons[player] = inventory;
-            }
+            m_PlayerInventory ??= new PlayerWeaponInventory(m_MaxWeaponSlots);
             
-            bool added = inventory.AddWeapon(interactable);
+            var added = m_PlayerInventory.AddWeapon(interactable);
             
             if (added)
             {
-                if (inventory.EquippedWeapon == null)
+                if (m_PlayerInventory.EquippedWeapon == null)
                 {
-                    inventory.EquippedWeapon = interactable;
+                    m_PlayerInventory.EquippedWeapon = interactable;
                     
-                    ApplyWeaponConfig(player, interactable, weaponCollectableData);
+                    ApplyWeaponConfig(interactable, weaponCollectableData);
                     
-                    OnWeaponEquipped?.Invoke(player, interactable);
+                    OnWeaponEquipped?.Invoke(interactable);
                     
                     if (m_DebugMode)
                     {
@@ -82,8 +79,7 @@ namespace LocomotionSystem
                 }
                 else
                 {
-                    // Just add to inventory if another weapon is already equipped
-                    OnWeaponAdded?.Invoke(player, interactable);
+                    OnWeaponAdded?.Invoke(interactable);
                     
                     if (m_DebugMode)
                     {
@@ -107,25 +103,26 @@ namespace LocomotionSystem
         {
             if (player == null) return false;
             
-            if (!m_PlayerWeapons.TryGetValue(player, out PlayerWeaponInventory inventory))
+            if (m_PlayerInventory == null)
             {
+                Debug.LogWarning("Player weapon inventory is null!");
                 return false;
             }
             
-            var weapon = inventory.GetWeaponAt(weaponIndex);
+            var weapon = m_PlayerInventory.GetWeaponAt(weaponIndex);
             
             if (weapon != null)
             {
-                if (inventory.EquippedWeapon == weapon) return true;
+                if (m_PlayerInventory.EquippedWeapon == weapon) return true;
                 
                 WeaponCollectableData weaponCollectableData = weapon.GetTypeData<WeaponCollectableData>();
                 if (weaponCollectableData == null) return false;
                 
-                inventory.EquippedWeapon = weapon;
+                m_PlayerInventory.EquippedWeapon = weapon;
                 
-                ApplyWeaponConfig(player, weapon, weaponCollectableData);
+                ApplyWeaponConfig(weapon, weaponCollectableData);
                 
-                OnWeaponEquipped?.Invoke(player, weapon);
+                OnWeaponEquipped?.Invoke(weapon);
                 
                 if (m_DebugMode)
                 {
@@ -141,123 +138,93 @@ namespace LocomotionSystem
         /// <summary>
         /// Gets the currently equipped weapon for the player
         /// </summary>
-        /// <param name="_player">The player</param>
         /// <returns>The equipped weapon or null if none is equipped</returns>
-        public IInteractable GetEquippedWeapon(Player _player)
+        public IInteractable GetEquippedWeapon()
         {
-            if (!_player) return null;
-            
-            return !m_PlayerWeapons.TryGetValue(_player, out PlayerWeaponInventory inventory) ? null : inventory.EquippedWeapon;
+            return m_PlayerInventory?.EquippedWeapon;
         }
 
         /// <summary>
         /// Gets the list of weapons in the player's inventory
         /// </summary>
-        /// <param name="_player">The player</param>
         /// <returns>List of weapons in the inventory</returns>
-        public List<IInteractable> GetWeaponInventory(Player _player)
+        public List<IInteractable> GetWeaponInventory()
         {
-            if (_player == null) return new List<IInteractable>();
-            
-            if (!m_PlayerWeapons.TryGetValue(_player, out PlayerWeaponInventory inventory))
-            {
-                return new List<IInteractable>();
-            }
-            
-            return inventory.Weapons;
+            return m_PlayerInventory == null ? new List<IInteractable>() : m_PlayerInventory.Weapons;
         }
 
         /// <summary>
         /// Removes a weapon from the player's inventory by index
         /// </summary>
-        /// <param name="player">The player</param>
         /// <param name="weaponIndex">The index of the weapon to remove</param>
         /// <returns>True if the weapon was removed successfully</returns>
-        public bool RemoveWeapon(Player player, int weaponIndex)
+        public bool RemoveWeapon(int weaponIndex)
         {
-            if (player == null) return false;
-            
-            if (!m_PlayerWeapons.TryGetValue(player, out PlayerWeaponInventory inventory))
+            if (m_PlayerInventory == null)
             {
                 return false;
             }
             
-            IInteractable weapon = inventory.GetWeaponAt(weaponIndex);
+            var weapon = m_PlayerInventory.GetWeaponAt(weaponIndex);
             
-            if (weapon != null)
-            {
-                return RemoveWeaponByInstance(player, weapon);
-            }
-            
-            return false;
+            return weapon != null && RemoveWeaponByInstance(weapon);
         }
         
         /// <summary>
         /// Removes a specific weapon instance from the player's inventory
         /// </summary>
-        /// <param name="player">The player</param>
         /// <param name="weapon">The weapon instance to remove</param>
         /// <returns>True if the weapon was removed successfully</returns>
-        public bool RemoveWeaponByInstance(Player player, IInteractable weapon)
+        public bool RemoveWeaponByInstance(IInteractable weapon)
         {
-            if (!player || weapon == null) return false;
-            
-            // Ensure the player has an inventory
-            if (!m_PlayerWeapons.TryGetValue(player, out PlayerWeaponInventory inventory))
+            if (m_PlayerInventory == null)
             {
                 return false;
             }
-            
-            // If removing equipped weapon, clear equipped reference
-            if (inventory.EquippedWeapon == weapon)
+
+            if (m_PlayerInventory.EquippedWeapon == weapon)
             {
-                inventory.EquippedWeapon = null;
+                m_PlayerInventory.EquippedWeapon = null;
                 
                 // If there are other weapons in inventory, equip the first one
-                if (inventory.Weapons.Count > 1)
+                if (m_PlayerInventory.Weapons.Count > 1)
                 {
                     // Find the next weapon to equip (not the one being removed)
-                    foreach (var nextWeapon in inventory.Weapons)
+                    foreach (var nextWeapon in m_PlayerInventory.Weapons.Where(nextWeapon => nextWeapon != weapon))
                     {
-                        if (nextWeapon != weapon)
+                        m_PlayerInventory.EquippedWeapon = nextWeapon;
+                            
+                        var weaponCollectableData = nextWeapon.GetTypeData<WeaponCollectableData>();
+                            
+                        if (weaponCollectableData != null)
                         {
-                            // Set as equipped weapon
-                            inventory.EquippedWeapon = nextWeapon;
-                            
-                            // Get weapon data
-                            WeaponCollectableData weaponCollectableData = nextWeapon.GetTypeData<WeaponCollectableData>();
-                            
-                            if (weaponCollectableData != null)
+                            ApplyWeaponConfig(nextWeapon, weaponCollectableData);
+                                
+                            // Trigger equipped event
+                            OnWeaponEquipped?.Invoke(nextWeapon);
+                                
+                            if (m_DebugMode)
                             {
-                                // Apply weapon configuration to player
-                                ApplyWeaponConfig(player, nextWeapon, weaponCollectableData);
-                                
-                                // Trigger equipped event
-                                OnWeaponEquipped?.Invoke(player, nextWeapon);
-                                
-                                if (m_DebugMode)
-                                {
-                                    Debug.Log($"Auto-equipped next weapon: {nextWeapon.Name} for player {player.name}");
-                                }
+                                Debug.Log($"Auto-equipped next weapon: {nextWeapon.Name}");
                             }
-                            
-                            break;
                         }
+                            
+                        break;
                     }
                 }
             }
             
             // Remove from inventory
-            bool removed = inventory.RemoveWeapon(weapon);
+            bool removed = m_PlayerInventory.RemoveWeapon(weapon);
             
             if (removed)
             {
                 // Trigger removed event
-                OnWeaponRemoved?.Invoke(player, weapon);
+                OnWeaponRemoved?.Invoke(weapon);
                 
                 if (m_DebugMode)
                 {
-                    Debug.Log($"Removed weapon: {weapon.Name} from player {player.name}");
+                    Debug.Log($"Removed weapon: {weapon.Name}");
                 }
                 
                 return true;
@@ -274,29 +241,21 @@ namespace LocomotionSystem
         public ComboConfiguration GetActiveComboConfiguration(Player player)
         {
             if (!player) return m_DefaultComboConfig;
-            
-            if (m_PlayerComboConfigs.TryGetValue(player, out ComboConfiguration config))
-            {
-                return config;
-            }
-            
-            return m_DefaultComboConfig;
+
+            return m_PlayerComboConfig ? m_PlayerComboConfig : m_DefaultComboConfig;
         }
         
         /// <summary>
         /// Sets the active ComboConfiguration for a player
         /// </summary>
-        /// <param name="player">The player</param>
         /// <param name="config">The ComboConfiguration to set</param>
-        public void SetActiveComboConfiguration(Player player, ComboConfiguration config)
+        public void SetActiveComboConfiguration(ComboConfiguration config)
         {
-            if (!player) return;
-            
-            m_PlayerComboConfigs[player] = config;
+            m_PlayerComboConfig = config;
             
             if (m_DebugMode)
             {
-                Debug.Log($"Set active ComboConfiguration for player {player.name}");
+                Debug.Log($"Set active ComboConfiguration");
             }
         }
         
@@ -329,15 +288,13 @@ namespace LocomotionSystem
         /// <summary>
         /// Applies a weapon configuration to a player
         /// </summary>
-        /// <param name="player">The player to apply the configuration to</param>
         /// <param name="weapon">The weapon interactable</param>
         /// <param name="weaponCollectableData">The weapon data</param>
-        private void ApplyWeaponConfig(Player player, IInteractable weapon, WeaponCollectableData weaponCollectableData)
+        private void ApplyWeaponConfig(IInteractable weapon, WeaponCollectableData weaponCollectableData)
         {
-            if (!player || weapon == null || weaponCollectableData == null || !weaponCollectableData.Config) return;
+            if (weaponCollectableData == null || !weaponCollectableData.Config) return;
             
-            // Store the weapon's ComboConfiguration for this player
-            SetActiveComboConfiguration(player, weaponCollectableData.Config);
+            SetActiveComboConfiguration(weaponCollectableData.Config);
             
             if (m_DebugMode)
             {

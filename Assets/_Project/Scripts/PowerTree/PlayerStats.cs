@@ -360,6 +360,13 @@ namespace PowerTree
             OnAttributesChanged.Invoke();
         }
 
+        public void AddDroppedGold(int amount)
+        {
+            gold += Mathf.RoundToInt(amount * goldDropMultiplier);
+            
+            OnAttributesChanged.Invoke();
+        }
+
         public bool SpendGold(int amount)
         {
             if (gold >= amount)
@@ -375,7 +382,7 @@ namespace PowerTree
 
         public int GetDiscountedPrice(int originalPrice)
         {
-            return Mathf.RoundToInt(originalPrice * (1 - shopDiscountPercent / 100f));
+            return Mathf.RoundToInt(originalPrice * (1 - shopDiscountPercent));
         }
 
         public void ModifyShopDiscount(float percentAmount)

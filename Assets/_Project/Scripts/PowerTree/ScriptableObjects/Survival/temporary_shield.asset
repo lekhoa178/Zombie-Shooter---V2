@@ -26,10 +26,13 @@ MonoBehaviour:
   requiredNodes:
   - {fileID: 11400000, guid: 21632317b1edd3d438b76b006c6f7f82, type: 2}
   aetherCosts: 010000000200000003000000
+  onNodeUnlockedOrUpgraded:
+    m_PersistentCalls:
+      m_Calls: []
   blueHeartsValues:
-  - 2
-  - 3
-  - 3
+  - 0.5
+  - 1
+  - 1
   nonLossChanceValues:
   - 0
   - 0

@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using CardSystem;
+using DungeonGeneration;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -37,22 +39,12 @@ namespace PowerTree
             currentGoldDropChance = goldDropChance[level - 1];
             canDropDoubleGold = (level == 3);
             
-            // Subscribe to enemy death event to check for gold drops
-            // This would typically be handled by the loot system
-            LootSystem.SetGoldDropChance(currentGoldDropChance);
-            
-            if (canDropDoubleGold)
-            {
-                LootSystem.SetDoubleGoldChance(doubleGoldChance);
-            }
+            EnemyManager.Instance?.OnEnemyUnregistered.AddListener(OnEnemyUnregistered);
         }
         
-        // ReSharper disable Unity.PerformanceAnalysis
         public override void RemoveEffect(PlayerStats player)
         {
-            // Reset gold drop chances
-            LootSystem.SetGoldDropChance(0f);
-            LootSystem.SetDoubleGoldChance(0f);
+            EnemyManager.Instance?.OnEnemyUnregistered.RemoveListener(OnEnemyUnregistered);
             
             ResetState();
         }
@@ -62,6 +54,21 @@ namespace PowerTree
             currentGoldDropChance = 0f;
             canDropDoubleGold = false;
         }
+        
+        private void OnEnemyUnregistered(BaseEnemy enemy)
+        {
+            if (!enemy) return;
+
+            if (!(Random.value < currentGoldDropChance)) return;
+            
+            var goldAmount = Mathf.RoundToInt(enemy.Data.goldDropAmount);
+            PlayerStats.Instance?.AddDroppedGold(goldAmount);
+
+            if (!canDropDoubleGold || !(Random.value < doubleGoldChance)) return;
+            
+            var doubleGoldAmount = Mathf.RoundToInt(goldAmount * 2);
+            PlayerStats.Instance?.AddDroppedGold(doubleGoldAmount);
+        }
     }
 
     /// <summary>
@@ -70,7 +77,7 @@ namespace PowerTree
     [CreateAssetMenu(fileName = "HellMerchant", menuName = "PowerTree/Nodes/Finance/HellMerchant")]
     public class HellMerchantNode : PowerNode
     {
-        [SerializeField] private float[] discountPercent = new float[] { 5f, 10f, 15f }; // 5%, 10%, 15%
+        [SerializeField] private float[] discountPercent = new float[] { 0.05f, 0.1f, 0.15f }; // 5%, 10%, 15%
         
         private float currentDiscount = 0f;
         
@@ -169,20 +176,21 @@ namespace PowerTree
         {
             if (withoutDamage)
             {
-                var player = FindObjectOfType<PlayerStats>();
-                if (player != null)
+                var player = PlayerStats.Instance;
+                if (player)
                 {
                     // Calculate bonus gold based on level gold
-                    int levelGold = GameManager.GetLevelGoldReward();
+                    int levelGold = FindAnyObjectByType<StageBaseManager>().CoinEarnAmount;
                     int bonusGold = Mathf.RoundToInt(levelGold * currentGoldBoost);
                     
                     // Award bonus gold
                     player.AddGold(bonusGold);
                     
                     // Check for special card at level 3
-                    if (canGetSpecialCard && UnityEngine.Random.value < specialCardChance)
+                    if (canGetSpecialCard && Random.value < specialCardChance)
                     {
-                        CardSystem.AwardSpecialCard();
+                        FindAnyObjectByType<CardSelectionScreenUI>()?.ShowSelectionScreen(3, 1,
+                            null, null, null, $"{displayName}'s Special Card", "Select one special card.");
                     }
                 }
             }
@@ -238,16 +246,13 @@ namespace PowerTree
         
         private void OnRedHeartLost(float amount)
         {
-            var player = FindObjectOfType<PlayerStats>();
-            if (player != null)
+            var player = PlayerStats.Instance;
+            if (player)
             {
-                // Give gold refund
                 player.AddGold(currentGoldRefund);
                 
-                // Check for heart save at level 3
                 if (canSaveHeart && UnityEngine.Random.value < heartSaveChance)
                 {
-                    // Give back heart
                     player.AddHearts(HeartType.Red, amount);
                 }
             }
@@ -256,20 +261,3 @@ namespace PowerTree
 
     #endregion
 }
-
-// Helper stubs to make the code compile - these would be implemented in your game
-public static class LootSystem
-{
-    public static void SetGoldDropChance(float chance) { }
-    public static void SetDoubleGoldChance(float chance) { }
-}
-
-public static class GameManager
-{
-    public static int GetLevelGoldReward() { return 100; }
-}
-
-public static class CardSystem
-{
-    public static void AwardSpecialCard() { }
-} 

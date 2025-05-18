@@ -30,9 +30,9 @@ public class EnemyFactory : PersistentSingleton<EnemyFactory>
     #region Events
     [Header("Events")]
     // Events for notifications about enemy lifecycle
-    public UnityEvent<BaseEnemy> OnEnemySpawnStarted;
-    public UnityEvent<BaseEnemy> OnEnemySpawned;
-    public UnityEvent<BaseEnemy> OnEnemyDeath;
+    public UnityEvent<BaseEnemy> OnEnemySpawnStarted = new();
+    public UnityEvent<BaseEnemy> OnEnemySpawned = new();
+    public UnityEvent<BaseEnemy> OnEnemyDeath = new();
     #endregion
     
     #region Private Fields
@@ -219,11 +219,9 @@ public class EnemyFactory : PersistentSingleton<EnemyFactory>
     #region Private Methods
     private IEnumerator SpawnEnemyWithTelegraph(string _enemyName, Vector3 _position, Quaternion _rotation, float _telegraphDuration)
     {
-        // Raise event that spawning has started (for any listeners that might want to know)
-        OnEnemySpawnStarted?.Invoke(null);
-        
         // Get or create the telegraph config for this enemy type
         EnemyTelegraphConfig telegraphConfig = GetTelegraphConfig(_enemyName);
+        Debug.Log($"Telegraph config for {_enemyName}: {telegraphConfig}");
         
         // Spawn the telegraph VFX
         VFXFlyweight telegraphVfx = VFXFlyweightHelper.SpawnVfxAtPosition(
@@ -241,6 +239,9 @@ public class EnemyFactory : PersistentSingleton<EnemyFactory>
         
         // Store the coroutine for possible cancellation
         m_ActiveTelegraphs[_position] = StartCoroutine(SpawnEnemyAfterTelegraph(_enemyName, _position, _rotation, _telegraphDuration, telegraphVfx));
+        
+        OnEnemySpawnStarted?.Invoke(null);
+
         
         yield return null;
     }

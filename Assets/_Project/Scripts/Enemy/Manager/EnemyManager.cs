@@ -23,8 +23,8 @@ public class EnemyManager : MonoBehaviour
     [SerializeField] private bool m_ShowDebugInfo = false;
     
     [Header("Events")]
-    public UnityEvent<BaseEnemy> OnEnemyRegistered;
-    public UnityEvent<BaseEnemy> OnEnemyUnregistered;
+    public UnityEvent<BaseEnemy> OnEnemyRegistered = new();
+    public UnityEvent<BaseEnemy> OnEnemyUnregistered = new();
     
     #endregion
     

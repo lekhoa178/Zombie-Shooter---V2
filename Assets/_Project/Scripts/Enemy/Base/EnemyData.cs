@@ -245,8 +245,14 @@ public class EnemyData : ScriptableObject
     public bool scaleStepVfxWithSpeed = true;
     [Tooltip("Minimum speed required to spawn step VFX")]
     public float minSpeedForStepVfx = 0.5f;
-
-    public GameObject deathVFX;
+    
+    [Header("Death VFX")]
+    [Tooltip("Gold drop amount when the enemy dies")]
+    public int goldDropAmount = 2;
+    [Tooltip("VFX to play when the enemy drops gold")]
+    public VFXFlyweightSettings goldDropVFX;
+    [Tooltip("VFX to play when the enemy dies")]
+    public VFXFlyweightSettings deathVFX;
     public AudioClip[] hitSounds;
     public AudioClip[] deathSounds;
 

@@ -19,7 +19,7 @@ MonoBehaviour:
   BoxSize: {x: 5, y: 0.5, z: 5}
   Offset: {x: 0, y: 0, z: 0.2}
   OffsetFromColliderCenter: 1
-  Damage: 10
+  Damage: 20
   EnableHitStop: 1
   HitStopDuration: 0.1
   HitStopTimeScale: 0.1

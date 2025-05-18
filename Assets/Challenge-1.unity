@@ -13000,7 +13000,7 @@ MonoBehaviour:
   m_SerializedVersion: 0
   m_AgentTypeID: 0
   m_CollectObjects: 1
-  m_Size: {x: 27, y: 10, z: 32}
+  m_Size: {x: 24, y: 10, z: 28}
   m_Center: {x: 0, y: 2, z: 0}
   m_LayerMask:
     serializedVersion: 2
@@ -13015,7 +13015,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: 918167f8fe6e94b48bd28dbe1f15dd8a, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: 33632cec44b152e4ebfee8bf56afe272, type: 2}
   m_BuildHeightMesh: 0
 --- !u!4 &763552153
 Transform:
@@ -13026,7 +13026,7 @@ Transform:
   m_GameObject: {fileID: 763552151}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -2.94}
+  m_LocalPosition: {x: 0, y: 0, z: -2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -32097,6 +32097,8 @@ MonoBehaviour:
   playerPrefab: {fileID: 8600471821050633075, guid: 089e20580852a5546987bd8f006ce355, type: 3}
   playerSpawnPointTag: PlayerSpawn
   hudPrefab: {fileID: 8860198512651457756, guid: 15f71b78cc88a7b4eb216834ab6873c0, type: 3}
+  coinEarnAmount: 25
+  shardsEarnProbability: 0.1
   onStageCompleted:
     m_PersistentCalls:
       m_Calls: []

@@ -19,6 +19,7 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
     [Tooltip("Configuration for squash and stretch efFfects when hit")]
     public MMF_Player hitFeedback;
     
+    
     // Components
     protected Rigidbody Rb;
     protected Animator Animator;
@@ -396,6 +397,15 @@ public class BaseEnemy : MonoBehaviour, IEnemy, IHittable
             {
                 int randomIndex = UnityEngine.Random.Range(0, enemyData.eliteDeathSounds.Length);
                 AudioSource.PlayClipAtPoint(enemyData.eliteDeathSounds[randomIndex], transform.position);
+            }
+
+            if (enemyData.goldDropVFX)
+            {
+                VFXFlyweightHelper.SpawnVfxAtPosition(
+                    enemyData.goldDropVFX,
+                    transform.position,
+                    Quaternion.identity
+                );
             }
         }
         // Handle normal death visuals for non-elite

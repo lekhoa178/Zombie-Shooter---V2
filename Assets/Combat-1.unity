@@ -13552,7 +13552,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: f1e090a8288247244beb92fc5ebd75ad, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: 0aeeea23e71fc5b4aa0aa0bab6a5a350, type: 2}
   m_BuildHeightMesh: 0
 --- !u!4 &763552153
 Transform:
@@ -32836,6 +32836,8 @@ MonoBehaviour:
   playerPrefab: {fileID: 8600471821050633075, guid: 089e20580852a5546987bd8f006ce355, type: 3}
   playerSpawnPointTag: PlayerSpawn
   hudPrefab: {fileID: 8860198512651457756, guid: 15f71b78cc88a7b4eb216834ab6873c0, type: 3}
+  coinEarnAmount: 25
+  shardsEarnProbability: 0.1
   onStageCompleted:
     m_PersistentCalls:
       m_Calls: []
@@ -32884,6 +32886,38 @@ MonoBehaviour:
         IsWildWave: 0
       - EnemyPrefab: {fileID: 1116067486118601656, guid: b5fd6fe55010dfb4d9201c1337070d5e, type: 3}
         SpawnCount: 2
+        IsWildWave: 0
+  - Name: 
+    WaveSets:
+    - Name: 
+      Waves:
+      - EnemyPrefab: {fileID: 2329032163622071503, guid: 1b9d91e284dd2174ebaf06ef2431b1be, type: 3}
+        SpawnCount: 10
+        IsWildWave: 0
+  - Name: 
+    WaveSets:
+    - Name: 
+      Waves:
+      - EnemyPrefab: {fileID: 5248203395703006340, guid: 7ac10ebff615ccb4d8f5f6fe42c5e7f5, type: 3}
+        SpawnCount: 10
+        IsWildWave: 0
+  - Name: 
+    WaveSets:
+    - Name: 
+      Waves:
+      - EnemyPrefab: {fileID: 8631082318153288712, guid: cbb871d2876ad4b4daa0b06263e7fc8d, type: 3}
+        SpawnCount: 3
+        IsWildWave: 0
+      - EnemyPrefab: {fileID: 2967958721894769120, guid: 5973f370eefb1ad4a8241c7bdb1cbc09, type: 3}
+        SpawnCount: 3
+        IsWildWave: 0
+    - Name: 
+      Waves:
+      - EnemyPrefab: {fileID: 3810108578128922762, guid: b24a1ef26b8a7c441b6ec4c1cdd6dd2a, type: 3}
+        SpawnCount: 3
+        IsWildWave: 0
+      - EnemyPrefab: {fileID: 6346280662521349968, guid: bc01147e91fe12d47b251a950d954c2b, type: 3}
+        SpawnCount: 3
         IsWildWave: 0
   m_TimeBetweenSpawns: 0
   m_ProgressionMode: 2

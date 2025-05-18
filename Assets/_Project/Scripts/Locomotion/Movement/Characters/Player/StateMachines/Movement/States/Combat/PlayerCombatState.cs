@@ -32,16 +32,12 @@ namespace LocomotionSystem
         // Helper method to get the active ComboConfiguration
         protected ComboConfiguration GetActiveComboConfig()
         {
-            // First check if there's a debug override in PlayerSO
-            if (StateMachine.Player.Data.DebugComboConfigOverride != null)
-            {
-                if (StateMachine.Player.Animator.updateMode == AnimatorUpdateMode.Fixed)
-                    Debug.Log("[Debug] Using ComboConfiguration override from PlayerSO");
-                return StateMachine.Player.Data.DebugComboConfigOverride;
-            }
+            if (!StateMachine.Player.Data.DebugComboConfigOverride)
+                return WeaponManager.Instance.GetActiveComboConfiguration(StateMachine.Player);
             
-            // If no override, use the WeaponManager's configuration
-            return WeaponManager.Instance.GetActiveComboConfiguration(StateMachine.Player);
+            if (StateMachine.Player.Animator.updateMode == AnimatorUpdateMode.Fixed)
+                Debug.Log("[Debug] Using ComboConfiguration override from PlayerSO");
+            return StateMachine.Player.Data.DebugComboConfigOverride;
         }
 
         public override void Enter()
@@ -50,20 +46,18 @@ namespace LocomotionSystem
             
             _attackIntervalTimer.Reset();
 
-            // Handle weapon attachment at the start of the attack
             var comboConfig = GetActiveComboConfig();
-            if (comboConfig != null)
+            if (!comboConfig) return;
+            
+            var config = comboConfig.AttackConfigs[StateMachine.ReusableData.CurrentComboIndex];
+            if (config)
             {
-                var config = comboConfig.AttackConfigs[StateMachine.ReusableData.CurrentComboIndex];
-                if (config)
-                {
-                    StateMachine.Player.SocketManager.HandleWeaponForAttack(config);
-                }
+                StateMachine.Player.SocketManager.HandleWeaponForAttack(config);
+            }
                 
-                if (config && config.EnableAttackIFrames)
-                {
-                    IFrameManager.Instance.StartInvincibility(config.AttackIFrameDuration);
-                }
+            if (config && config.EnableAttackIFrames)
+            {
+                IFrameManager.Instance.StartInvincibility(config.AttackIFrameDuration);
             }
         }
 

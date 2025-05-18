@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c99f3487b6cf1644ac540e35b1aa2bd, type: 3}
+  m_Name: Shop_MSM_Epic
+  m_EditorClassIdentifier: 
+  m_Id: MSM_Epic
+  m_DisplayName: "Windrunner\t"
+  m_Description: Swift movement (+{MoveSpeedMultiplier}).
+  m_GoldCost: 50
+  m_Icon: {fileID: -104855914, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
+  m_ItemType: 0
+  m_Card: {fileID: 11400000, guid: 6bf04a18d78aed3418c8ee7ae04a69a0, type: 2}
+  m_ConsumableType: 0
+  m_ConsumableValue: 0

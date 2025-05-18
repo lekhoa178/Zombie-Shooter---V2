@@ -22,6 +22,7 @@ public class UIPage : MonoBehaviour
     [SerializeField] protected float m_AnimationDuration = 0.3f;
     [SerializeField] protected float m_SlideDistance = 100f;
     [SerializeField] protected bool m_ShowCursorWhenActive = true;
+    [SerializeField] protected bool m_ExitOnPush = false;
 
     [Header("Animation Curves")]
     [SerializeField] protected AnimationCurve m_FadeCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
@@ -45,18 +46,16 @@ public class UIPage : MonoBehaviour
     private Coroutine m_CurrentAnimation;
     private Coroutine m_BackgroundAnimation;
 
-    private CameraCursor m_CameraCursor;
     private GameObject m_BackgroundGameObject;
     
     public bool ShowCursorWhenActive => m_ShowCursorWhenActive;
+    public bool ExitOnPush => m_ExitOnPush;
 
     private void Awake()
     {
         m_CanvasGroup = GetComponent<CanvasGroup>();
         m_RectTransform = GetComponent<RectTransform>();
         m_StartPosition = m_RectTransform.anchoredPosition;
-
-        m_CameraCursor = FindAnyObjectByType<CameraCursor>();
         
         m_CanvasGroup.interactable = true;
         m_CanvasGroup.blocksRaycasts = true;
@@ -66,35 +65,6 @@ public class UIPage : MonoBehaviour
         {
             m_BackgroundGameObject = m_Background.gameObject;
             m_Background.color = new Color(m_BackgroundColor.r, m_BackgroundColor.g, m_BackgroundColor.b, 0);
-        }
-    }
-
-    protected void OnEnable()
-    {
-        UIManager.Instance.DisableGameplayInput();
-
-        StartCoroutine(DelayedEnable());
-    }
-
-    IEnumerator DelayedEnable()
-    {
-        yield return new WaitForNextFrameUnit();
-
-        if (m_ShowCursorWhenActive && m_CameraCursor && !m_CameraCursor.IsUICursorVisible)
-        {
-            m_CameraCursor.UIToggleCursor(true);
-            m_CameraCursor.enabled = false;
-        }
-    }
-
-    private void OnDisable()
-    {
-        UIManager.Instance.EnableGameplayInput();
-        
-        if (m_ShowCursorWhenActive && m_CameraCursor != null && !UIManager.Instance.IsLastPageInHistory)
-        {
-            m_CameraCursor.UIToggleCursor(false);
-            m_CameraCursor.enabled = true;
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using PowerTree;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
@@ -13,6 +14,12 @@ namespace DungeonGeneration
 
         [Header("HUD Settings")] [SerializeField]
         protected GameObject hudPrefab;
+        
+        [Header("Stage Settings")]
+        [SerializeField] protected int coinEarnAmount = 25;
+        [SerializeField] protected float shardsEarnProbability = 0.1f;
+        
+        public int CoinEarnAmount => coinEarnAmount;
 
         public UnityEvent onStageCompleted;
 
@@ -28,6 +35,15 @@ namespace DungeonGeneration
         {
             SpawnPlayerAtSpawnPoint();
             CreateHUD();
+            
+            onStageCompleted.AddListener(() =>
+            {
+                PlayerStats.Instance?.AddDroppedGold(coinEarnAmount);
+                if (UnityEngine.Random.value < shardsEarnProbability)
+                {
+                    PowerTreeManager.Instance?.AddAetherShards(1);
+                }
+            });
         }
 
         public void SpawnPlayerAtSpawnPoint()

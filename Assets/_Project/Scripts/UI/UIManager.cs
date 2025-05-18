@@ -26,8 +26,20 @@ public class UIManager : PersistentSingleton<UIManager>
     private Dictionary<string, UIPage> m_RegisteredPages = new Dictionary<string, UIPage>();
     private Stack<UIPage> m_PageHistory = new Stack<UIPage>();
     private UIPage m_CurrentPage;
-    private Stack<UIPopupPage> m_PopupHistory = new Stack<UIPopupPage>();
-    private UIPopupPage m_CurrentPopup;
+    
+    private CameraCursor _cameraCursor;
+    
+    public CameraCursor CameraCursor
+    {
+        get
+        {
+            if (_cameraCursor == null)
+            {
+                _cameraCursor = FindAnyObjectByType<CameraCursor>();
+            }
+            return _cameraCursor;
+        }
+    }
     
     private PlayerInput _playerInput;
     private PlayerInput PlayerInput
@@ -41,9 +53,6 @@ public class UIManager : PersistentSingleton<UIManager>
             return _playerInput;
         }
     }
-    
-    public bool IsPageHistoryEmpty => m_PageHistory.Count == 0;
-    public bool IsLastPageInHistory => m_PageHistory.Count == 1;
 
     protected override void Awake()
     {
@@ -64,6 +73,8 @@ public class UIManager : PersistentSingleton<UIManager>
         {
             ShowPage(m_StartingPage.name);
         }
+        
+        _cameraCursor = FindAnyObjectByType<CameraCursor>();
     }
 
     private void OnDestroy()
@@ -139,10 +150,18 @@ public class UIManager : PersistentSingleton<UIManager>
         }
 
         // Hide current page if exists
-        if (m_CurrentPage != null)
+        if (m_CurrentPage)
         {
             m_PageHistory.Push(m_CurrentPage);
-            m_CurrentPage.Exit();
+            
+            if (m_CurrentPage.ExitOnPush)
+                m_CurrentPage.Exit();
+        }
+
+        if (m_PageHistory.Count == 0)
+        {
+            DisableGameplayInput();
+            ShowCursor();
         }
 
         // Show new page
@@ -153,39 +172,33 @@ public class UIManager : PersistentSingleton<UIManager>
 
     public void GoBack()
     {
-        // First handle any active popups - they take priority in navigation
-        if (m_CurrentPopup != null)
-        {
-            ClosePopup();
-            return;
-        }
-        
-        // Then handle regular page history
         if (m_PageHistory.Count == 0)
         {
             HideCurrentPage();
+            
+            EnableGameplayInput();
+            HideCursor();
+            
             return;
         }
 
-        if (m_CurrentPage != null)
+        if (m_CurrentPage)
         {
             m_CurrentPage.Exit();
         }
 
         m_CurrentPage = m_PageHistory.Pop();
-        m_CurrentPage.gameObject.SetActive(true);
-        m_CurrentPage.Enter();
+
+        if (m_CurrentPage.ExitOnPush)
+        {
+            m_CurrentPage.gameObject.SetActive(true);
+            m_CurrentPage.Enter();
+        }
     }
 
     public void HideCurrentPage()
     {
-        // First close any active popups
-        if (m_CurrentPopup != null)
-        {
-            CloseAllPopups();
-        }
-        
-        if (m_CurrentPage != null)
+        if (m_CurrentPage)
         {
             m_CurrentPage.Exit();
             m_CurrentPage = null;
@@ -194,14 +207,26 @@ public class UIManager : PersistentSingleton<UIManager>
 
     public UIPage GetPage(string pageId)
     {
-        if (m_RegisteredPages.TryGetValue(pageId, out UIPage page))
-        {
-            return page;
-        }
-        return null;
+        return m_RegisteredPages.GetValueOrDefault(pageId);
     }
     
     #region Popup System
+
+    public void ShowCursor()
+    {
+        if (CameraCursor != null)
+        {
+            CameraCursor.UIToggleCursor(true);
+        }
+    }
+    
+    public void HideCursor()
+    {
+        if (CameraCursor != null)
+        {
+            CameraCursor.UIToggleCursor(false);
+        }
+    }
     
     public void DisableGameplayInput()
     {
@@ -233,11 +258,17 @@ public class UIManager : PersistentSingleton<UIManager>
         string denyText = "Deny", string cancelText = "Cancel",
         Sprite continueIcon = null, Sprite acceptIcon = null, Sprite denyIcon = null, Sprite cancelIcon = null)
     {
-        // If there's a current popup, add it to history instead of destroying it
-        if (m_CurrentPopup != null)
+        if (m_CurrentPage != null)
         {
-            m_CurrentPopup.gameObject.SetActive(false);
-            m_PopupHistory.Push(m_CurrentPopup);
+            if (m_CurrentPage.ExitOnPush)
+                m_CurrentPage.Exit();
+            m_PageHistory.Push(m_CurrentPage);
+        }
+        
+        if (m_PageHistory.Count == 0)
+        {
+            DisableGameplayInput();
+            ShowCursor();
         }
 
         if (m_PopupPrefab == null)
@@ -298,52 +329,13 @@ public class UIManager : PersistentSingleton<UIManager>
         }
 
         // Show popup
-        m_CurrentPopup = popupPage;
+        m_CurrentPage = popupPage;
         popup.gameObject.SetActive(true);
         popupPage.Enter();
 
         return popupPage;
     }
 
-    public void ClosePopup()
-    {
-        if (m_CurrentPopup != null)
-        {
-            // Close current popup
-            var popupToClose = m_CurrentPopup;
-            m_CurrentPopup = null;
-            
-            popupToClose.Exit();
-            Destroy(popupToClose.gameObject);
-            
-            // If there's a popup in history, show it
-            if (m_PopupHistory.Count > 0)
-            {
-                m_CurrentPopup = m_PopupHistory.Pop();
-                m_CurrentPopup.gameObject.SetActive(true);
-                m_CurrentPopup.Enter();
-            }
-        }
-    }
-    
-    public void CloseAllPopups()
-    {
-        // Close current popup if exists
-        if (m_CurrentPopup != null)
-        {
-            m_CurrentPopup.Exit();
-            Destroy(m_CurrentPopup.gameObject);
-            m_CurrentPopup = null;
-        }
-        
-        // Close all popups in history
-        while (m_PopupHistory.Count > 0)
-        {
-            var popup = m_PopupHistory.Pop();
-            Destroy(popup.gameObject);
-        }
-    }
-    
     #endregion
 }
 

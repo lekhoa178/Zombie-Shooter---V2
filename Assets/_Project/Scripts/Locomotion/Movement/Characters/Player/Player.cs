@@ -333,7 +333,7 @@ namespace LocomotionSystem
             
             AnimationData.PlayInteractionAnimation(Animator, AnimationData.DieStateName, 0);
             
-            DOVirtual.DelayedCall(2f, () => SceneTransitionManager.Instance.LoadScene("ResultScreen_Success"));
+            DOVirtual.DelayedCall(2f, () => SceneTransitionManager.Instance.LoadScene("ResultScreen_Failed"));
         }
         #endregion
         

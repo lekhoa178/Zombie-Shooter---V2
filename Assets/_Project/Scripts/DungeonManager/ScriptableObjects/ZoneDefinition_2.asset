@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fccfdfdaabc5ab45b1f4fba2f7fdb97, type: 3}
+  m_Name: ZoneDefinition_2
+  m_EditorClassIdentifier: 
+  m_ZoneName: ZONE 2
+  m_BranchingFactors:
+  - branchCount: 1
+    weight: 0.453
+  - branchCount: 2
+    weight: 1
+  m_OverallLength: 5
+  m_MaxNodesPerDepth: 4
+  m_AllowSharedPaths: 0
+  m_AllowSkipDepth: 0
+  m_BossStageName: Boss-2
+  m_CombatStages:
+  - Combat-1
+  - Combat-2
+  - Combat-3
+  - Combat-4
+  m_ChallengeStages:
+  - Challenge-1
+  m_ShopStageName: Shop
+  m_HealingStageName: Healing
+  m_InterzoneStageName: Interzone
+  m_CombatStageWeight: 0.4
+  m_ChallengeStageWeight: 0.4
+  m_ShopStageWeight: 0.1
+  m_HealingStageWeight: 0.1
+  m_MysteryStageWeight: 0.2

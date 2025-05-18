@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Events;
 using TMPro;
@@ -131,7 +132,7 @@ namespace DungeonGeneration
             // Show accept UI if challenge is optional
             if (m_OptionalChallenge)
             {
-                ShowAcceptPrompt();
+                DOVirtual.DelayedCall(2f, ShowAcceptPrompt);
             }
             else
             {
@@ -256,7 +257,7 @@ namespace DungeonGeneration
         private void ShowAcceptPrompt()
         {
             UIManager.Instance.ShowPopup("", $"{m_ChallengeDescription}\nAccept Challenge?", UIManager.PopupType.AcceptDeny,
-                AcceptChallenge, 
+                acceptAction: AcceptChallenge, 
                 denyAction: SkipChallenge);
             
             if (m_ChallengeUI != null)

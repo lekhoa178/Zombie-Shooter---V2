@@ -228,6 +228,15 @@ namespace PowerTree
             OnAetherShardChanged.Invoke();
             SavePlayerData();
         }
+        
+        public void RemoveAetherShards(int amount)
+        {
+            playerTreeData.aetherShards -= amount;
+            if (playerTreeData.aetherShards < 0)
+                playerTreeData.aetherShards = 0;
+            OnAetherShardChanged.Invoke();
+            SavePlayerData();
+        }
 
         public int GetAetherShards()
         {

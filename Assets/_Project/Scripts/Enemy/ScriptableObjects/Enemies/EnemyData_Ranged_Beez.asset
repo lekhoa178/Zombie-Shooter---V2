@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EnemyData_Ranged_Beez
   m_EditorClassIdentifier: 
   enemyName: 'Enemy [Elite]'
-  maxHealth: 30
+  maxHealth: 25
   moveSpeed: 2
   attackDamage: 10
   attackRange: 8
@@ -23,6 +23,7 @@ MonoBehaviour:
   canBeElite: 0
   eliteSpawnChance: 0.1
   eliteScaleMultiplier: 1.2
+  isBoss: 0
   overrideEliteHealth: 1
   eliteHealthMultiplier: 2
   overrideEliteDamage: 1
@@ -112,6 +113,8 @@ MonoBehaviour:
   rightFootOffset: {x: 0.2, y: 0.05, z: 0}
   scaleStepVfxWithSpeed: 1
   minSpeedForStepVfx: 0.5
+  goldDropAmount: 2
+  goldDropVFX: {fileID: 11400000, guid: 2f93b526e2a07a94b9e01bf33b4415a2, type: 2}
   deathVFX: {fileID: 0}
   hitSounds: []
   deathSounds: []

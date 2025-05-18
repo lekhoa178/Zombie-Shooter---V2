@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ComboWindowDuration: 0.8
   BaseAttackInterval: 0.4
-  AttackSpeedMultiplier: 2
+  AttackSpeedMultiplier: 1
   MinimumAttackInterval: 0.1
   AttackConfigs:
   - {fileID: 11400000, guid: 29576446b84ce5f47862ec234006c2fa, type: 2}

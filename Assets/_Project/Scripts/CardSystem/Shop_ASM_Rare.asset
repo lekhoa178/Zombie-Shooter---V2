@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c99f3487b6cf1644ac540e35b1aa2bd, type: 3}
+  m_Name: Shop_ASM_Rare
+  m_EditorClassIdentifier: 
+  m_Id: ASM_Rare
+  m_DisplayName: Quick Hands
+  m_Description: Increase attack speed by {AttackSpeedMultiplier}x.
+  m_GoldCost: 25
+  m_Icon: {fileID: 1473609168, guid: 83f37a7f21b438b448959a5e3bfe8dd0, type: 3}
+  m_ItemType: 0
+  m_Card: {fileID: 11400000, guid: 1347b0507a114a4449b2b41884720dde, type: 2}
+  m_ConsumableType: 0
+  m_ConsumableValue: 0
